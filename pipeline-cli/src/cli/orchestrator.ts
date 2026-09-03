@@ -90,8 +90,8 @@ function fail(reason: string, code = 1): never {
  * Exported so tests can assert the exact message text.
  */
 export const THIRD_PARTY_KEY_ENV_VARS = [
-  'GITHUB_MODELS_TOKEN',
-  'GITHUB_MODELS_TOKEN',
+  'ANTHROPIC_API_KEY',
+  'OPENAI_API_KEY',
   'CURSOR_API_KEY',
   'CODEX_API_KEY',
   'LLM_API_KEY',

@@ -50,8 +50,8 @@ export interface VectorStoreEntry {
  */
 export const DEFAULT_PROVIDER_RATES_PER_1M_TOKENS_USD: Record<string, number> = {
   'github-models-embedding-small': 0.02,
-  'github-copilot-text-embedding-3-large': 0.13,
-  'github-copilot-text-embedding-ada-002': 0.1,
+  'github-models-embedding-large': 0.13,
+  'github-models-embedding-legacy': 0.1,
   'self-hosted-embed-v3': 0.1,
 };
 

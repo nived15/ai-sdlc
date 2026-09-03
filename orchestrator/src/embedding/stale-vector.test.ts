@@ -108,7 +108,7 @@ describe('isCurrentVector', () => {
 describe('StaleVectorEncountered', () => {
   it('AC#4: error message names stored + current provenance and the migration command', () => {
     const err = new StaleVectorEncountered({
-      storedProvider: 'github-copilot-text-embedding-ada-002',
+      storedProvider: 'github-models-embedding-legacy',
       storedModelVersion: '2022-12-15',
       currentProvider: 'github-models-embedding-small',
       currentModelVersion: '2024-01-25',
@@ -116,7 +116,7 @@ describe('StaleVectorEncountered', () => {
     });
 
     expect(err.name).toBe('StaleVectorEncountered');
-    expect(err.message).toContain('github-copilot-text-embedding-ada-002@2022-12-15');
+    expect(err.message).toContain('github-models-embedding-legacy@2022-12-15');
     expect(err.message).toContain('github-models-embedding-small@2024-01-25');
     expect(err.message).toContain('cli-embedding-bump --to github-models-embedding-small');
     expect(err.context.textHash).toBe('abc123');

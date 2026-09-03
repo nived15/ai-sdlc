@@ -101,7 +101,6 @@ export {
 
   // Runners
   CopilotRunner,
-  CopilotRunner,
   type AgentRunner,
   type AgentContext,
   type AgentResult,

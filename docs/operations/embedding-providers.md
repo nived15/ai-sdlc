@@ -78,7 +78,7 @@ Programmatic entry point: `loadEmbeddingFromPipelineSpec()` in
 | Adapter | Dimensions | Cost per 1M tokens | Best for |
 |---|---|---|---|
 | `github-models-embedding-small` | 1536 | ~$0.02 | Default; broad coverage, cheap, mature. |
-| `github-copilot-text-embedding-3-large` | 3072 | ~$0.13 | When recall matters more than cost. |
+| `github-models-embedding-large` | 3072 | ~$0.13 | When recall matters more than cost. |
 | a third-party provider `embed-v3.0` (adopter-supplied) | 1024 | ~$0.10 | Multi-lingual; pay-per-token but different SLA. |
 | Local ONNX / sentence-transformers (adopter-supplied) | 384–768 | $0 (compute only) | Air-gapped envs; embedding cost dominates pipeline cost. |
 
@@ -275,7 +275,7 @@ node pipeline-cli/bin/cli-embedding-gc.mjs run \
 ```bash
 node pipeline-cli/bin/cli-embedding-bump.mjs \
   --from github-models-embedding-small \
-  --to   github-copilot-text-embedding-3-large \
+  --to   github-models-embedding-large \
   --artifacts-dir .ai-sdlc/artifacts \
   --dry-run
 # Output: would re-embed 8,432 entries, est. cost $1.05 (3-large @ $0.13/1M tokens)
@@ -286,7 +286,7 @@ node pipeline-cli/bin/cli-embedding-bump.mjs \
 ```bash
 node pipeline-cli/bin/cli-embedding-bump.mjs \
   --from github-models-embedding-small \
-  --to   github-copilot-text-embedding-3-large \
+  --to   github-models-embedding-large \
   --artifacts-dir .ai-sdlc/artifacts \
   --execute
 # Output: re-embedded 8,432 entries; original file preserved at <path>.bak
@@ -500,7 +500,7 @@ pattern in `orchestrator/src/embedding/consumers/tessellation-drift.ts`).
 ```
 <artifactsDir>/_embeddings/
 ├── github-models-embedding-small-2024-01-25.jsonl  ← one file per (provider, modelVersion)
-└── github-copilot-text-embedding-3-large-2024-01-25.jsonl  ← (if multi-provider in use)
+└── github-models-embedding-large-2024-01-25.jsonl  ← (if multi-provider in use)
 ```
 
 ### Filename convention

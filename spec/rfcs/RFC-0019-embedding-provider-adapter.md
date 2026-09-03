@@ -84,7 +84,7 @@ Each consumer has different latency/cost/quality tradeoffs. A single hard-coded 
 
 ### 2.3 Provider lock-in is a real risk without versioned storage
 
-Embeddings produced by `github-models-embedding-small` (1536 dimensions, model `text-embedding-3-small`, snapshot 2024-01-25) are NOT interchangeable with vectors from `github-copilot-text-embedding-3-large` (3072 dimensions), a third-party provider `embed-v3.0` (1024 dimensions), or any other provider. An accidental adapter swap silently corrupts every distance computation that reads from storage. The framework MUST treat `(embeddingProvider, embeddingModelVersion)` as part of the vector's identity and refuse to compare vectors across provider/version boundaries without an explicit migration step.
+Embeddings produced by `github-models-embedding-small` (1536 dimensions, model `text-embedding-3-small`, snapshot 2024-01-25) are NOT interchangeable with vectors from `github-models-embedding-large` (3072 dimensions), a third-party provider `embed-v3.0` (1024 dimensions), or any other provider. An accidental adapter swap silently corrupts every distance computation that reads from storage. The framework MUST treat `(embeddingProvider, embeddingModelVersion)` as part of the vector's identity and refuse to compare vectors across provider/version boundaries without an explicit migration step.
 
 ### 2.4 The harness-adapter precedent already validates the pattern
 
@@ -207,7 +207,7 @@ interface EmbeddingAvailability {
 
 **Why `name` is separate from `modelId`.** The same `modelId` MAY be wrapped by multiple adapters with different default behaviors (e.g., one adapter defaults to truncate-on-overflow, another defaults to error-on-overflow). The `name` is the operator-facing alias; `modelId` is the wire-protocol value. Keeping them distinct preserves the adapter's freedom to evolve without breaking pipeline configs.
 
-**Why `modelVersion` is mandatory.** Without an explicit version, the same logical model can silently change behavior across provider snapshots — GitHub Copilot has done this multiple times with `text-embedding-ada-002`. Pinning the snapshot date in the adapter source makes adapter upgrades a code change (visible in PR review) rather than a silent provider-side rollout.
+**Why `modelVersion` is mandatory.** Without an explicit version, the same logical model can silently change behavior across provider snapshots — GitHub Copilot has done this multiple times with `the legacy embedding model`. Pinning the snapshot date in the adapter source makes adapter upgrades a code change (visible in PR review) rather than a silent provider-side rollout.
 
 ## 6. Registry and Capability Matrix
 
@@ -235,7 +235,7 @@ Pipeline-load MUST fail with `UnknownEmbeddingProvider` if `Pipeline.spec.embedd
 
 ### 6.2 Capability matrix
 
-| Capability                | `github-models-embedding-small` | `github-copilot-text-embedding-3-large` (future) | `self-hosted-embed-v3` (future) | `local-onnx-bge-small` (future) |
+| Capability                | `github-models-embedding-small` | `github-models-embedding-large` (future) | `self-hosted-embed-v3` (future) | `local-onnx-bge-small` (future) |
 | ------------------------- | ------------------------------- | ----------------------------------------- | --------------------------- | ------------------------------- |
 | dimensions                | 1536                            | 3072                                      | 1024                        | 384                             |
 | maxInputTokens            | 8191                            | 8191                                      | 512                         | 512                             |
@@ -372,7 +372,7 @@ interface VectorStoreEntry {
 ```
 <artifactsDir>/_embeddings/
 ├── github-models-embedding-small-2024-01-25.jsonl
-└── github-copilot-text-embedding-3-large-2024-01-25.jsonl   (if multi-provider in use)
+└── github-models-embedding-large-2024-01-25.jsonl   (if multi-provider in use)
 ```
 
 One file per `(provider, modelVersion)` tuple, named `<safeProvider>-<safeModelVersion>.jsonl` where each component is sanitized to `[a-zA-Z0-9._-]`. The directory listing itself is the index — `scan()` walks `<embeddingsDir>/*.jsonl` and each entry carries its own provenance for filtering. There is no separate `_index.json` file: dropping it eliminates a read-modify-write race on concurrent first-writes for different provider/version tuples (Phase 2 iter-2 review finding). Writes use an atomic temp-then-rename (read existing content → concatenate new line → write to `<file>.<uuid>.tmp` → atomic `rename` over the target) so readers never see partial lines regardless of write size. GC by mtime — `cli-embedding-gc --older-than 90d` removes stale entries via the same temp-then-rename pattern.
@@ -419,21 +419,21 @@ The 90d pre-warning is configurable via Q4 (§15); the values above are the lean
 ### 9.2 The `cli-embedding-bump` tool
 
 ```
-$ npx cli-embedding-bump --dry-run --to github-copilot-text-embedding-3-large
-Found 12,847 vectors on deprecated provider 'github-copilot-text-embedding-ada-002'.
+$ npx cli-embedding-bump --dry-run --to github-models-embedding-large
+Found 12,847 vectors on deprecated provider 'github-models-embedding-legacy'.
 Estimated re-embed cost:
   Total tokens to re-embed: 4,312,891
-  Provider rate (github-copilot-text-embedding-3-large): $0.13 / 1M tokens
+  Provider rate (github-models-embedding-large): $0.13 / 1M tokens
   Estimated cost: $0.56 USD
   Estimated wall-clock (at 100 req/sec, batched 2048 per call): ~21s
 Run with --execute to perform migration.
 
-$ npx cli-embedding-bump --execute --to github-copilot-text-embedding-3-large
-[1/3] Reading 12,847 vectors from github-copilot-text-embedding-ada-002...    done (1.2s)
-[2/3] Re-embedding via github-copilot-text-embedding-3-large...                done (19.8s, $0.55)
-[3/3] Atomic swap: writing _embeddings/github-copilot-text-embedding-3-large-2024-01-25.jsonl...
-       Original kept at _embeddings/github-copilot-text-embedding-ada-002.jsonl.bak.<timestamp> for 30d.
-Migration complete. 12,847 vectors migrated. Pipeline.spec.embedding.provider should now be set to 'github-copilot-text-embedding-3-large'.
+$ npx cli-embedding-bump --execute --to github-models-embedding-large
+[1/3] Reading 12,847 vectors from github-models-embedding-legacy...    done (1.2s)
+[2/3] Re-embedding via github-models-embedding-large...                done (19.8s, $0.55)
+[3/3] Atomic swap: writing _embeddings/github-models-embedding-large-2024-01-25.jsonl...
+       Original kept at _embeddings/github-models-embedding-legacy.jsonl.bak.<timestamp> for 30d.
+Migration complete. 12,847 vectors migrated. Pipeline.spec.embedding.provider should now be set to 'github-models-embedding-large'.
 ```
 
 **Atomicity contract.** The migration writes the new provider+version JSONL file in full via temp-then-rename: the final `rename(<file>.<uuid>.tmp, <newProvider>-<newModelVersion>.jsonl)` is the linearization point. Concurrent reads see either the old file (still on the deprecated provider) or the new file (on the replacement provider), never a half-written mix. The original is preserved as `.bak.<timestamp>` for 30 days; `cli-embedding-gc` removes it after that window.
@@ -599,7 +599,7 @@ Amends RFC-0004 §4 cost-attribution categories with a new line item for embeddi
 
 ### Q3: Cross-provider compatibility — explicit no-op or auto-migrate?
 
-**Lean: explicit no-op.** Vectors from `github-models-embedding-small` (1536 dims) are NOT comparable to vectors from `github-copilot-text-embedding-3-large` (3072 dims) even within the same provider family. The framework MUST refuse to compare across `(provider, modelVersion)` boundaries; adopters who change adapters MUST run `cli-embedding-bump`. Auto-migration on read is technically possible (the `lazy-re-embed` policy in Q2 already does it on a per-vector basis) but framework-level "magic" cross-provider migration would obscure the identity-of-vectors invariant.
+**Lean: explicit no-op.** Vectors from `github-models-embedding-small` (1536 dims) are NOT comparable to vectors from `github-models-embedding-large` (3072 dims) even within the same provider family. The framework MUST refuse to compare across `(provider, modelVersion)` boundaries; adopters who change adapters MUST run `cli-embedding-bump`. Auto-migration on read is technically possible (the `lazy-re-embed` policy in Q2 already does it on a per-vector basis) but framework-level "magic" cross-provider migration would obscure the identity-of-vectors invariant.
 
 **Resolution (2026-05-21 re-walkthrough, full rubric):** **Split — strict no-op cross-PROVIDER; cross-VERSION-within-provider delegates to OQ-2 `staleVectorPolicy`.** Industry research: Pinecone (model-locked indexes), Weaviate (refuse cross-vectorizer queries), Qdrant / pgvector (schema-enforced per-collection dimensions) — all refuse cross-provider; no industry pattern for "auto-migrate cross-provider" because the math is genuinely undefined (vectors in different embedding spaces have no metrically-valid distance). **Key bug in v0.2 resolution surfaced by re-walkthrough:** v0.2 lumped cross-PROVIDER (github-copilot vs self-hosted — math undefined) AND cross-VERSION-within-provider (3-small@2024-01-25 vs 3-small@2025-01-25 — closely-correlated spaces, lazy re-embed valid) under one "strict no-op" policy, **directly contradicting OQ-2's lazy-re-embed default** for the cross-version case. **Refinement over v0.2:** explicit split — cross-PROVIDER always strict no-op + `Decision: cross-provider-comparison-attempted` + emit `cli-embedding-bump` migration task (rare, high-cost, high-surprise); cross-VERSION-within-provider delegates to OQ-2's `staleVectorPolicy` (composes cleanly with per-consumer override). **Counter-argument:** "splitting adds API complexity for a corner case." Rebuttal: the split already exists in the data model (`provider` and `modelVersion` are distinct fields); making policy reflect that distinction is clarifying, not complexifying. The two policies compose without ambiguity. **Selected over v0.2 lumped strict-no-op** because v0.2's logical conflict with OQ-2 is the kind of cross-resolution inconsistency that surfaces as a real bug 6 months in. **Selected over uniform auto-migrate** because auto-migrate cost for cross-PROVIDER is catastrophic (re-embed entire corpus from text on every comparison). **Selected over allow+warn** because cross-provider distance is mathematically undefined.
 
@@ -610,7 +610,7 @@ Amends RFC-0004 §4 cost-attribution categories with a new line item for embeddi
 - Error starts: at `deprecatedAt` (operator-strict mode); warning continues in default mode.
 - Pipeline-load FAILS: at `removedAt`; operator MUST run `cli-embedding-bump` to migrate.
 
-**Resolution (2026-05-21 re-walkthrough, full rubric):** **Three-layer precedence: 90d framework default → adapter-declared `defaultGracePeriodDays` (capability matrix) → per-org `gracePeriodDays` override — PLUS catalog dedup via per-Decision-key counter (emit at 1/7/30/60/89-day milestones, NOT per-load).** Industry research: GitHub Copilot ~12-15 months total deprecation (text-embedding-ada-002: 2024-01-25 announced, 2025-04-15 shutdown); a third-party provider 6 months; Google Vertex / AWS Bedrock 12 / 6 months; K8s API deprecation 12 months GA / 9 months beta with staggered escalation; Stripe 1-year notice; semver convention ≥ one major version. 90d framework default gives ~3 sprint cycles to migrate, conservative within GitHub Copilot's window but eats half of a third-party provider's window. **Two substantive gaps in v0.2 surfaced by re-walkthrough:** (1) no adapter-declared override — a third-party provider-style fast-moving providers get insufficient warning under 90d default; the adapter knows its provider's lifecycle better than framework default. (2) No Decision dedup story — every pipeline-load between (deprecatedAt - 90d) and `deprecatedAt` emits `Decision: embedding-provider-deprecated`; orchestrator-driven loads (RFC-0015) can trigger thousands of identical Decisions. **Refinement over v0.2:** adapter capability matrix gains optional `defaultGracePeriodDays` field (overrides framework default but per-org still applies on top); catalog dedup via per-Decision-key counter on `embedding-provider-deprecated:<adapter-name>:<deprecatedAt>` emits at milestone thresholds (89d, 60d, 30d, 7d, 1d before deprecatedAt) NOT per-load. At `removedAt`: pipeline-load emits `Decision: embedding-provider-removed` → auto-action: emit `cli-embedding-bump` migration task. Pipeline never halts — downstream consumers degrade gracefully. **Counter-argument:** "three layers of override is config-surface bloat." Rebuttal: framework default → adapter default → user override is the standard precedence chain used by every config system (env vars, JSON Schema defaults, etc.); each layer has a clear semantic owner. **Selected over v0.2 (90d + per-org override only)** because v0.2's missing adapter-declared default leaves fast-moving providers under-warned AND missing dedup floods the catalog at orchestrator scale. **Selected over configurable-with-no-default** because no default punts choice paralysis to adopter on day-1. **Selected over tiered (warn at 90d / error at 30d)** because triple-staged severity is more surface than benefit for v1 — defer until corpus signals demand.
+**Resolution (2026-05-21 re-walkthrough, full rubric):** **Three-layer precedence: 90d framework default → adapter-declared `defaultGracePeriodDays` (capability matrix) → per-org `gracePeriodDays` override — PLUS catalog dedup via per-Decision-key counter (emit at 1/7/30/60/89-day milestones, NOT per-load).** Industry research: GitHub Copilot ~12-15 months total deprecation (the legacy embedding model: 2024-01-25 announced, 2025-04-15 shutdown); a third-party provider 6 months; Google Vertex / AWS Bedrock 12 / 6 months; K8s API deprecation 12 months GA / 9 months beta with staggered escalation; Stripe 1-year notice; semver convention ≥ one major version. 90d framework default gives ~3 sprint cycles to migrate, conservative within GitHub Copilot's window but eats half of a third-party provider's window. **Two substantive gaps in v0.2 surfaced by re-walkthrough:** (1) no adapter-declared override — a third-party provider-style fast-moving providers get insufficient warning under 90d default; the adapter knows its provider's lifecycle better than framework default. (2) No Decision dedup story — every pipeline-load between (deprecatedAt - 90d) and `deprecatedAt` emits `Decision: embedding-provider-deprecated`; orchestrator-driven loads (RFC-0015) can trigger thousands of identical Decisions. **Refinement over v0.2:** adapter capability matrix gains optional `defaultGracePeriodDays` field (overrides framework default but per-org still applies on top); catalog dedup via per-Decision-key counter on `embedding-provider-deprecated:<adapter-name>:<deprecatedAt>` emits at milestone thresholds (89d, 60d, 30d, 7d, 1d before deprecatedAt) NOT per-load. At `removedAt`: pipeline-load emits `Decision: embedding-provider-removed` → auto-action: emit `cli-embedding-bump` migration task. Pipeline never halts — downstream consumers degrade gracefully. **Counter-argument:** "three layers of override is config-surface bloat." Rebuttal: framework default → adapter default → user override is the standard precedence chain used by every config system (env vars, JSON Schema defaults, etc.); each layer has a clear semantic owner. **Selected over v0.2 (90d + per-org override only)** because v0.2's missing adapter-declared default leaves fast-moving providers under-warned AND missing dedup floods the catalog at orchestrator scale. **Selected over configurable-with-no-default** because no default punts choice paralysis to adopter on day-1. **Selected over tiered (warn at 90d / error at 30d)** because triple-staged severity is more surface than benefit for v1 — defer until corpus signals demand.
 
 ### Q5: Where in `pipeline-cli` vs `orchestrator` does the framework live?
 

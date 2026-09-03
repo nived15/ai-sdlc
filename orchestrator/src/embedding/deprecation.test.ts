@@ -101,13 +101,13 @@ describe('buildDedupKey', () => {
   it('AC#9: same (type, adapter, deprecatedAt, milestone) → same key', () => {
     const k1 = buildDedupKey(
       'embedding-provider-deprecated',
-      'github-copilot-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       30,
     );
     const k2 = buildDedupKey(
       'embedding-provider-deprecated',
-      'github-copilot-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       30,
     );
@@ -117,13 +117,13 @@ describe('buildDedupKey', () => {
   it('AC#9: different milestones → different keys', () => {
     const k1 = buildDedupKey(
       'embedding-provider-deprecated',
-      'github-copilot-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       89,
     );
     const k2 = buildDedupKey(
       'embedding-provider-deprecated',
-      'github-copilot-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       30,
     );
@@ -133,11 +133,11 @@ describe('buildDedupKey', () => {
   it('AC#9: removed event uses null milestone', () => {
     const k = buildDedupKey(
       'embedding-provider-removed',
-      'github-copilot-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       null,
     );
-    expect(k).toMatch(/^embedding-provider-removed:github-copilot-text-embedding-ada-002:2026-06-01$/);
+    expect(k).toMatch(/^embedding-provider-removed:github-models-embedding-legacy:2026-06-01$/);
   });
 });
 
@@ -158,7 +158,7 @@ describe('evaluateDeprecationLifecycle', () => {
   it('AC#8: pre-warning phase when today is BEFORE the grace-period window', () => {
     // deprecatedAt is 200 days out; framework default 90d window not yet open.
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'github-copilot-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 200).toISOString().slice(0, 10),
       today: TODAY,
     });
@@ -169,7 +169,7 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#8 + AC#9: warning phase emits milestone event at 89d', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'github-copilot-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 89).toISOString().slice(0, 10),
       replacementAlias: 'github-models-embedding-small',
       today: TODAY,
@@ -183,12 +183,12 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#9: same milestone twice → same dedup key (caller stops second emission)', () => {
     const r1 = evaluateDeprecationLifecycle({
-      adapterName: 'github-copilot-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       today: TODAY,
     });
     const r2 = evaluateDeprecationLifecycle({
-      adapterName: 'github-copilot-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       today: TODAY,
     });
@@ -197,12 +197,12 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#9: different milestones (89 vs 60) → different dedup keys', () => {
     const at89 = evaluateDeprecationLifecycle({
-      adapterName: 'github-copilot-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 89).toISOString().slice(0, 10),
       today: TODAY,
     });
     const at60 = evaluateDeprecationLifecycle({
-      adapterName: 'github-copilot-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       today: TODAY,
     });
@@ -211,7 +211,7 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#8: deprecated phase (past deprecatedAt, before removedAt) emits info', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'github-copilot-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, -10).toISOString().slice(0, 10),
       removedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       today: TODAY,
@@ -223,7 +223,7 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#8: deprecated phase in strict mode emits HIGH severity', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'github-copilot-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, -10).toISOString().slice(0, 10),
       removedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       strictModeAtDeprecatedAt: true,
@@ -235,7 +235,7 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#10: removed phase emits migration task auto-action + HIGH severity', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'github-copilot-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, -60).toISOString().slice(0, 10),
       removedAt: daysFrom(TODAY, -1).toISOString().slice(0, 10),
       replacementAlias: 'github-models-embedding-small',
@@ -252,7 +252,7 @@ describe('evaluateDeprecationLifecycle', () => {
   it('AC#10: pipeline NEVER halts — evaluateDeprecationLifecycle does not throw on removed', () => {
     expect(() =>
       evaluateDeprecationLifecycle({
-        adapterName: 'github-copilot-text-embedding-ada-002',
+        adapterName: 'github-models-embedding-legacy',
         removedAt: daysFrom(TODAY, -100).toISOString().slice(0, 10),
         today: TODAY,
       }),

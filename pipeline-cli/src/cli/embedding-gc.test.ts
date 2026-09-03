@@ -206,7 +206,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
   it('provider filter restricts GC to matching entries', () => {
     const embDir = makeEmbeddingsDir(tmpDir);
     const slugSmall = 'github-models-embedding-small-2024-01-25';
-    const slugLarge = 'github-copilot-text-embedding-3-large-2024-01-25';
+    const slugLarge = 'github-models-embedding-large-2024-01-25';
 
     const oldSmall = makeJsonlEntry(
       'old-small',
@@ -217,7 +217,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
     const oldLarge = makeJsonlEntry(
       'old-large',
       100,
-      'github-copilot-text-embedding-3-large',
+      'github-models-embedding-large',
       '2024-01-25',
     );
 
@@ -396,8 +396,8 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
     seedJsonl(artifactsDir, 'github-models-embedding-small-2024-01-25', [
       makeJsonlEntry('old-small', 100, 'github-models-embedding-small'),
     ]);
-    seedJsonl(artifactsDir, 'github-copilot-text-embedding-3-large-2024-01-25', [
-      makeJsonlEntry('old-large', 100, 'github-copilot-text-embedding-3-large'),
+    seedJsonl(artifactsDir, 'github-models-embedding-large-2024-01-25', [
+      makeJsonlEntry('old-large', 100, 'github-models-embedding-large'),
     ]);
 
     setArgv(
@@ -509,8 +509,8 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
       makeJsonlEntry('a', 5),
       makeJsonlEntry('b', 30),
     ]);
-    seedJsonl(artifactsDir, 'github-copilot-text-embedding-3-large-2024-01-25', [
-      makeJsonlEntry('c', 5, 'github-copilot-text-embedding-3-large'),
+    seedJsonl(artifactsDir, 'github-models-embedding-large-2024-01-25', [
+      makeJsonlEntry('c', 5, 'github-models-embedding-large'),
     ]);
 
     setArgv('stats', '--artifacts-dir', artifactsDir);
@@ -521,7 +521,7 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
     expect(out).toMatch(/ModelVersion/);
     expect(out).toMatch(/Count/);
     expect(out).toMatch(/github-models-embedding-small/);
-    expect(out).toMatch(/github-copilot-text-embedding-3-large/);
+    expect(out).toMatch(/github-models-embedding-large/);
   });
 
   it('stats --format json emits an array of per-file stats', async () => {

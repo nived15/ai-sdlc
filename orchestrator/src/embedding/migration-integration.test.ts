@@ -112,7 +112,7 @@ describe('AC#11 — full deprecation lifecycle (integration)', () => {
       const today = new Date(ANCHOR);
       today.setUTCDate(today.getUTCDate() + offset);
       phasesByOffset[offset] = evaluateDeprecationLifecycle({
-        adapterName: 'github-copilot-text-embedding-ada-002',
+        adapterName: 'github-models-embedding-legacy',
         deprecatedAt: daysFromIso(ANCHOR, 0),
         removedAt: daysFromIso(ANCHOR, 90),
         replacementAlias: 'github-models-embedding-small',
@@ -159,7 +159,7 @@ describe('AC#11 — full deprecation lifecycle (integration)', () => {
     // collapse them to exactly 1 emission.
     for (let i = 0; i < 1000; i++) {
       const r = evaluateDeprecationLifecycle({
-        adapterName: 'github-copilot-text-embedding-ada-002',
+        adapterName: 'github-models-embedding-legacy',
         deprecatedAt,
         removedAt,
         today,

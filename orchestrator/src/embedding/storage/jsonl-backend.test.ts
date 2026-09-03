@@ -115,13 +115,13 @@ describe('JsonlEmbeddingStorageBackend', () => {
     const { existsSync } = await import('node:fs');
 
     await backend.write(makeEntry('text-a', 'github-models-embedding-small', '2024-01-25'));
-    await backend.write(makeEntry('text-b', 'github-copilot-text-embedding-3-large', '2024-01-25'));
+    await backend.write(makeEntry('text-b', 'github-models-embedding-large', '2024-01-25'));
 
     expect(
       existsSync(join(tmpDir, '_embeddings', 'github-models-embedding-small-2024-01-25.jsonl')),
     ).toBe(true);
     expect(
-      existsSync(join(tmpDir, '_embeddings', 'github-copilot-text-embedding-3-large-2024-01-25.jsonl')),
+      existsSync(join(tmpDir, '_embeddings', 'github-models-embedding-large-2024-01-25.jsonl')),
     ).toBe(true);
   });
 
@@ -203,7 +203,7 @@ describe('JsonlEmbeddingStorageBackend', () => {
   it('scan() with no filter yields all entries across all providers', async () => {
     await backend.write(makeEntry('entry-1', 'github-models-embedding-small', '2024-01-25'));
     await backend.write(makeEntry('entry-2', 'github-models-embedding-small', '2024-01-25'));
-    await backend.write(makeEntry('entry-3', 'github-copilot-text-embedding-3-large', '2024-01-25'));
+    await backend.write(makeEntry('entry-3', 'github-models-embedding-large', '2024-01-25'));
 
     const all: VectorStoreEntry[] = [];
     for await (const e of backend.scan()) {
@@ -215,7 +215,7 @@ describe('JsonlEmbeddingStorageBackend', () => {
 
   it('scan() with provider filter yields only matching entries', async () => {
     await backend.write(makeEntry('entry-a', 'github-models-embedding-small', '2024-01-25'));
-    await backend.write(makeEntry('entry-b', 'github-copilot-text-embedding-3-large', '2024-01-25'));
+    await backend.write(makeEntry('entry-b', 'github-models-embedding-large', '2024-01-25'));
 
     const found: VectorStoreEntry[] = [];
     for await (const e of backend.scan({ provider: 'github-models-embedding-small' })) {
@@ -288,10 +288,10 @@ describe('JsonlEmbeddingStorageBackend', () => {
   it('count() with provider filter counts correctly', async () => {
     await backend.write(makeEntry('a', 'github-models-embedding-small', '2024-01-25'));
     await backend.write(makeEntry('b', 'github-models-embedding-small', '2024-01-25'));
-    await backend.write(makeEntry('c', 'github-copilot-text-embedding-3-large', '2024-01-25'));
+    await backend.write(makeEntry('c', 'github-models-embedding-large', '2024-01-25'));
 
     expect(await backend.count({ provider: 'github-models-embedding-small' })).toBe(2);
-    expect(await backend.count({ provider: 'github-copilot-text-embedding-3-large' })).toBe(1);
+    expect(await backend.count({ provider: 'github-models-embedding-large' })).toBe(1);
     expect(await backend.count()).toBe(3);
   });
 
@@ -367,12 +367,12 @@ describe('JsonlEmbeddingStorageBackend', () => {
     const oldSmall = makeOldEntry('old-small', 100);
     oldSmall.embeddingProvider = 'github-models-embedding-small';
     const oldLarge = makeOldEntry('old-large', 100);
-    oldLarge.embeddingProvider = 'github-copilot-text-embedding-3-large';
+    oldLarge.embeddingProvider = 'github-models-embedding-large';
     oldLarge.textHash = JsonlEmbeddingStorageBackend.hashText('old-large');
 
     await backend.write(oldSmall);
     await backend.write(
-      makeEntry('old-large', 'github-copilot-text-embedding-3-large', '2024-01-25', {
+      makeEntry('old-large', 'github-models-embedding-large', '2024-01-25', {
         writtenAt: (() => {
           const d = new Date();
           d.setDate(d.getDate() - 100);

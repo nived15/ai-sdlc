@@ -42,7 +42,7 @@ export const DEPRECATION_MILESTONE_DAYS: ReadonlyArray<number> = [89, 60, 30, 7,
  * `today` defaults to the current date; callers pass an explicit Date in tests.
  */
 export interface DeprecationLifecycleInput {
-  /** Canonical adapter name (e.g., 'github-copilot-text-embedding-ada-002'). */
+  /** Canonical adapter name (e.g., 'github-models-embedding-legacy'). */
   adapterName: string;
   /** ISO date when the deprecation warning period starts (adapter.deprecatedAt). */
   deprecatedAt?: string;

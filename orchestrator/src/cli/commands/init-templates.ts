@@ -222,7 +222,7 @@ jobs:
  * complete but never signed anything — the exact bug this task exists to
  * fix. `check-attestation-sign.sh` now also ships under
  * `ai-sdlc-plugin/scripts/` (AISDLC-555), so this snippet resolves it from
- * the PLUGIN INSTALL ONLY: `$COPILOT_PLUGIN_ROOT` / `$CLAUDE_PLUGIN_DIR` (the
+ * the PLUGIN INSTALL ONLY: `$COPILOT_PLUGIN_ROOT` / `$COPILOT_PLUGIN_DIR` (the
  * zero-config path when `git push` runs inside a Copilot CLI session), then a
  * read-only plugin-cache probe (bare-terminal `git push`, which never inherits
  * those env vars).
@@ -266,8 +266,8 @@ if [ -z "\${AI_SDLC_SKIP_ATTESTATION_SIGN:-}" ]; then
   AI_SDLC_ATTESTATION_HOOK=""
   if [ -n "\${COPILOT_PLUGIN_ROOT:-}" ] && [ -f "\${COPILOT_PLUGIN_ROOT}/scripts/check-attestation-sign.sh" ]; then
     AI_SDLC_ATTESTATION_HOOK="\${COPILOT_PLUGIN_ROOT}/scripts/check-attestation-sign.sh"
-  elif [ -n "\${CLAUDE_PLUGIN_DIR:-}" ] && [ -f "\${CLAUDE_PLUGIN_DIR}/scripts/check-attestation-sign.sh" ]; then
-    AI_SDLC_ATTESTATION_HOOK="\${CLAUDE_PLUGIN_DIR}/scripts/check-attestation-sign.sh"
+  elif [ -n "\${COPILOT_PLUGIN_DIR:-}" ] && [ -f "\${COPILOT_PLUGIN_DIR}/scripts/check-attestation-sign.sh" ]; then
+    AI_SDLC_ATTESTATION_HOOK="\${COPILOT_PLUGIN_DIR}/scripts/check-attestation-sign.sh"
   else
     for _ai_sdlc_dir in "$HOME"/.copilot/plugins/cache/*/ai-sdlc/*/; do
       if [ -f "\${_ai_sdlc_dir}scripts/check-attestation-sign.sh" ]; then
@@ -282,7 +282,7 @@ if [ -z "\${AI_SDLC_SKIP_ATTESTATION_SIGN:-}" ]; then
   elif [ -n "$(ls -A .ai-sdlc/verdicts 2>/dev/null)" ]; then
     echo "[ai-sdlc] ERROR: reviewer verdicts exist under .ai-sdlc/verdicts/ but NO attestation signer" >&2
     echo "[ai-sdlc]   could be found — this push will carry no attestation." >&2
-    echo "[ai-sdlc]   Searched COPILOT_PLUGIN_ROOT, CLAUDE_PLUGIN_DIR, and" >&2
+    echo "[ai-sdlc]   Searched COPILOT_PLUGIN_ROOT, COPILOT_PLUGIN_DIR, and" >&2
     echo "[ai-sdlc]   ~/.copilot/plugins/cache/*/ai-sdlc/*/scripts/check-attestation-sign.sh" >&2
     echo "[ai-sdlc]   Install the ai-sdlc GitHub Copilot CLI plugin, or set COPILOT_PLUGIN_ROOT." >&2
   fi

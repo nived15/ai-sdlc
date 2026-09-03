@@ -129,15 +129,15 @@ fi
   uses variables established here. This makes the command body work across all install
   topologies (AISDLC-272 added topology 2 + 3 to the original 2-case binary):
 
-  1. Marketplace install (set+correct): CLAUDE_PLUGIN_DIR is set by GitHub Copilot CLI and
-     $CLAUDE_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin exists → use it.
+  1. Marketplace install (set+correct): COPILOT_PLUGIN_DIR is set by GitHub Copilot CLI and
+     $COPILOT_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin exists → use it.
 
-  2. Marketplace install (set+useless): CLAUDE_PLUGIN_DIR is set but the bundle is
+  2. Marketplace install (set+useless): COPILOT_PLUGIN_DIR is set but the bundle is
      missing (local marketplace cache never runs npm install). Auto-detect and self-heal
      via scripts/install-runtime-deps.sh, then probe the cache.
 
-  3. CLAUDE_PLUGIN_DIR unset but COPILOT_PLUGIN_ROOT set: GitHub Copilot CLI injects
-     COPILOT_PLUGIN_ROOT in all main-session contexts even when CLAUDE_PLUGIN_DIR is
+  3. COPILOT_PLUGIN_DIR unset but COPILOT_PLUGIN_ROOT set: GitHub Copilot CLI injects
+     COPILOT_PLUGIN_ROOT in all main-session contexts even when COPILOT_PLUGIN_DIR is
      absent. Try $COPILOT_PLUGIN_ROOT/node_modules/@ai-sdlc/pipeline-cli/bin first.
 
   4. Plugin cache probe (env unset): Walk ~/.copilot/plugins/cache/<marketplace>/ai-sdlc/
@@ -149,7 +149,7 @@ fi
   6. Self-location fallback (AISDLC-557, last resort, all env vars unset): derive the
      plugin dir from resolve-pipeline-cli.sh's own on-disk location and self-heal
      against it. Reachable in the exact case topologies 1-3 never attempt self-heal:
-     neither CLAUDE_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT made it through.
+     neither COPILOT_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT made it through.
 
   Resolution is delegated to scripts/resolve-pipeline-cli.sh which handles self-heal
   and all fallback steps. The script prints the resolved path to stdout; exit 1 on
@@ -170,17 +170,17 @@ PATH-RESOLUTION:END -->
 # AISDLC-245.4 / AISDLC-272: Resolve pipeline-cli binaries and plugin scripts portably.
 #
 # PLUGIN_SCRIPTS_DIR — plugin-internal scripts (compute-slug.mjs etc.):
-#   - Marketplace install: $CLAUDE_PLUGIN_DIR/scripts  (COPILOT_PLUGIN_ROOT is the same)
+#   - Marketplace install: $COPILOT_PLUGIN_DIR/scripts  (COPILOT_PLUGIN_ROOT is the same)
 #   - Dogfood monorepo:    $(pwd)/ai-sdlc-plugin/scripts
 #
 # Must be set FIRST because resolve-pipeline-cli.sh lives under PLUGIN_SCRIPTS_DIR.
-PLUGIN_SCRIPTS_DIR="${CLAUDE_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
+PLUGIN_SCRIPTS_DIR="${COPILOT_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
 
 # PIPELINE_CLI_BIN — directory containing cli-*.mjs binaries.
 #
 # AISDLC-272: the original two-case branch was too binary:
-#   - "CLAUDE_PLUGIN_DIR set"  → adopter install  (but local mp cache has no node_modules)
-#   - "CLAUDE_PLUGIN_DIR unset" → dogfood monorepo (wrong in adopter projects)
+#   - "COPILOT_PLUGIN_DIR set"  → adopter install  (but local mp cache has no node_modules)
+#   - "COPILOT_PLUGIN_DIR unset" → dogfood monorepo (wrong in adopter projects)
 #
 # Delegate resolution to resolve-pipeline-cli.sh which handles all five topologies
 # (set+correct, set+useless with self-heal, COPILOT_PLUGIN_ROOT fallback, cache probe,
@@ -197,8 +197,8 @@ if [ -z "${PIPELINE_CLI_BIN:-}" ]; then
   else
     # Fallback for the dogfood monorepo where PLUGIN_SCRIPTS_DIR contains resolve-pipeline-cli.sh
     # but we haven't shipped that script yet (upgrade in place). Use the old two-case logic.
-    if [ -n "${CLAUDE_PLUGIN_DIR:-}" ]; then
-      PIPELINE_CLI_BIN="$CLAUDE_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin"
+    if [ -n "${COPILOT_PLUGIN_DIR:-}" ]; then
+      PIPELINE_CLI_BIN="$COPILOT_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin"
     else
       PIPELINE_CLI_BIN="$(pwd)/pipeline-cli/bin"
     fi
@@ -664,7 +664,7 @@ fi
 # then yielded a malformed branch like `ai-sdlc/aisdlc-178.1-`. The script
 # is dependency-free (no js-yaml), handles every title form the serializer
 # emits, and exits non-zero with a clear error if the slug would be empty.
-# AISDLC-245.4: $PLUGIN_SCRIPTS_DIR resolves to $CLAUDE_PLUGIN_DIR/scripts
+# AISDLC-245.4: $PLUGIN_SCRIPTS_DIR resolves to $COPILOT_PLUGIN_DIR/scripts
 # (adopter install) or ./ai-sdlc-plugin/scripts (dogfood monorepo).
 SLUG=$(node "$PLUGIN_SCRIPTS_DIR/compute-slug.mjs" "$TASK_FILE") || {
   echo "ERROR: failed to compute slug for $TASK_ID — see stderr above"

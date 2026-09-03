@@ -66,8 +66,8 @@ above; the watchdog-avoidance framing has been removed.
 ## Path resolution
 
 ```bash
-if [ -n "${CLAUDE_PLUGIN_DIR:-}" ]; then
-  PIPELINE_CLI_BIN="$CLAUDE_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin"
+if [ -n "${COPILOT_PLUGIN_DIR:-}" ]; then
+  PIPELINE_CLI_BIN="$COPILOT_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin"
 else
   PIPELINE_CLI_BIN="$(pwd)/pipeline-cli/bin"
 fi

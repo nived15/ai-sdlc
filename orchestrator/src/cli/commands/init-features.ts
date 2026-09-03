@@ -2061,7 +2061,7 @@ export function renderNextSteps(
  * Idempotent — guarded by a sentinel so re-running init doesn't duplicate
  * the block.
  */
-export const CLAUDE_MD_POINTER = `
+export const COPILOT_INSTRUCTIONS_POINTER = `
 <!-- ai-sdlc:recommendation-pointer -->
 ## AI-SDLC quality gate
 
@@ -2073,13 +2073,13 @@ Run \`ai-sdlc health\` to verify your local config; see
 `;
 
 /** Sentinel marker used by the .github/copilot-instructions.md pointer for idempotency. */
-export const CLAUDE_MD_SENTINEL = '<!-- ai-sdlc:recommendation-pointer -->';
+export const COPILOT_INSTRUCTIONS_SENTINEL = '<!-- ai-sdlc:recommendation-pointer -->';
 
 /**
  * Append the recommendation pointer to .github/copilot-instructions.md (or create the file if
  * missing). Idempotent: if the sentinel is already present we no-op.
  */
-export function ensureClaudeMdPointer(
+export function ensureCopilotInstructionsPointer(
   projectDir: string,
   adapters: Pick<FeatureAdapters, 'exists' | 'writeFile' | 'appendOnce' | 'log'>,
   dryRun: boolean,
@@ -2092,12 +2092,12 @@ export function ensureClaudeMdPointer(
   }
 
   if (!adapters.exists(path)) {
-    adapters.writeFile(path, `# Project instructions\n${CLAUDE_MD_POINTER}`);
+    adapters.writeFile(path, `# Project instructions\n${COPILOT_INSTRUCTIONS_POINTER}`);
     adapters.log('  created .github/copilot-instructions.md');
     return;
   }
 
-  const status = adapters.appendOnce(path, CLAUDE_MD_POINTER, CLAUDE_MD_SENTINEL);
+  const status = adapters.appendOnce(path, COPILOT_INSTRUCTIONS_POINTER, COPILOT_INSTRUCTIONS_SENTINEL);
   if (status === 'appended') {
     adapters.log('  updated .github/copilot-instructions.md (recommendation pointer)');
   } else {

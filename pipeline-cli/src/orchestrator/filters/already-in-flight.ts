@@ -150,7 +150,7 @@ export function checkAlreadyInFlight(opts: CheckAlreadyInFlightOpts): FilterResu
   if (shouldDetect) {
     try {
       const psOutput = opts.readProcessTable ? opts.readProcessTable() : runPsAx();
-      const pid = findClaudeSubprocess(psOutput, opts.taskId);
+      const pid = findCopilotSubprocess(psOutput, opts.taskId);
       if (pid !== null) {
         const detail: AlreadyInFlightDetail = {
           kind: 'already-in-flight',
@@ -226,7 +226,7 @@ function runPsAx(): string {
  * This ensures `AISDLC-2` only matches `AISDLC-2` (followed by a non-digit),
  * never `AISDLC-28` or `AISDLC-283`.
  */
-function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
+function findCopilotSubprocess(psOutput: string, taskId: string): number | null {
   const taskIdLower = taskId.toLowerCase();
   // Escape any regex special chars in the task ID (defensive; standard IDs
   // are alphanumeric + hyphen and don't require escaping, but guard anyway).

@@ -184,9 +184,9 @@ export function resolveProjectRoot(opts: ResolveProjectRootOptions = {}): string
     return applyPatternCIfNeeded(resolve(envProjectRoot), env);
   }
 
-  const claudeProjectDir = env.COPILOT_PROJECT_DIR;
-  if (claudeProjectDir && hasBacklogDir(claudeProjectDir)) {
-    return applyPatternCIfNeeded(resolve(claudeProjectDir), env);
+  const copilotProjectDir = env.COPILOT_PROJECT_DIR;
+  if (copilotProjectDir && hasBacklogDir(copilotProjectDir)) {
+    return applyPatternCIfNeeded(resolve(copilotProjectDir), env);
   }
 
   const fromCwd = walkUpForBacklog(cwd);

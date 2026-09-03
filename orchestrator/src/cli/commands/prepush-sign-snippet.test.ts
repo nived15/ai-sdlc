@@ -96,10 +96,10 @@ describe('HUSKY_PREPUSH_SIGN_SNIPPET — executed as bash (AISDLC-555)', () => {
     expect(stderr).toContain('attestation signer:');
   });
 
-  it('resolves via CLAUDE_PLUGIN_DIR when COPILOT_PLUGIN_ROOT is unset', () => {
+  it('resolves via COPILOT_PLUGIN_DIR when COPILOT_PLUGIN_ROOT is unset', () => {
     const plugin = makePluginDir('dir');
     withVerdict();
-    const { stdout } = runSnippet({ CLAUDE_PLUGIN_DIR: plugin });
+    const { stdout } = runSnippet({ COPILOT_PLUGIN_DIR: plugin });
     expect(stdout).toContain('SIGNED-BY-dir');
   });
 

@@ -322,18 +322,18 @@ describe('/ai-sdlc orchestrator-tick body — hard rules', () => {
 });
 
 describe('/ai-sdlc orchestrator-tick body — AISDLC-245.4 path resolution', () => {
-  it('establishes PIPELINE_CLI_BIN with CLAUDE_PLUGIN_DIR resolution', () => {
+  it('establishes PIPELINE_CLI_BIN with COPILOT_PLUGIN_DIR resolution', () => {
     assert.ok(
       cmdBody.includes('PIPELINE_CLI_BIN'),
       'must define PIPELINE_CLI_BIN for portable CLI invocation',
     );
     assert.ok(
-      cmdBody.includes('CLAUDE_PLUGIN_DIR'),
-      'must reference CLAUDE_PLUGIN_DIR for adopter-install layout',
+      cmdBody.includes('COPILOT_PLUGIN_DIR'),
+      'must reference COPILOT_PLUGIN_DIR for adopter-install layout',
     );
   });
 
-  it('includes dogfood fallback when CLAUDE_PLUGIN_DIR is unset', () => {
+  it('includes dogfood fallback when COPILOT_PLUGIN_DIR is unset', () => {
     assert.ok(
       cmdBody.includes('pipeline-cli/bin'),
       'must include fallback path to dogfood monorepo pipeline-cli/bin',

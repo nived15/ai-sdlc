@@ -69,7 +69,7 @@ function runHook(projectDir, extraEnv = {}) {
   // rather than an edge one. Deleted BEFORE extraEnv so a test can still opt
   // in deliberately.
   delete env.COPILOT_PLUGIN_ROOT;
-  delete env.CLAUDE_PLUGIN_DIR;
+  delete env.COPILOT_PLUGIN_DIR;
   Object.assign(env, extraEnv);
   try {
     const output = execFileSync('node', [hookScript], {

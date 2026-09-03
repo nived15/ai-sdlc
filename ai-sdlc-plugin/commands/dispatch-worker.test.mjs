@@ -105,8 +105,8 @@ describe('/ai-sdlc dispatch-worker body — RFC-0041 §4.3.1 protocol', () => {
       'must define PIPELINE_CLI_BIN for AISDLC-245.4 path resolution',
     );
     assert.ok(
-      cmdBody.includes('CLAUDE_PLUGIN_DIR'),
-      'must reference CLAUDE_PLUGIN_DIR for adopter-install layout',
+      cmdBody.includes('COPILOT_PLUGIN_DIR'),
+      'must reference COPILOT_PLUGIN_DIR for adopter-install layout',
     );
   });
 

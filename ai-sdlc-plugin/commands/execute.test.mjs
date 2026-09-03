@@ -504,10 +504,10 @@ describe('/ai-sdlc execute body — pipeline lives inline (AISDLC-98)', () => {
   // All pipeline-cli and plugin-script invocations must use portable
   // variables ($PIPELINE_CLI_BIN, $PLUGIN_SCRIPTS_DIR), never bare relative
   // paths like `node pipeline-cli/bin/...` or `node ai-sdlc-plugin/scripts/...`.
-  // This ensures the command works in adopter installs (CLAUDE_PLUGIN_DIR set)
-  // and the dogfood monorepo (CLAUDE_PLUGIN_DIR unset, falls back to ./pipeline-cli/).
+  // This ensures the command works in adopter installs (COPILOT_PLUGIN_DIR set)
+  // and the dogfood monorepo (COPILOT_PLUGIN_DIR unset, falls back to ./pipeline-cli/).
 
-  it('AISDLC-245.4: establishes PIPELINE_CLI_BIN with CLAUDE_PLUGIN_DIR resolution', () => {
+  it('AISDLC-245.4: establishes PIPELINE_CLI_BIN with COPILOT_PLUGIN_DIR resolution', () => {
     assert.match(
       cmdBody,
       /PIPELINE_CLI_BIN/,
@@ -515,8 +515,8 @@ describe('/ai-sdlc execute body — pipeline lives inline (AISDLC-98)', () => {
     );
     assert.match(
       cmdBody,
-      /CLAUDE_PLUGIN_DIR/,
-      'must reference CLAUDE_PLUGIN_DIR for adopter-install layout',
+      /COPILOT_PLUGIN_DIR/,
+      'must reference COPILOT_PLUGIN_DIR for adopter-install layout',
     );
     assert.match(
       cmdBody,
@@ -573,23 +573,23 @@ describe('/ai-sdlc execute body — pipeline lives inline (AISDLC-98)', () => {
   });
 
   // ── AISDLC-272: portable execute across all install topologies ────────────
-  // The original two-case CLAUDE_PLUGIN_DIR branch assumed either "env set +
+  // The original two-case COPILOT_PLUGIN_DIR branch assumed either "env set +
   // bundled deps" (adopter) or "env unset" (dogfood). In practice the local
-  // marketplace cache never runs npm install, so CLAUDE_PLUGIN_DIR can be set
+  // marketplace cache never runs npm install, so COPILOT_PLUGIN_DIR can be set
   // but deps missing — the old logic blindly used a path that didn't exist.
   //
   // AISDLC-272 extends resolution to 5 topologies:
-  //   1. CLAUDE_PLUGIN_DIR set + deps present → use it
-  //   2. CLAUDE_PLUGIN_DIR set + deps missing → self-heal via install-runtime-deps.sh
-  //   3. CLAUDE_PLUGIN_DIR unset + COPILOT_PLUGIN_ROOT set → try COPILOT_PLUGIN_ROOT
-  //   4. CLAUDE_PLUGIN_DIR unset → probe ~/.copilot/plugins/cache/
+  //   1. COPILOT_PLUGIN_DIR set + deps present → use it
+  //   2. COPILOT_PLUGIN_DIR set + deps missing → self-heal via install-runtime-deps.sh
+  //   3. COPILOT_PLUGIN_DIR unset + COPILOT_PLUGIN_ROOT set → try COPILOT_PLUGIN_ROOT
+  //   4. COPILOT_PLUGIN_DIR unset → probe ~/.copilot/plugins/cache/
   //   5. All env vars unset → $(pwd)/pipeline-cli/bin (dogfood)
 
   it('AISDLC-272: PIPELINE_CLI_BIN resolution references COPILOT_PLUGIN_ROOT as fallback', () => {
     assert.match(
       cmdBody,
       /COPILOT_PLUGIN_ROOT/,
-      'must reference COPILOT_PLUGIN_ROOT for topology 3 (env set but CLAUDE_PLUGIN_DIR unset)',
+      'must reference COPILOT_PLUGIN_ROOT for topology 3 (env set but COPILOT_PLUGIN_DIR unset)',
     );
   });
 
@@ -612,7 +612,7 @@ describe('/ai-sdlc execute body — pipeline lives inline (AISDLC-98)', () => {
   });
 
   it('AISDLC-272: PLUGIN_SCRIPTS_DIR uses COPILOT_PLUGIN_ROOT as secondary fallback', () => {
-    // PLUGIN_SCRIPTS_DIR must fall back to COPILOT_PLUGIN_ROOT when CLAUDE_PLUGIN_DIR
+    // PLUGIN_SCRIPTS_DIR must fall back to COPILOT_PLUGIN_ROOT when COPILOT_PLUGIN_DIR
     // is unset — not just to $(pwd)/ai-sdlc-plugin. This handles topology 3.
     assert.match(
       cmdBody,

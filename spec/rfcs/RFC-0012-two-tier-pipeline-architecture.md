@@ -625,13 +625,13 @@ export class CopilotHarnessAdapter implements SubagentSpawner {
 #### `CopilotHarnessAdapter` (Tier 2 alternative — API key)
 
 ```typescript
-import { ClaudeCode } from '@github-models-ai/copilot';
+import { Copilot } from '@github-models-ai/copilot';
 
 export class CopilotHarnessAdapter implements SubagentSpawner {
   constructor(private opts: { apiKey: string; model?: string }) {}
 
   async spawn(opts: SpawnOpts): Promise<SubagentResult> {
-    const client = new ClaudeCode({
+    const client = new Copilot({
       apiKey: this.opts.apiKey,
       model: this.opts.model ?? 'the balanced tier',
     });
@@ -672,7 +672,7 @@ For unit tests of the iteration loop and step orchestration.
 ```typescript
 // "Default Tier 2 spawner" helper
 export function defaultSpawner(): SubagentSpawner {
-  if (await isClaudeCodeSubscriptionAvailable()) {
+  if (await isCopilotSubscriptionAvailable()) {
     return new CopilotHarnessAdapter();
   }
   if (process.env.GITHUB_MODELS_TOKEN) {

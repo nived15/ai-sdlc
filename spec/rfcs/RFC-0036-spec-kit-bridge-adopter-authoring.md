@@ -510,7 +510,7 @@ When spec-kit's analyze pass already ran upstream, should DoR at import be a no-
 
 Spec-kit's `constitution.md` ≈ ai-sdlc's `.github/copilot-instructions.md` + governance YAML. Merge, separate, or ignore?
 
-**Resolution (2026-05-16):** **Separate + drift detection via Decision Catalog.** Each tool owns its file (preserves both ecosystems' ownership). Bridge detects drift on shared-norm sections (start simple: rebase-vs-merge policy, branch-naming convention, review cadence) → emits `Decision: constitution-claudemd-drift` → catalog routes per Stage A/B/C → operator-batch review. Default-on-silence = drift accepted as intentional. **Selected over .github/copilot-instructions.md-canonical-auto-derive** because forcing framework norms onto spec-kit's constitution surface violates "spec-kit is recommended, not required" (§1). Composes with G0: drift surfaces but never blocks.
+**Resolution (2026-05-16):** **Separate + drift detection via Decision Catalog.** Each tool owns its file (preserves both ecosystems' ownership). Bridge detects drift on shared-norm sections (start simple: rebase-vs-merge policy, branch-naming convention, review cadence) → emits `Decision: constitution-instructions-drift` → catalog routes per Stage A/B/C → operator-batch review. Default-on-silence = drift accepted as intentional. **Selected over .github/copilot-instructions.md-canonical-auto-derive** because forcing framework norms onto spec-kit's constitution surface violates "spec-kit is recommended, not required" (§1). Composes with G0: drift surfaces but never blocks.
 
 ### OQ-9: Positioning leadership
 

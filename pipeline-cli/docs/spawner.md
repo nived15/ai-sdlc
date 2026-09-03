@@ -153,7 +153,7 @@ Step 6 logic falls back to parsing the raw `output` string.
 
 Uses the `@github-models-ai/copilot` SDK programmatically rather than shelling
 out. Authenticates via an explicit `GITHUB_MODELS_TOKEN` (or the SDK's own
-`CLAUDE_CODE_USE_BEDROCK` / `CLAUDE_CODE_USE_VERTEX` env vars). Designed for
+`COPILOT_USE_BEDROCK` / `COPILOT_USE_VERTEX` env vars). Designed for
 environments without subscription auth: bare CI runners, customer tenants on
 their own keys, webhooks invoked from servers that aren't logged into a GitHub Copilot
 Code session.
@@ -230,7 +230,7 @@ shapes in order:
 
 1. **`query({ prompt, agent, cwd, ... })`** returning an async iterable — the
    SDK v1+ streaming API.
-2. **`new ClaudeCode({apiKey}).runAgent({subagentType, agent, prompt, cwd})`** —
+2. **`new Copilot({apiKey}).runAgent({subagentType, agent, prompt, cwd})`** —
    the higher-level wrapper sketched in RFC §8.2.
 
 Whichever shape resolves wins; the unrecognised one throws a clear
@@ -241,7 +241,7 @@ shape (or bridge a new SDK release), pass an `invoker`:
 const spawner = new CopilotHarnessAdapter({
   invoker: async ({ type, prompt, cwd, apiKey, model }) => {
     const sdk = await import('@github-models-ai/copilot');
-    const client = new sdk.ClaudeCode({ apiKey, model });
+    const client = new sdk.Copilot({ apiKey, model });
     const raw = await client.runAgent({ subagentType: type, prompt, cwd });
     return { output: typeof raw === 'string' ? raw : JSON.stringify(raw) };
   },
@@ -466,7 +466,7 @@ The `copilot` inline-manifest spawner (`CopilotHarnessAdapter`, AISDLC-198)
 was removed after a one-release deprecation window (AISDLC-377.4 shipped the
 deprecation warning). Yargs `--spawner copilot` is rejected at parse time;
 programmatic callers that bypass yargs and pass the string literal receive a
-clear `CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE` error pointing at the migration
+clear `UNSUPPORTED_SPAWNER_MESSAGE` error pointing at the migration
 breadcrumb.
 
 **What to use instead:**

@@ -26,7 +26,7 @@ Spawn N concurrent `/ai-sdlc execute` sessions in tmux panes (AISDLC-462).
 ## Path resolution
 
 ```bash
-PLUGIN_SCRIPTS_DIR="${CLAUDE_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
+PLUGIN_SCRIPTS_DIR="${COPILOT_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
 if [ -z "${PIPELINE_CLI_BIN:-}" ]; then
   PIPELINE_CLI_BIN=$(bash "$PLUGIN_SCRIPTS_DIR/resolve-pipeline-cli.sh") || exit 1
 fi

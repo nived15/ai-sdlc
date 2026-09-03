@@ -55,18 +55,18 @@ class RunnerRegistry:
         """Auto-discover runners from environment variables.
 
         Checks:
-        - CLAUDE_CODE_PATH → SubprocessRunner for GitHub Copilot CLI
+        - COPILOT_CLI_PATH → SubprocessRunner for the GitHub Copilot CLI
         - AI_SDLC_RUNNER_CMD → SubprocessRunner with custom command
         Returns list of discovered runner names.
         """
         discovered: list[str] = []
 
-        claude_path = os.environ.get("CLAUDE_CODE_PATH")
-        if claude_path:
+        copilot_path = os.environ.get("COPILOT_CLI_PATH")
+        if copilot_path:
             self.register(
                 "copilot",
                 SubprocessRunner(
-                    [claude_path, "--print"],
+                    [copilot_path, "--print"],
                     runner_name="copilot",
                 ),
             )

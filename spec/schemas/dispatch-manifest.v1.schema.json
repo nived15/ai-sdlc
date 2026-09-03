@@ -75,7 +75,7 @@
         "budgetMs": {
           "type": "integer",
           "minimum": 60000,
-          "description": "Per-Worker wall-clock budget in milliseconds. Default 1800000 (30 min) — matches ShellClaudePSpawner.DEFAULT_TIMEOUT_MS per RFC-0041 OQ-3."
+          "description": "Per-Worker wall-clock budget in milliseconds. Default 1800000 (30 min) — matches CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS per RFC-0041 OQ-3."
         },
         "verifyCommands": {
           "type": "array",

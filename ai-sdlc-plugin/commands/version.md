@@ -8,7 +8,7 @@ model: inherit
 Show the installed ai-sdlc plugin version, the latest published version on
 the marketplace, and whether the install is up to date. Bypasses the 24h
 cache used by the SessionStart staleness nag (AISDLC-89) — every run
-re-fetches `marketplace.json` from `main`.
+re-fetches `plugin.json` from `main`.
 
 ## When to run this
 
@@ -39,13 +39,13 @@ ai-sdlc plugin
 - Status: ⚠ stale — run /plugin update ai-sdlc && /reload-plugins
 ```
 
-When the marketplace can't be reached:
+When the manifest can't be reached:
 
 ```
 ai-sdlc plugin
 - Installed: v0.8.1
 - Latest: unknown (fetch failed)
-- Status: ? could not reach marketplace.json
+- Status: ? could not reach plugin.json
 ```
 
 ## Implementation contract
@@ -68,4 +68,4 @@ and exit. That's intentional — opt-out is opt-out across both surfaces.
 - `Last checked` reflects the cache freshness AFTER this command refreshes
   it — so it always says "just now" on a successful fetch.
 - Network failures don't fail the command. They just report
-  `Status: ? could not reach marketplace.json`.
+  `Status: ? could not reach plugin.json`.

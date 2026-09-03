@@ -623,7 +623,7 @@ describe('AISDLC-355 — spawnReviewerWithRetry (Bug 3: degenerate-reviewer one-
   // dispatch) reported `status=success` from the spawner, NOT `status=error`.
   // The reviewer LLM produced content that defeated all 3 fence-strip parser
   // strategies (pure prose, no JSON, no fenced block, no `{...}` substring),
-  // so `parseClaudeOutput` returned `undefined`, `r.parsed` was `undefined`,
+  // so `parseCopilotOutput` returned `undefined`, `r.parsed` was `undefined`,
   // and `coerceReviewerVerdict` synthesised the critical placeholder. The
   // pre-AISDLC-359/355 codepath then propagated that placeholder verbatim;
   // the retry layer now recovers when the second attempt parses cleanly.

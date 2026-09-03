@@ -5,7 +5,7 @@
  *
  * Each test points the hook at a temp `COPILOT_PLUGIN_ROOT` (so we control the
  * "installed" version) and a local http test server (via
- * `AI_SDLC_PLUGIN_MARKETPLACE_URL`) so the hook never touches the network.
+ * `AI_SDLC_PLUGIN_MANIFEST_URL`) so the hook never touches the network.
  * `XDG_CACHE_HOME` is overridden per-test so cache state never leaks across
  * cases — the hook reads `~/.cache/...` via `os.homedir()`, so we override
  * `HOME` to our temp dir.
@@ -25,7 +25,7 @@ const HOOK = join(__dirname, 'check-plugin-version.js');
 
 let server;
 let serverUrl;
-let serverHandler = () => ({ status: 200, body: '{"plugins":[{"version":"0.8.1"}]}' });
+let serverHandler = () => ({ status: 200, body: '{"name":"ai-sdlc","version":"0.8.1"}' });
 
 before(async () => {
   server = createServer((req, res) => {
@@ -36,7 +36,7 @@ before(async () => {
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const addr = server.address();
-  serverUrl = `http://127.0.0.1:${addr.port}/marketplace.json`;
+  serverUrl = `http://127.0.0.1:${addr.port}/plugin.json`;
 });
 
 after(async () => {
@@ -48,17 +48,17 @@ let tempHome;
 beforeEach(() => {
   // Fresh COPILOT_PLUGIN_ROOT (controls installed version) per test.
   tempRoot = join(tmpdir(), `aisdlc-89-root-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  mkdirSync(join(tempRoot, '.copilot-plugin'), { recursive: true });
+  mkdirSync(tempRoot, { recursive: true });
   // Default: installed = 0.7.0 (older than test server's 0.8.1).
   writeFileSync(
-    join(tempRoot, '.copilot-plugin', 'plugin.json'),
+    join(tempRoot, 'plugin.json'),
     JSON.stringify({ name: 'ai-sdlc', version: '0.7.0' }, null, 2),
   );
   // Fresh HOME so cache state is isolated.
   tempHome = join(tmpdir(), `aisdlc-89-home-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   mkdirSync(tempHome, { recursive: true });
   // Default: every test gets a healthy 0.8.1 server response.
-  serverHandler = () => ({ status: 200, body: '{"plugins":[{"version":"0.8.1"}]}' });
+  serverHandler = () => ({ status: 200, body: '{"name":"ai-sdlc","version":"0.8.1"}' });
 });
 
 function cleanup() {
@@ -69,11 +69,11 @@ function cleanup() {
 async function runHook({ env = {}, args = [], input = '{}' } = {}) {
   const child = execFile('node', [HOOK, ...args], {
     env: {
-      // Inherit PATH but isolate cache + plugin root + marketplace URL.
+      // Inherit PATH but isolate cache + plugin root + manifest URL.
       PATH: process.env.PATH,
       HOME: tempHome,
       COPILOT_PLUGIN_ROOT: tempRoot,
-      AI_SDLC_PLUGIN_MARKETPLACE_URL: serverUrl,
+      AI_SDLC_PLUGIN_MANIFEST_URL: serverUrl,
       ...env,
     },
     timeout: 5000,
@@ -110,7 +110,7 @@ describe('check-plugin-version hook (AISDLC-89)', () => {
     try {
       // Bump installed to match latest.
       writeFileSync(
-        join(tempRoot, '.copilot-plugin', 'plugin.json'),
+        join(tempRoot, 'plugin.json'),
         JSON.stringify({ name: 'ai-sdlc', version: '0.8.1' }, null, 2),
       );
       const { code, stderr, stdout } = await runHook();
@@ -161,7 +161,7 @@ describe('check-plugin-version hook (AISDLC-89)', () => {
     }
   });
 
-  it('AC#4: silent on malformed marketplace JSON', async () => {
+  it('AC#4: silent on malformed manifest JSON', async () => {
     try {
       serverHandler = () => ({ status: 200, body: '{not valid json' });
       const { code, stderr } = await runHook();
@@ -221,7 +221,7 @@ describe('check-plugin-version hook (AISDLC-89)', () => {
       let serverHits = 0;
       serverHandler = () => {
         serverHits++;
-        return { status: 200, body: '{"plugins":[{"version":"0.8.1"}]}' };
+        return { status: 200, body: '{"name":"ai-sdlc","version":"0.8.1"}' };
       };
       const { code, stdout } = await runHook({
         args: ['--print'],
@@ -262,7 +262,7 @@ describe('check-plugin-version hook (AISDLC-89)', () => {
       let serverHits = 0;
       serverHandler = () => {
         serverHits++;
-        return { status: 200, body: '{"plugins":[{"version":"0.8.1"}]}' };
+        return { status: 200, body: '{"name":"ai-sdlc","version":"0.8.1"}' };
       };
       const { code, stderr } = await runHook();
       assert.equal(code, 0);

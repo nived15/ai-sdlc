@@ -59,7 +59,7 @@ function cleanEnv(extra = {}) {
   // AISDLC-555: never let the real plugin env vars leak into a test that's
   // deliberately exercising the "neither var is set" resolution path.
   if (!('COPILOT_PLUGIN_ROOT' in extra)) delete env.COPILOT_PLUGIN_ROOT;
-  if (!('CLAUDE_PLUGIN_DIR' in extra)) delete env.CLAUDE_PLUGIN_DIR;
+  if (!('COPILOT_PLUGIN_DIR' in extra)) delete env.COPILOT_PLUGIN_DIR;
   for (const [k, v] of Object.entries(extra)) env[k] = v;
   return env;
 }
@@ -293,7 +293,7 @@ describe('ai-sdlc-plugin/scripts/check-attestation-sign.sh (AISDLC-555)', () => 
   // tests copy check-attestation-sign.sh to a throwaway directory alongside
   // a fake sign-attestation.mjs and confirm it's found and invoked WITHOUT
   // any AI_SDLC_SIGN_ATTESTATION_CMD override and WITHOUT COPILOT_PLUGIN_ROOT
-  // / CLAUDE_PLUGIN_DIR being set — proving resolution is anchored to the
+  // / COPILOT_PLUGIN_DIR being set — proving resolution is anchored to the
   // script's own directory, not the invoking shell's environment.
   describe('self-location resolution (no monorepo, no plugin env vars)', () => {
     let pluginDir;
@@ -335,7 +335,7 @@ process.stdout.write('signed via self-location resolution\\n');
       writeVerdictFile(root, 'AISDLC-555');
       const scriptPath = join(pluginDir, 'check-attestation-sign.sh');
       // Deliberately no AI_SDLC_SIGN_ATTESTATION_CMD override, no
-      // COPILOT_PLUGIN_ROOT/CLAUDE_PLUGIN_DIR — proves the resolution is
+      // COPILOT_PLUGIN_ROOT/COPILOT_PLUGIN_DIR — proves the resolution is
       // anchored to the script's own on-disk location.
       const r = runHook(scriptPath, root, {});
       assert.equal(

@@ -79,7 +79,7 @@ The 2026-05-20 "4-wide autonomous drain" session attempted to use the `Agent` to
 
 The kill mechanism is well-understood: the GitHub Models platform monitors the subagent's own stdout/stderr stream and kills the subagent after 600 seconds of silence. While a subagent is blocked inside a long-running tool call (e.g. `Bash` running `pnpm test` for 15 minutes), the subagent emits nothing. The platform cannot distinguish "working hard" from "hung" and chooses to kill.
 
-Confirmed via independent investigation of the `copilot` repository (`/Users/dominique/Documents/dev/ai-sdlc/copilot`): the 600s threshold is in the GitHub Models platform runtime, not in the client CLI. No environment variable, settings key, or per-agent frontmatter option exposes it. The only existing overrides cover unrelated timeouts (`BASH_MAX_TIMEOUT_MS`, `CLAUDE_STREAM_IDLE_TIMEOUT_MS`).
+Confirmed via independent investigation of the GitHub Copilot CLI runtime: the 600s threshold is in the GitHub Models platform runtime, not in the client CLI. No environment variable, settings key, or per-agent frontmatter option exposes it. The only existing overrides cover unrelated timeouts (`BASH_MAX_TIMEOUT_MS`, `COPILOT_STREAM_IDLE_TIMEOUT_MS`).
 
 ### 2.2 What's working: foreground & shell-spawned paths
 
@@ -289,15 +289,15 @@ spec:
   defaultWorkerKind: in-session-agent   # 'in-session-agent' | 'copilot-p-shell'
   parallelism:
     inSessionAgentMaxSessions: 4          # operator's expected open-terminal count
-    claudePShellMaxConcurrent: 0          # 0 = supervisor disabled; bump to enable
+    copilotPShellMaxConcurrent: 0          # 0 = supervisor disabled; bump to enable
   inSessionAgent:
     quotaBackoffSec: 600                  # cool-down on rate-limit
-  claudePShell:
+  copilotPShell:
     watchdogMs: 1800000                   # 30 min default
     supervisorPidFile: .ai-sdlc/dispatch/.supervisor.pid
 ```
 
-Adopters that never want API-token billing can set `claudePShellMaxConcurrent: 0` and only operate in-session-agent. Adopters running headless CI can flip the default to `copilot-p-shell` and accept the credit-pool cost.
+Adopters that never want API-token billing can set `copilotPShellMaxConcurrent: 0` and only operate in-session-agent. Adopters running headless CI can flip the default to `copilot-p-shell` and accept the credit-pool cost.
 
 ### 4.4 Dispatch Board protocol
 
@@ -372,7 +372,7 @@ Conductor polls:   sees done/AISDLC-305.verdict.json → triggers reviewer fan-o
 Workers MUST be spawned with `COPILOT_CLI_SESSION` unset:
 
 ```bash
-env -u COPILOT_CLI_SESSION -u CLAUDE_API_KEY copilot -p \
+env -u COPILOT_CLI_SESSION -u COPILOT_API_KEY copilot -p \
   --working-directory ".worktrees/$TASK_ID" \
   --max-turns 100 \
   "$(generate_prompt_from_manifest)"
@@ -561,7 +561,7 @@ Three phases, each shippable independently. **Phase 1 prioritizes the `in-sessio
 
    Rejected alternative B (Conductor writes a fresh manifest with `iteration: 2`) because it forces the Worker to re-read the task body, re-explore the codebase, re-figure out the implementation plan — losing the "what I tried and why it failed" context that makes iteration valuable in the first place. The operator-preferred shape: **iteration is a continuation, not a restart**. Counter-argument considered: in-Worker resumption is harder to implement than B (requires session-ID capture + resume protocol) — accepted as a cost worth bearing for the context-preservation win. Each iteration still counts against the concurrency cap (the Worker holding its session counts as 1 inflight slot) and still respects the 30-min watchdog (resumption starts a fresh budget). Manifest fields added: `iterationsAttempted: 0` (incremented per resume), `iterationBudget: 2` (RFC-0015 §5 carryover), `lastSessionId: <uuid>` (set by Worker on first attempt).
 5. ~~Cross-soul / multi-host scaling — RFC-0015 §10 deferred this. RFC-0041 also defers.~~ **Resolution (operator walkthrough 2026-05-20):** **Filesystem-local only**, defer multi-host to a separate future RFC. No `DispatchBoard` interface abstraction, no `kind: filesystem | redis | nats` enum on the schema. Matches RFC-0015's existing same deferral. Single-machine + single-Conductor + N-terminal-Workers covers every realistic adopter use case at v1. The manifest schema's `worktree` field is intrinsically filesystem-local — pretending otherwise via abstraction is dishonest. Counter-argument considered: future migration cost — rebutted because designing for hypothetical multi-host requirements is the premature-abstraction failure mode (we have *zero* signal about real multi-host adopter requirements; abstractions designed without that signal age badly). When multi-host actually surfaces, it gets its own RFC with concrete latency/consistency/auth requirements to design against.
-6. ~~Default `workerKind` when both Worker kinds are configured.~~ **Resolution (operator walkthrough 2026-05-20):** **Cost-first via biased poll cadence.** `in-session-agent` Workers poll the queue every 5 seconds; `copilot-p-shell` supervisor polls every 15 seconds. Both use atomic `rename` for claim. When a `workerKind: any` manifest is queued, the in-session-agent Worker wins the race ~95% of the time while subscription sessions are idle; the shell supervisor picks up within 15s when all sessions are saturated. Operators force the shell path with explicit `workerKind: copilot-p-shell` tag per manifest; the inverse for shell-preferred. Poll cadences are configurable via `.ai-sdlc/dispatch-config.yaml` `spec.inSessionAgent.pollIntervalSec` and `spec.claudePShell.pollIntervalSec`. Counter-argument considered: race-condition fragility under load — accepted as acceptable v1 trade-off (the edge-race "wrong claim" is one task to shell, reversible by re-emit). If material cost surprises surface in Phase 2 dogfood, escalate to a proper scheduler. The bias preserves the AISDLC-353 economic priority (subscription quota is the framework's competitive moat post-2026-06-15).
+6. ~~Default `workerKind` when both Worker kinds are configured.~~ **Resolution (operator walkthrough 2026-05-20):** **Cost-first via biased poll cadence.** `in-session-agent` Workers poll the queue every 5 seconds; `copilot-p-shell` supervisor polls every 15 seconds. Both use atomic `rename` for claim. When a `workerKind: any` manifest is queued, the in-session-agent Worker wins the race ~95% of the time while subscription sessions are idle; the shell supervisor picks up within 15s when all sessions are saturated. Operators force the shell path with explicit `workerKind: copilot-p-shell` tag per manifest; the inverse for shell-preferred. Poll cadences are configurable via `.ai-sdlc/dispatch-config.yaml` `spec.inSessionAgent.pollIntervalSec` and `spec.copilotPShell.pollIntervalSec`. Counter-argument considered: race-condition fragility under load — accepted as acceptable v1 trade-off (the edge-race "wrong claim" is one task to shell, reversible by re-emit). If material cost surprises surface in Phase 2 dogfood, escalate to a proper scheduler. The bias preserves the AISDLC-353 economic priority (subscription quota is the framework's competitive moat post-2026-06-15).
 7. ~~Subscription quota detection.~~ **Resolution (operator walkthrough 2026-05-20):** **Reactive + structured cool-down**, no pre-flight. On 429 (quota exhaustion), Worker writes `failed/<id>.diagnostic.json` with `{cause: "quota-exhausted", retryAfter: <seconds from GitHub Models 429 Retry-After header, default 600s if absent>}`. Conductor sees the diagnostic and: (i) re-enqueues the failed task to `queue/` with `noClaimBefore: now + retryAfter`; (ii) pauses emitting new `workerKind: in-session-agent` (and `any`) manifests for `retryAfter` duration; (iii) surfaces an operator event ("Subscription quota exhausted, paused N tasks for 10 min"). Exponential backoff on successive failures (`quotaBackoffMultiplier: 2`, capped at `quotaBackoffMaxSec: 3600`). All configurable via `.ai-sdlc/dispatch-config.yaml` `spec.inSessionAgent.{quotaBackoffSec, quotaBackoffMaxSec, quotaBackoffMultiplier}`. Counter-argument considered: arbitrary cool-down duration — rebutted because we honor GitHub Models's `Retry-After` header when present (correct most of the time); the default is the failure-case heuristic. **Selected over pre-flight (`/usage` parse)** because parsing the GitHub Copilot CLI client's local state is tight coupling to undocumented CC internals, brittle across CC version bumps.
 
 ## 11. References

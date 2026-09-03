@@ -16,7 +16,7 @@
  * Spawner selection (RFC-0012 §8.3):
  *   - `--spawner shell` (or default `auto` when `copilot` CLI is on PATH) →
  *     `CopilotHarnessAdapter` (subscription billing, preferred per RFC §2.4).
- *   - `--spawner sdk`   (or `auto` falling back to `ANTHROPIC_API_KEY`) →
+ *   - `--spawner sdk`   (or `auto`) →
  *     `CopilotHarnessAdapter` (API-key billing for unattended/CI runs).
  *   - `--spawner mock`  → `MockSpawner` (deterministic test fixture; intended
  *     for smoke tests + this file's own integration tests).
@@ -86,7 +86,7 @@ export async function resolveSpawner(kind: SpawnerKind): Promise<SubagentSpawner
   }
   // shell / sdk / auto: defer to the pipeline-cli resolver. defaultSpawner()
   // constructs CopilotHarnessAdapter over the configured bridge; it falls back to
-  // CopilotHarnessAdapter when ANTHROPIC_API_KEY is set. Explicit `--spawner`
+  // CopilotHarnessAdapter when the bridge is configured. Explicit `--spawner`
   // overrides the auto-detection by short-circuiting one of the two probes.
   if (kind === 'shell') {
     // Force the shell branch: pretend env has no API key so we never fall

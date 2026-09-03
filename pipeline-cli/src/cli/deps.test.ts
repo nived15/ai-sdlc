@@ -419,7 +419,7 @@ describe('cli-deps router', () => {
 
   // ── AISDLC-377.5: recommendedWorkerKind annotation ───────────────────────
   describe('recommendedWorkerKind (RFC-0041 Phase 3.2)', () => {
-    function writeDispatchConfig(workDir: string, claudePShellMaxConcurrent: number): void {
+    function writeDispatchConfig(workDir: string, copilotPShellMaxConcurrent: number): void {
       mkdirSync(join(workDir, '.ai-sdlc'), { recursive: true });
       writeFileSync(
         join(workDir, '.ai-sdlc', 'dispatch-config.yaml'),
@@ -429,7 +429,7 @@ spec:
   defaultWorkerKind: in-session-agent
   parallelism:
     inSessionAgentMaxSessions: 4
-    claudePShellMaxConcurrent: ${claudePShellMaxConcurrent}
+    copilotPShellMaxConcurrent: ${copilotPShellMaxConcurrent}
 `,
         'utf8',
       );
@@ -495,10 +495,10 @@ spec:
       expect(r.frontier[0].recommendedWorkerKind).toBe('in-session-agent');
     });
 
-    it('AC #4: when claudePShellMaxConcurrent is 0, every entry recommends in-session-agent', async () => {
+    it('AC #4: when copilotPShellMaxConcurrent is 0, every entry recommends in-session-agent', async () => {
       writeDispatchConfig(tmp, 0);
       // High quota utilization + big task: would normally recommend copilot-p-shell,
-      // but claudePShellMaxConcurrent=0 forces in-session-agent.
+      // but copilotPShellMaxConcurrent=0 forces in-session-agent.
       writeLedger(tmp, MAX_20X_ROLLING_WINDOW_TOKENS * 0.95);
       writeTaskFile(tmp, {
         id: 'AISDLC-BIG',

@@ -110,9 +110,9 @@ export async function loadEnterprisePlugins(workDir: string): Promise<Orchestrat
     }
 
     // Config-driven plugins
-    if (enterprise.ClaudeCodeAuditHookPlugin && entConfig.audit?.endpoint) {
+    if (enterprise.CopilotAuditHookPlugin && entConfig.audit?.endpoint) {
       plugins.push(
-        new enterprise.ClaudeCodeAuditHookPlugin({
+        new enterprise.CopilotAuditHookPlugin({
           relayEndpoint: entConfig.audit.endpoint,
           tokenEnvVar: entConfig.audit.tokenEnvVar,
         }),

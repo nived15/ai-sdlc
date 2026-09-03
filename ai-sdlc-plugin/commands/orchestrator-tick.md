@@ -139,8 +139,8 @@ isn't a JS event loop.
 # (including the self-location last resort, AISDLC-557 AC#3) and (b) a
 # NAMED, actionable error at the very top of the tick — before any frontier
 # work — when nothing resolves at all.
-if [ -n "${CLAUDE_PLUGIN_DIR:-}" ]; then
-  PLUGIN_SCRIPTS_DIR="$CLAUDE_PLUGIN_DIR/scripts"
+if [ -n "${COPILOT_PLUGIN_DIR:-}" ]; then
+  PLUGIN_SCRIPTS_DIR="$COPILOT_PLUGIN_DIR/scripts"
 elif [ -n "${COPILOT_PLUGIN_ROOT:-}" ]; then
   PLUGIN_SCRIPTS_DIR="$COPILOT_PLUGIN_ROOT/scripts"
 else

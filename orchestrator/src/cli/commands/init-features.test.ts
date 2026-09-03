@@ -24,9 +24,9 @@ import {
   applyBranchProtection,
   applyFeatureSelection,
   buildProductionAdapters,
-  CLAUDE_MD_POINTER,
-  CLAUDE_MD_SENTINEL,
-  ensureClaudeMdPointer,
+  COPILOT_INSTRUCTIONS_POINTER,
+  COPILOT_INSTRUCTIONS_SENTINEL,
+  ensureCopilotInstructionsPointer,
   NO_FEATURES,
   RECOMMENDED_BRANCH_PROTECTION_BODY,
   renderNextSteps,
@@ -888,40 +888,40 @@ describe('renderNextSteps', () => {
   });
 });
 
-// ── ensureClaudeMdPointer ────────────────────────────────────────────────
+// ── ensureCopilotInstructionsPointer ────────────────────────────────────────────────
 
-describe('ensureClaudeMdPointer', () => {
+describe('ensureCopilotInstructionsPointer', () => {
   it('AC #4: creates .github/copilot-instructions.md when missing', () => {
     const { state, adapters } = makeStub();
-    ensureClaudeMdPointer('/proj', adapters, false);
+    ensureCopilotInstructionsPointer('/proj', adapters, false);
     expect(state.files.has('/proj/.github/copilot-instructions.md')).toBe(true);
-    expect(state.files.get('/proj/.github/copilot-instructions.md')).toContain(CLAUDE_MD_SENTINEL);
+    expect(state.files.get('/proj/.github/copilot-instructions.md')).toContain(COPILOT_INSTRUCTIONS_SENTINEL);
     expect(state.files.get('/proj/.github/copilot-instructions.md')).toContain('ai-sdlc/pr-ready');
   });
 
   it('AC #4: appends pointer to existing .github/copilot-instructions.md without clobbering user content', () => {
     const { state, adapters } = makeStub();
     state.files.set('/proj/.github/copilot-instructions.md', '# My project\n\nUser content here.\n');
-    ensureClaudeMdPointer('/proj', adapters, false);
+    ensureCopilotInstructionsPointer('/proj', adapters, false);
     const result = state.files.get('/proj/.github/copilot-instructions.md')!;
     expect(result).toContain('User content here.');
-    expect(result).toContain(CLAUDE_MD_SENTINEL);
+    expect(result).toContain(COPILOT_INSTRUCTIONS_SENTINEL);
   });
 
   it('AC #4: idempotent — re-run on file with pointer already present is a no-op', () => {
     const { state, adapters } = makeStub();
-    state.files.set('/proj/.github/copilot-instructions.md', `# Existing\n${CLAUDE_MD_POINTER}`);
-    ensureClaudeMdPointer('/proj', adapters, false);
+    state.files.set('/proj/.github/copilot-instructions.md', `# Existing\n${COPILOT_INSTRUCTIONS_POINTER}`);
+    ensureCopilotInstructionsPointer('/proj', adapters, false);
     // Sentinel still appears exactly once.
     const occurrences = (
-      state.files.get('/proj/.github/copilot-instructions.md')!.match(new RegExp(CLAUDE_MD_SENTINEL, 'g')) ?? []
+      state.files.get('/proj/.github/copilot-instructions.md')!.match(new RegExp(COPILOT_INSTRUCTIONS_SENTINEL, 'g')) ?? []
     ).length;
     expect(occurrences).toBe(1);
   });
 
   it('respects --dry-run by not touching the file', () => {
     const { state, adapters } = makeStub();
-    ensureClaudeMdPointer('/proj', adapters, true);
+    ensureCopilotInstructionsPointer('/proj', adapters, true);
     expect(state.files.size).toBe(0);
   });
 });

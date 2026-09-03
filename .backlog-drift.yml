@@ -9,8 +9,8 @@ structural:
 
 semantic:
   enabled: false
-  provider: anthropic
-  model: claude-sonnet-4-20250514
+  provider: github-copilot
+  model: gpt-5
 
 # Hook behavior
 hook:

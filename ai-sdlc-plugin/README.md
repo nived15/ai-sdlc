@@ -76,9 +76,9 @@ This makes harness selection transparent to the Step 8 verdict aggregator — no
 
 Slash command bodies invoke `@ai-sdlc/pipeline-cli` CLIs and plugin-internal scripts. They must work across **six distinct install topologies**:
 
-| # | Topology | `CLAUDE_PLUGIN_DIR` | `COPILOT_PLUGIN_ROOT` | `pipeline-cli` location |
+| # | Topology | `COPILOT_PLUGIN_DIR` | `COPILOT_PLUGIN_ROOT` | `pipeline-cli` location |
 |---|----------|---------------------|----------------------|-------------------------|
-| 1 | Remote marketplace install (bundled deps) | Set — deps present | Set | `$CLAUDE_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/` |
+| 1 | Remote marketplace install (bundled deps) | Set — deps present | Set | `$COPILOT_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/` |
 | 2 | Local marketplace install (no npm install) | Set — **deps missing** | Set | Self-heal via `install-runtime-deps.sh`, then probe cache |
 | 3 | Marketplace (env injection variant) | Unset | Set — deps present | `$COPILOT_PLUGIN_ROOT/node_modules/@ai-sdlc/pipeline-cli/` |
 | 4 | Plugin cache probe (env unset) | Unset | Unset | `~/.copilot/plugins/cache/<mp>/ai-sdlc/<version>/node_modules/@ai-sdlc/pipeline-cli/` (read-only — never self-heals) |
@@ -87,15 +87,15 @@ Slash command bodies invoke `@ai-sdlc/pipeline-cli` CLIs and plugin-internal scr
 
 > **Why topology 2 exists:** The local marketplace installer (`/copilot plugin install` against a local `marketplace.json`) copies plugin files to `~/.copilot/plugins/cache/<marketplace>/<plugin>/<version>/` but does NOT run `npm install`. So `runtimeDependencies` declared in `plugin.json` are never installed for local marketplace setups. The `scripts/install-runtime-deps.sh` self-heal script fills this gap.
 
-> **Why topology 6 exists (AISDLC-557):** a second adopter report found that when `CLAUDE_PLUGIN_DIR` and `COPILOT_PLUGIN_ROOT` are BOTH unset, self-heal was completely unreachable — topologies 1-3 are the only ones that ever attempt it, and topology 4 (cache probe) deliberately stays read-only (see the security note in `resolve-pipeline-cli.sh` — that's the PR #482 fix for the cache-WALK vulnerability, which is a different failure mode from this one). Topology 6 derives the plugin dir from `resolve-pipeline-cli.sh`'s own on-disk location as a genuine last resort, so self-heal gets a chance to run even when neither env var made it through. This does NOT reintroduce the PR #482 vulnerability: topology 6 only ever targets the exact directory the currently-executing script lives in — no directory is walked, compared, or selected the way the removed cache-walk topology did.
+> **Why topology 6 exists (AISDLC-557):** a second adopter report found that when `COPILOT_PLUGIN_DIR` and `COPILOT_PLUGIN_ROOT` are BOTH unset, self-heal was completely unreachable — topologies 1-3 are the only ones that ever attempt it, and topology 4 (cache probe) deliberately stays read-only (see the security note in `resolve-pipeline-cli.sh` — that's the PR #482 fix for the cache-WALK vulnerability, which is a different failure mode from this one). Topology 6 derives the plugin dir from `resolve-pipeline-cli.sh`'s own on-disk location as a genuine last resort, so self-heal gets a chance to run even when neither env var made it through. This does NOT reintroduce the PR #482 vulnerability: topology 6 only ever targets the exact directory the currently-executing script lives in — no directory is walked, compared, or selected the way the removed cache-walk topology did.
 
 ### Resolution algorithm
 
 `scripts/resolve-pipeline-cli.sh` tries each topology in order and exits 0 with the path on the first match, or exits 1 with a clear actionable error naming the broken topology:
 
 ```
-1. $CLAUDE_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin exists → use it
-2. $CLAUDE_PLUGIN_DIR set but deps missing → self-heal via install-runtime-deps.sh
+1. $COPILOT_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin exists → use it
+2. $COPILOT_PLUGIN_DIR set but deps missing → self-heal via install-runtime-deps.sh
 3. $COPILOT_PLUGIN_ROOT/node_modules/@ai-sdlc/pipeline-cli/bin exists → use it
 4. ~/.copilot/plugins/cache/*/ai-sdlc/*/node_modules/... exists → use highest version
 5. $(pwd)/pipeline-cli/bin exists → use it (dogfood monorepo)
@@ -111,7 +111,7 @@ Slash command bodies invoke `@ai-sdlc/pipeline-cli` CLIs and plugin-internal scr
 ```bash
 # PLUGIN_SCRIPTS_DIR — resolves plugin-internal scripts (compute-slug.mjs etc.):
 # Must be set FIRST — resolve-pipeline-cli.sh lives under PLUGIN_SCRIPTS_DIR.
-PLUGIN_SCRIPTS_DIR="${CLAUDE_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
+PLUGIN_SCRIPTS_DIR="${COPILOT_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
 
 # PIPELINE_CLI_BIN — resolves across all 5 install topologies (AISDLC-272).
 # Override: export PIPELINE_CLI_BIN=/path/to/pipeline-cli/bin to skip resolution.
@@ -172,7 +172,7 @@ true for that hook to ever fire in an adopter repo:
    monorepo. AISDLC-555 fixed the block (`HUSKY_PREPUSH_SIGN_SNIPPET` in
    `orchestrator/src/cli/commands/init-templates.ts`) to resolve the script the
    same way slash-command bodies do: repo-local copy first (dogfood
-   back-compat), then `$COPILOT_PLUGIN_ROOT` / `$CLAUDE_PLUGIN_DIR` (git push run
+   back-compat), then `$COPILOT_PLUGIN_ROOT` / `$COPILOT_PLUGIN_DIR` (git push run
    inside a Copilot CLI session), then a **read-only** plugin-cache probe (bare
    terminal, matching the security posture of `resolve-pipeline-cli.sh`
    topology 4 — never self-heals from a user-writable cache dir).

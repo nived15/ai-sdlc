@@ -3460,7 +3460,7 @@ export const dispatchConfigV1Schema = {
   $id: 'https://ai-sdlc.io/schemas/v1alpha1/dispatch-config.v1.schema.json',
   title: 'AI-SDLC DispatchConfig',
   description:
-    'Per-project configuration for the Dispatch Board (RFC-0041 §4.3.3). Lives on disk at .ai-sdlc/dispatch-config.yaml. Declares the default Worker kind, parallelism caps, and per-kind tuning knobs. Phase 1 fields under spec.inSessionAgent are consumed; spec.claudePShell is declared for forward-compat with Phase 2 (AISDLC-377.3).',
+    'Per-project configuration for the Dispatch Board (RFC-0041 §4.3.3). Lives on disk at .ai-sdlc/dispatch-config.yaml. Declares the default Worker kind, parallelism caps, and per-kind tuning knobs. Phase 1 fields under spec.inSessionAgent are consumed; spec.copilotPShell is declared for forward-compat with Phase 2 (AISDLC-377.3).',
   type: 'object',
   required: ['apiVersion', 'kind', 'spec'],
   properties: {
@@ -3490,7 +3490,7 @@ export const dispatchConfigV1Schema = {
               description:
                 "Operator's expected open-terminal count for in-session-agent Workers. The Conductor sizes its dispatch batch against this cap. Set to 0 to disable in-session-agent dispatch entirely.",
             },
-            claudePShellMaxConcurrent: {
+            copilotPShellMaxConcurrent: {
               type: 'integer',
               minimum: 0,
               default: 0,
@@ -3541,7 +3541,7 @@ export const dispatchConfigV1Schema = {
           },
           additionalProperties: false,
         },
-        claudePShell: {
+        copilotPShell: {
           type: 'object',
           description:
             'Tuning knobs for the copilot-p-shell Worker kind. Read by Phase 2 (AISDLC-377.3); declared in Phase 1 for forward-compat.',

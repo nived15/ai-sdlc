@@ -164,7 +164,7 @@ function fail(msg, code = 1) {
  *      adopter who pinned the dependency themselves. Ranked above the plugin's
  *      own copy so the repo being signed controls the version, and so
  *      workspace-root hoisting is covered.
- *   3. `$CLAUDE_PLUGIN_DIR` / `$COPILOT_PLUGIN_ROOT` node_modules — the
+ *   3. `$COPILOT_PLUGIN_DIR` / `$COPILOT_PLUGIN_ROOT` node_modules — the
  *      zero-config path. Both packages are plugin runtimeDependencies, so
  *      install-runtime-deps.sh puts them here and an adopter needs to install
  *      nothing at all.
@@ -215,7 +215,7 @@ function runtimeModuleCandidates(repoRoot, workspaceDir, pkg, distSubpath) {
     join(repoRoot, workspaceDir, ...distSubpath),
     ...nodeModulesWalkUp(repoRoot, pkg, distSubpath),
   ];
-  for (const pluginDir of [process.env.CLAUDE_PLUGIN_DIR, process.env.COPILOT_PLUGIN_ROOT]) {
+  for (const pluginDir of [process.env.COPILOT_PLUGIN_DIR, process.env.COPILOT_PLUGIN_ROOT]) {
     if (pluginDir) {
       candidates.push(join(pluginDir, 'node_modules', ...pkg.split('/'), ...distSubpath));
     }

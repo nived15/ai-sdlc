@@ -61,7 +61,7 @@ function fakeFrontier(ids: string[]): () => Array<{ id: string; title: string }>
  * session dispatching a task whose ID (e.g. AISDLC-283) contains the
  * synthetic candidate ID (e.g. AISDLC-2) as a prefix, the substring check
  * incorrectly fires and blocks the candidate for the remainder of the run.
- * The underlying production bug is also fixed in `findClaudeSubprocess`
+ * The underlying production bug is also fixed in `findCopilotSubprocess`
  * (word-boundary lookahead), but belt-and-suspenders isolation here keeps
  * the test hermetic regardless of which GitHub Copilot session is running.
  *

@@ -135,7 +135,7 @@ export function defaultReadProcessTable(): string {
  * Mirrors the logic in `filters/already-in-flight.ts` so both guards use
  * the same detection heuristic.
  */
-function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
+function findCopilotSubprocess(psOutput: string, taskId: string): number | null {
   const taskIdLower = taskId.toLowerCase();
   const taskIdUpper = taskId.toUpperCase();
   for (const line of psOutput.split('\n')) {
@@ -261,7 +261,7 @@ export async function isReallyStale(
   // Signal 3 — live copilot subprocess.
   try {
     const psOutput = readProcessTable();
-    const pid = findClaudeSubprocess(psOutput, taskId);
+    const pid = findCopilotSubprocess(psOutput, taskId);
     if (pid !== null) {
       return {
         stale: false,

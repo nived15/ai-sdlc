@@ -201,7 +201,7 @@ export {
   buildCopilotInitialArgv as dispatchBuildCopilotInitialArgv,
   buildCopilotResumeArgv as dispatchBuildCopilotResumeArgv,
   DEFAULT_RESUME_AGENT as DISPATCH_DEFAULT_RESUME_AGENT,
-  extractSessionIdFromCopilotOutput as dispatchExtractSessionIdFromClaudeOutput,
+  extractSessionIdFromCopilotOutput as dispatchExtractSessionIdFromCopilotOutput,
   type BuildCopilotInitialArgvOpts as DispatchBuildCopilotInitialArgvOpts,
   type BuildCopilotResumeArgvOpts as DispatchBuildCopilotResumeArgvOpts,
   type BoardSubdir as DispatchBoardSubdir,

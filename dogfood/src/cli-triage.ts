@@ -9,8 +9,8 @@
  *
  * Billing path (--via):
  *   --via cli  → invoke `copilot` CLI subscription (Pro/Max). Default for AISDLC-* issues
- *                or whenever ANTHROPIC_API_KEY is unset.
- *   --via api  → call GitHub Messages API directly with ANTHROPIC_API_KEY. Default
+ *                or whenever the Copilot CLI is unavailable.
+ *   --via api  → call the GitHub Models API directly with GITHUB_MODELS_TOKEN. Default
  *                for numeric (GitHub) issues when the env var is set.
  */
 
@@ -65,13 +65,13 @@ function parseArgs(argv: string[]): TriageArgs {
  * Pick the billing path:
  *   - explicit --via wins
  *   - AISDLC-* issues default to CLI (subscription path for internal backlog)
- *   - missing ANTHROPIC_API_KEY → CLI (no other option)
+ *   - missing GITHUB_MODELS_TOKEN → CLI (no other option)
  *   - otherwise → API (legacy default for GitHub workflow)
  */
 function resolveVia(args: TriageArgs): Via {
   if (args.via) return args.via;
   if (args.issueId?.startsWith('AISDLC-')) return 'cli';
-  if (!process.env.ANTHROPIC_API_KEY) return 'cli';
+  if (!process.env.GITHUB_MODELS_TOKEN) return 'cli';
   return 'api';
 }
 

@@ -19,7 +19,7 @@
 # or this monorepo), self-location resolution works regardless of where
 # the plugin was installed and regardless of which env vars the invoking
 # shell happens to have (git hooks do not inherit COPILOT_PLUGIN_ROOT /
-# CLAUDE_PLUGIN_DIR from a Copilot CLI session unless the `git push` itself
+# COPILOT_PLUGIN_DIR from a Copilot CLI session unless the `git push` itself
 # ran inside that session's Bash tool).
 #
 # Why this exists: `/ai-sdlc execute` Step 10 used to drive signing inline
@@ -344,7 +344,7 @@ fi
 # in every install topology (plugin cache, COPILOT_PLUGIN_ROOT checkout, or
 # this monorepo's ai-sdlc-plugin/scripts/), so self-location resolution
 # works everywhere, including bare `git push` invocations outside a GitHub Copilot
-# Code session that never had COPILOT_PLUGIN_ROOT / CLAUDE_PLUGIN_DIR set.
+# Code session that never had COPILOT_PLUGIN_ROOT / COPILOT_PLUGIN_DIR set.
 SELF_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIGN_ATTESTATION_MJS="$SELF_SCRIPT_DIR/sign-attestation.mjs"
 

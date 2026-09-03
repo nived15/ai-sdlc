@@ -44,7 +44,7 @@ You do **NOT** need the supervisor when:
 A small Node daemon (~190 LOC in `pipeline-cli/src/dispatch/supervisor.ts`,
 ~210 LOC for the CLI wrapper) that:
 
-1. Polls `.ai-sdlc/dispatch/queue/` every `claudePShell.pollIntervalSec`
+1. Polls `.ai-sdlc/dispatch/queue/` every `copilotPShell.pollIntervalSec`
    (default 15s — biased slower than in-session-agent's 5s per RFC-0041
    OQ-6 so subscription Workers preferentially win `any` races).
 2. For each manifest matching `workerKind ∈ {copilot-p-shell, any}`:
@@ -53,7 +53,7 @@ A small Node daemon (~190 LOC in `pipeline-cli/src/dispatch/supervisor.ts`,
    (RFC §4.4 — the `COPILOT_CLI_SESSION` env var must be unset; GitHub Copilot CLI's
    startup guard refuses to launch otherwise).
 3. Enforces the concurrency cap from
-   `parallelism.claudePShellMaxConcurrent` in `.ai-sdlc/dispatch-config.yaml`.
+   `parallelism.copilotPShellMaxConcurrent` in `.ai-sdlc/dispatch-config.yaml`.
 4. Sweeps stale inflight heartbeats every tick. Any worker with
    `lastHeartbeat > 30 min ago` (RFC §4.4 + OQ-3, matching
    `CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS`) gets a `SIGTERM`, its
@@ -234,9 +234,9 @@ spec:
     # Sized against your Agent SDK credit budget — at ~$0.20/task and
     # ~$200/mo, 1000 tasks/mo is the practical ceiling; 2-4 concurrent
     # is a typical operator setting.
-    claudePShellMaxConcurrent: 2
+    copilotPShellMaxConcurrent: 2
 
-  claudePShell:
+  copilotPShell:
     pollIntervalSec: 15        # RFC-0041 OQ-6 — 15s default
     watchdogMs: 1800000        # 30 min — matches OQ-3
     supervisorPidFile: .ai-sdlc/dispatch/.supervisor.pid
@@ -284,7 +284,7 @@ spawns happen:
 2. Check the manifests have `workerKind: copilot-p-shell` or
    `workerKind: any`. The supervisor ignores `in-session-agent`
    manifests.
-3. Check `.ai-sdlc/dispatch-config.yaml`'s `claudePShellMaxConcurrent`
+3. Check `.ai-sdlc/dispatch-config.yaml`'s `copilotPShellMaxConcurrent`
    isn't `0` (the Phase 1 default — bump to ≥1 to enable the
    supervisor).
 

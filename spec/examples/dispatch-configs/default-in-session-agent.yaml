@@ -16,7 +16,7 @@ spec:
     # the operator is expected to keep open. Increase as you scale terminals.
     inSessionAgentMaxSessions: 4
     # Phase 2 supervisor disabled until copilot-p-shell Workers ship.
-    claudePShellMaxConcurrent: 0
+    copilotPShellMaxConcurrent: 0
 
   inSessionAgent:
     pollIntervalSec: 5 # RFC-0041 OQ-6 cost-first bias
@@ -26,7 +26,7 @@ spec:
     emptyQueueHibernateSec: 30 # Hibernate when queue empty
 
   # Phase 2 forward-compat — Workers ignore this until copilot-p-shell ships.
-  claudePShell:
+  copilotPShell:
     pollIntervalSec: 15
     watchdogMs: 1800000 # 30 min, matches CopilotHarnessAdapter default
     supervisorPidFile: .ai-sdlc/dispatch/.supervisor.pid

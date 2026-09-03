@@ -551,11 +551,11 @@ describe('renderPrTasksComment', () => {
   it('redacts secrets in PR-summary findings', () => {
     // Build the secret marker via template-literal concatenation so
     // GitHub secret-scanning doesn't trip on the test source.
-    const fakeAnthropicToken = `sk-ant-` + `api03-` + 'A'.repeat(60);
+    const fakeInferenceToken = `sk-ant-` + `api03-` + 'A'.repeat(60);
     const blocking = blockingTaskVerdict();
-    blocking.gates[0]!.finding = `URL extracted: https://example.test/?t=${fakeAnthropicToken}`;
+    blocking.gates[0]!.finding = `URL extracted: https://example.test/?t=${fakeInferenceToken}`;
     const body = renderPrTasksComment([blocking]);
-    expect(body).not.toContain(fakeAnthropicToken);
+    expect(body).not.toContain(fakeInferenceToken);
     expect(body).toContain('[REDACTED:INFERENCE_KEY_SCOPED]');
   });
 });

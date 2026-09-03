@@ -6,10 +6,10 @@
 #
 # Resolution order (first match wins):
 #
-#   1. CLAUDE_PLUGIN_DIR set + node_modules/@ai-sdlc/pipeline-cli/bin exists
+#   1. COPILOT_PLUGIN_DIR set + node_modules/@ai-sdlc/pipeline-cli/bin exists
 #      → Standard marketplace install with bundled deps. Use it.
 #
-#   2. CLAUDE_PLUGIN_DIR set + node_modules missing
+#   2. COPILOT_PLUGIN_DIR set + node_modules missing
 #      → Broken/incomplete install. Try to self-heal via install-runtime-deps.sh,
 #        then retry. If self-heal fails, fall through.
 #
@@ -30,8 +30,8 @@
 #   PIPELINE_CLI_BIN=$(bash "$PLUGIN_SCRIPTS_DIR/resolve-pipeline-cli.sh") || exit 1
 #
 # Environment variables read:
-#   CLAUDE_PLUGIN_DIR  — set by GitHub Copilot CLI harness for marketplace installs
-#   COPILOT_PLUGIN_ROOT — always set by GitHub Copilot CLI harness (same dir as CLAUDE_PLUGIN_DIR
+#   COPILOT_PLUGIN_DIR  — set by GitHub Copilot CLI harness for marketplace installs
+#   COPILOT_PLUGIN_ROOT — always set by GitHub Copilot CLI harness (same dir as COPILOT_PLUGIN_DIR
 #                         in most contexts, but guaranteed to exist)
 #
 # The script is idempotent and safe to call multiple times.
@@ -42,7 +42,7 @@ PIPELINE_CLI_REL="node_modules/@ai-sdlc/pipeline-cli/bin"
 
 # AISDLC-557: derive the plugin dir from THIS script's own on-disk location,
 # for use as a last-resort self-heal fallback (topology 4.5 below) when
-# neither CLAUDE_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT is set. Only meaningful
+# neither COPILOT_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT is set. Only meaningful
 # when this script lives at "<plugin-dir>/scripts/resolve-pipeline-cli.sh"
 # (the layout every install topology uses); leaves SELF_PLUGIN_DIR empty
 # otherwise so the fallback is a clean no-op.
@@ -75,25 +75,25 @@ _deps_complete() {
   _is_usable "$plugin_dir/$PIPELINE_CLI_REL" && _mcp_usable "$plugin_dir"
 }
 
-# ── Topology 1: CLAUDE_PLUGIN_DIR set + deps bundled ────────────────────────
-if [ -n "${CLAUDE_PLUGIN_DIR:-}" ]; then
-  CANDIDATE="$CLAUDE_PLUGIN_DIR/$PIPELINE_CLI_REL"
+# ── Topology 1: COPILOT_PLUGIN_DIR set + deps bundled ────────────────────────
+if [ -n "${COPILOT_PLUGIN_DIR:-}" ]; then
+  CANDIDATE="$COPILOT_PLUGIN_DIR/$PIPELINE_CLI_REL"
   # AISDLC-385: fast-path requires BOTH pipeline-cli AND mcp-server present.
-  if _deps_complete "$CLAUDE_PLUGIN_DIR"; then
+  if _deps_complete "$COPILOT_PLUGIN_DIR"; then
     printf '%s' "$CANDIDATE"
     exit 0
   fi
 
-  # ── Topology 2: CLAUDE_PLUGIN_DIR set + deps missing (broken install) ─────
+  # ── Topology 2: COPILOT_PLUGIN_DIR set + deps missing (broken install) ─────
   # Attempt self-heal: run install-runtime-deps.sh if it ships with the plugin.
   # AISDLC-385: triggers when EITHER pipeline-cli OR mcp-server is missing.
-  SELF_HEAL_SCRIPT="$CLAUDE_PLUGIN_DIR/scripts/install-runtime-deps.sh"
+  SELF_HEAL_SCRIPT="$COPILOT_PLUGIN_DIR/scripts/install-runtime-deps.sh"
   if [ -f "$SELF_HEAL_SCRIPT" ]; then
     MISSING="pipeline-cli"
     _is_usable "$CANDIDATE" && MISSING="plugin-mcp-server"
-    echo "resolve-pipeline-cli.sh: @ai-sdlc/$MISSING missing in $CLAUDE_PLUGIN_DIR — attempting self-heal..." >&2
-    if bash "$SELF_HEAL_SCRIPT" "$CLAUDE_PLUGIN_DIR" >&2; then
-      if _deps_complete "$CLAUDE_PLUGIN_DIR"; then
+    echo "resolve-pipeline-cli.sh: @ai-sdlc/$MISSING missing in $COPILOT_PLUGIN_DIR — attempting self-heal..." >&2
+    if bash "$SELF_HEAL_SCRIPT" "$COPILOT_PLUGIN_DIR" >&2; then
+      if _deps_complete "$COPILOT_PLUGIN_DIR"; then
         echo "resolve-pipeline-cli.sh: self-heal succeeded" >&2
         printf '%s' "$CANDIDATE"
         exit 0
@@ -172,7 +172,7 @@ fi
 # ── Topology 6: Self-location fallback (AISDLC-557, last resort) ───────────
 #
 # AISDLC-557: the second adopter report found that when NEITHER
-# CLAUDE_PLUGIN_DIR NOR COPILOT_PLUGIN_ROOT is set, self-heal was completely
+# COPILOT_PLUGIN_DIR NOR COPILOT_PLUGIN_ROOT is set, self-heal was completely
 # unreachable — topologies 1-3 (the only ones that ever attempt self-heal)
 # are gated on one of those two vars being set, and topology 4 (cache probe)
 # deliberately stays read-only (see the security note below). The result:
@@ -208,18 +208,18 @@ if [ -n "$SELF_PLUGIN_DIR" ]; then
 
   # Skip the retry when an earlier topology already self-healed against this
   # exact directory: resolve-pipeline-cli.sh always lives at
-  # <CLAUDE_PLUGIN_DIR>/scripts/, so when that var is set SELF_PLUGIN_DIR is
+  # <COPILOT_PLUGIN_DIR>/scripts/, so when that var is set SELF_PLUGIN_DIR is
   # the same path topology 1 already tried. Re-running would double the
   # up-to-120s npm timeout before the final error is printed.
   SELF_HEAL_SCRIPT="$SELF_PLUGIN_DIR/scripts/install-runtime-deps.sh"
-  if [ "$SELF_PLUGIN_DIR" = "${CLAUDE_PLUGIN_DIR:-}" ] || [ "$SELF_PLUGIN_DIR" = "${COPILOT_PLUGIN_ROOT:-}" ]; then
+  if [ "$SELF_PLUGIN_DIR" = "${COPILOT_PLUGIN_DIR:-}" ] || [ "$SELF_PLUGIN_DIR" = "${COPILOT_PLUGIN_ROOT:-}" ]; then
     SELF_HEAL_SCRIPT=""
     echo "resolve-pipeline-cli.sh: self-location fallback resolves to a directory already attempted above — not retrying self-heal." >&2
   fi
   if [ -n "$SELF_HEAL_SCRIPT" ] && [ -f "$SELF_HEAL_SCRIPT" ]; then
     MISSING="pipeline-cli"
     _is_usable "$CANDIDATE" && MISSING="plugin-mcp-server"
-    echo "resolve-pipeline-cli.sh: @ai-sdlc/$MISSING missing in $SELF_PLUGIN_DIR (self-location fallback — neither CLAUDE_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT is set) — attempting self-heal..." >&2
+    echo "resolve-pipeline-cli.sh: @ai-sdlc/$MISSING missing in $SELF_PLUGIN_DIR (self-location fallback — neither COPILOT_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT is set) — attempting self-heal..." >&2
     if bash "$SELF_HEAL_SCRIPT" "$SELF_PLUGIN_DIR" >&2; then
       if _deps_complete "$SELF_PLUGIN_DIR"; then
         echo "resolve-pipeline-cli.sh: self-heal (self-location) succeeded" >&2
@@ -247,10 +247,10 @@ ROOT_CAUSE=""
 # AISDLC-557: fall back to SELF_PLUGIN_DIR for diagnostics too, so the
 # self-location fallback case (neither env var set) still gets a named root
 # cause instead of the generic topology list.
-DIAG_DIR="${CLAUDE_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$SELF_PLUGIN_DIR}}"
+DIAG_DIR="${COPILOT_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$SELF_PLUGIN_DIR}}"
 if [ -n "$DIAG_DIR" ] && [ -d "$DIAG_DIR" ]; then
   if [ ! -f "$DIAG_DIR/plugin.json" ]; then
-    ROOT_CAUSE="Root cause: $DIAG_DIR/plugin.json is missing — \$CLAUDE_PLUGIN_DIR / \$COPILOT_PLUGIN_ROOT does not point at a valid plugin install."
+    ROOT_CAUSE="Root cause: $DIAG_DIR/plugin.json is missing — \$COPILOT_PLUGIN_DIR / \$COPILOT_PLUGIN_ROOT does not point at a valid plugin install."
   elif command -v node >/dev/null 2>&1; then
     DIAG=$(node -e '
       const fs = require("node:fs");
@@ -289,7 +289,7 @@ fi
   fi
   cat <<'EOF'
 Tried all install topologies:
-  1. $CLAUDE_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin  (marketplace install)
+  1. $COPILOT_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin  (marketplace install)
   2. $COPILOT_PLUGIN_ROOT/node_modules/@ai-sdlc/pipeline-cli/bin (plugin root)
   3. ~/.copilot/plugins/cache/*/ai-sdlc/*/node_modules/@ai-sdlc/pipeline-cli/bin (cache probe, read-only)
   4. $(pwd)/pipeline-cli/bin  (dogfood monorepo)

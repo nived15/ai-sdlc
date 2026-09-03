@@ -38,7 +38,7 @@ import { resolveVersions, formatVersionBlock } from '../versions.js';
 import {
   applyFeatureSelection,
   buildProductionAdapters,
-  ensureClaudeMdPointer,
+  ensureCopilotInstructionsPointer,
   renderNextSteps,
   resolveFeatureSelection,
   resolveInstallTarget,
@@ -855,7 +855,7 @@ async function runWizardStage(projectDir: string, flags: WizardFlags): Promise<v
   console.log('');
   console.log('Scaffolding selected features:');
   const result = await applyFeatureSelection(projectDir, selection, flags, adapters);
-  ensureClaudeMdPointer(projectDir, adapters, flags.dryRun);
+  ensureCopilotInstructionsPointer(projectDir, adapters, flags.dryRun);
   renderNextSteps(selection, result, adapters);
 
   // Reviewer feedback (round 2, suggestion #5): when branch-protection

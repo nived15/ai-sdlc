@@ -9,7 +9,7 @@
  *    shell out to git/gh or touch the filesystem.
  *  - Mock the spawner factory via `PipelineToolDeps.spawnerFactory` so the
  *    Step 9 wrapper never invokes the real `defaultSpawner()` (which would
- *    throw — neither `copilot` nor `ANTHROPIC_API_KEY` is present in the
+ *    throw — the `copilot` CLI is not present in the
  *    test environment).
  *  - Cover: registration shape (14 tools, naming, schemas), successful
  *    invocation, schema validation rejection, and error propagation.

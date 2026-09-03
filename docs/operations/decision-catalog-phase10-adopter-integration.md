@@ -61,7 +61,7 @@ import {
 const invoker: ResearchSubagentInvoker = async (input) => {
   // input.summary, input.body, input.options, input.recommendation
   // are all present. Return findings + model + token counts.
-  const { stdout } = await runClaude({
+  const { stdout } = await runCopilot({
     prompt: `Research the following decision: ${input.summary}`,
     options: input.options,
     framing: input.framing,

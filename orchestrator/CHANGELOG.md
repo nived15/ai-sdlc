@@ -377,7 +377,7 @@
 ### Bug Fixes
 
 * **ci:** review bot no longer 422s on lines outside diff hunks ([b62111f](https://github.com/ai-sdlc-framework/ai-sdlc/commit/b62111fc8aa9bda891dfe2538b35b0d669f9dcae))
-* **dogfood:** unblock pr 69 ci — return after exit, mock claudecodeadapter ([42c0360](https://github.com/ai-sdlc-framework/ai-sdlc/commit/42c0360759fab3f8bdd86d4867eb300d2135a8c6))
+* **dogfood:** unblock pr 69 ci — return after exit, mock copilot adapter ([42c0360](https://github.com/ai-sdlc-framework/ai-sdlc/commit/42c0360759fab3f8bdd86d4867eb300d2135a8c6))
 * **orchestrator:** address local review findings for RFC-0008 ([3da537b](https://github.com/ai-sdlc-framework/ai-sdlc/commit/3da537b7aa1dd2a8c184414fc65368a3b23c94fe))
 * **orchestrator:** convention detector — React naming, multi-test-dir, path aliases (AISDLC-80) ([fdeefe4](https://github.com/ai-sdlc-framework/ai-sdlc/commit/fdeefe405f758b703c5bb5ec609c4fea4db2c009))
 * **orchestrator:** deflake withmergegate timeout test ([57aa161](https://github.com/ai-sdlc-framework/ai-sdlc/commit/57aa161de32b1631f94b08109667afb3cdce6dd9))

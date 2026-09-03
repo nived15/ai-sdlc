@@ -283,15 +283,15 @@ export function salvageReviewerTranscript(
   // `-Users-foo-repo--worktrees-aisdlc-418`. Empty path components (`//`
   // after replacing `.` in `.worktrees`) become `--` so we don't
   // over-normalize.
-  const encoded = encodeWorktreePathForClaudeTmp(worktreePath);
+  const encoded = encodeWorktreePathForCopilotTmp(worktreePath);
   let candidates: string[];
   try {
     candidates = readdirSync(tmpRoot).filter((d) => d.startsWith('copilot-'));
   } catch {
     return { status: 'not-found', destination };
   }
-  for (const claudeDir of candidates) {
-    const cwdDir = path.join(tmpRoot, claudeDir, encoded);
+  for (const sessionDir of candidates) {
+    const cwdDir = path.join(tmpRoot, sessionDir, encoded);
     if (!existsSync(cwdDir)) continue;
     let sessions: string[];
     try {
@@ -331,7 +331,7 @@ export function salvageReviewerTranscript(
  * Real-world entry observed on disk during the AISDLC-344 reconcile:
  *   `-Users-dominique-Documents-dev-ai-sdlc-ai-sdlc--worktrees-aisdlc-284`
  */
-export function encodeWorktreePathForClaudeTmp(worktreePath: string): string {
+export function encodeWorktreePathForCopilotTmp(worktreePath: string): string {
   const normalized = path.resolve(worktreePath);
   return normalized.replace(/[/.]/g, '-');
 }

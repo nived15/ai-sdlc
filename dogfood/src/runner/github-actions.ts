@@ -86,12 +86,12 @@ async function gitExec(workDir: string, args: string[]): Promise<string> {
 
 // Defaults imported from ../orchestrator/defaults.js
 
-interface RunClaudeOptions {
+interface RunCopilotOptions {
   allowedTools?: string[];
   timeoutMs?: number;
 }
 
-function runClaude(prompt: string, workDir: string, opts?: RunClaudeOptions): Promise<string> {
+function runCopilot(prompt: string, workDir: string, opts?: RunCopilotOptions): Promise<string> {
   const tools = opts?.allowedTools?.join(',') ?? DEFAULT_ALLOWED_TOOLS;
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_RUNNER_TIMEOUT_MS;
 
@@ -134,7 +134,7 @@ export class CopilotRunner implements AgentRunner {
 
     try {
       // Invoke GitHub Copilot CLI in print mode, sending prompt via stdin
-      const stdout = await runClaude(prompt, ctx.workDir, {
+      const stdout = await runCopilot(prompt, ctx.workDir, {
         allowedTools: ctx.allowedTools,
         timeoutMs: ctx.timeoutMs,
       });

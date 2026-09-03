@@ -416,9 +416,9 @@ describe('init — AISDLC-143 wizard scaffolding', () => {
 
     // .github/copilot-instructions.md pointer
     expect(existsSync(join(tmpDir, '.github/copilot-instructions.md'))).toBe(true);
-    const claudeMd = readFileSync(join(tmpDir, '.github/copilot-instructions.md'), 'utf-8');
-    expect(claudeMd).toContain('<!-- ai-sdlc:recommendation-pointer -->');
-    expect(claudeMd).toContain('ai-sdlc/pr-ready');
+    const copilotInstructions = readFileSync(join(tmpDir, '.github/copilot-instructions.md'), 'utf-8');
+    expect(copilotInstructions).toContain('<!-- ai-sdlc:recommendation-pointer -->');
+    expect(copilotInstructions).toContain('ai-sdlc/pr-ready');
   });
 
   it('--with-dor (without --yes / without other --with-X) errors cleanly in non-TTY env', async () => {

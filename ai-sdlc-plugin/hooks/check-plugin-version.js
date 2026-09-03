@@ -3,16 +3,16 @@
  * AI-SDLC Plugin Version-Check Hook (AISDLC-89)
  *
  * SessionStart hook that nags when the bundled plugin version is older than
- * the published latest in the marketplace. Same UX pattern as `pnpm`, `gh`,
+ * the published latest on `main`. Same UX pattern as `pnpm`, `gh`,
  * `kubectl`, `terraform` — a single yellow line, one terminal message, no
  * auto-update.
  *
  * Behavior contract:
- *  - Reads bundled version from `${COPILOT_PLUGIN_ROOT}/.copilot-plugin/plugin.json`
+ *  - Reads bundled version from `${COPILOT_PLUGIN_ROOT}/plugin.json`
  *    (falls back to the script's parent dir if the env var is unset, so the
  *    hook still works under `node check-plugin-version.js` for tests).
- *  - Fetches the marketplace.json from `main` on GitHub raw and parses
- *    `plugins[0].version` as the latest published.
+ *  - Fetches `ai-sdlc-plugin/plugin.json` from `main` on GitHub raw and parses
+ *    its top-level `version` as the latest published.
  *  - Caches the latest-version result at `~/.cache/ai-sdlc-plugin/version-check.json`
  *    with a 24h TTL. Subsequent runs within TTL skip the network call.
  *  - On staleness (latest > installed), prints a yellow banner to stderr and
@@ -58,8 +58,8 @@ const http = require('http');
 const crypto = require('crypto');
 const childProcess = require('child_process');
 
-const MARKETPLACE_URL =
-  'https://raw.githubusercontent.com/ai-sdlc-framework/ai-sdlc/main/.copilot-plugin/marketplace.json';
+const MANIFEST_URL =
+  'https://raw.githubusercontent.com/ai-sdlc-framework/ai-sdlc/main/ai-sdlc-plugin/plugin.json';
 const CACHE_DIR = path.join(os.homedir(), '.cache', 'ai-sdlc-plugin');
 const CACHE_FILE = path.join(CACHE_DIR, 'version-check.json');
 const ERROR_LOG = path.join(CACHE_DIR, 'last-error.log');
@@ -526,20 +526,12 @@ function parseTrustedReviewersYamlSync(raw) {
 
 function readInstalledVersion() {
   const root = process.env.COPILOT_PLUGIN_ROOT || path.resolve(__dirname, '..');
-  const pluginJsonPath = path.join(root, '.copilot-plugin', 'plugin.json');
   try {
-    const raw = fs.readFileSync(pluginJsonPath, 'utf-8');
+    const raw = fs.readFileSync(path.join(root, 'plugin.json'), 'utf-8');
     const parsed = JSON.parse(raw);
     return typeof parsed.version === 'string' ? parsed.version : null;
   } catch {
-    // Fallback: try the legacy top-level plugin.json some installs may have.
-    try {
-      const legacy = fs.readFileSync(path.join(root, 'plugin.json'), 'utf-8');
-      const parsed = JSON.parse(legacy);
-      return typeof parsed.version === 'string' ? parsed.version : null;
-    } catch {
-      return null;
-    }
+    return null;
   }
 }
 
@@ -571,8 +563,12 @@ function writeCache(entry) {
 }
 
 function fetchLatestVersion() {
-  // Honor a custom override URL for tests.
-  const url = process.env.AI_SDLC_PLUGIN_MARKETPLACE_URL || MARKETPLACE_URL;
+  // Honor a custom override URL for tests. `AI_SDLC_PLUGIN_MARKETPLACE_URL` is
+  // still read for backward compatibility with existing operator configs.
+  const url =
+    process.env.AI_SDLC_PLUGIN_MANIFEST_URL ||
+    process.env.AI_SDLC_PLUGIN_MARKETPLACE_URL ||
+    MANIFEST_URL;
   const client = url.startsWith('http://') ? http : https;
   return new Promise((resolve, reject) => {
     const req = client.get(url, { timeout: FETCH_TIMEOUT_MS }, (res) => {
@@ -589,9 +585,15 @@ function fetchLatestVersion() {
       res.on('end', () => {
         try {
           const parsed = JSON.parse(body);
-          const v = parsed && parsed.plugins && parsed.plugins[0] && parsed.plugins[0].version;
+          // Preferred shape: the plugin manifest's own top-level `version`.
+          // Fall back to the legacy marketplace shape so a pinned override URL
+          // pointing at an old manifest keeps working.
+          const v =
+            parsed && typeof parsed.version === 'string'
+              ? parsed.version
+              : parsed && parsed.plugins && parsed.plugins[0] && parsed.plugins[0].version;
           if (typeof v !== 'string') {
-            reject(new Error('marketplace.json: plugins[0].version missing'));
+            reject(new Error('plugin.json: version missing'));
             return;
           }
           resolve(v);
@@ -635,7 +637,7 @@ function printStatus({ installed, latest, checkedAt }) {
     }
   } else {
     lines.push('- Latest: unknown (fetch failed)');
-    lines.push('- Status: ? could not reach marketplace.json');
+    lines.push('- Status: ? could not reach plugin.json');
   }
   process.stdout.write(lines.join('\n') + '\n');
 }

@@ -18,7 +18,6 @@ export default tseslint.config(
       '**/scripts/',
       '**/vitest.config.ts',
       '.github/workflows/__tests__/',
-      '.claude/hooks/',
       'ai-sdlc-plugin/hooks/',
       'ai-sdlc-plugin/agents/',
       'ai-sdlc-plugin/commands/',

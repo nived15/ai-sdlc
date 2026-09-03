@@ -48,7 +48,7 @@ function cleanEnv(extra = {}) {
   // resolution tests into false passes — the runtime IS found, so
   // "fails when absent everywhere" stops testing anything. Strip them from the
   // inherited env, but let a test opt back in explicitly via `extra`.
-  delete inherited.CLAUDE_PLUGIN_DIR;
+  delete inherited.COPILOT_PLUGIN_DIR;
   delete inherited.COPILOT_PLUGIN_ROOT;
   const env = { ...inherited, ...extra };
   delete env.GIT_DIR;
@@ -1073,7 +1073,7 @@ describe('sign-attestation.mjs — adopter runtime resolution (AISDLC-554)', () 
   });
 
   it('resolves via node_modules beside the script when no plugin env vars are set (git-hook context)', () => {
-    // Git hooks do not inherit CLAUDE_PLUGIN_DIR/ROOT, and the pre-push
+    // Git hooks do not inherit COPILOT_PLUGIN_DIR/ROOT, and the pre-push
     // signing hook runs in exactly that context — so the script must find the
     // plugin's own install by walking up from its own location.
     const root = join(base, 'app');
@@ -1090,7 +1090,7 @@ describe('sign-attestation.mjs — adopter runtime resolution (AISDLC-554)', () 
       cwd: fixture.root,
       env: (() => {
         const env = cleanEnv({ HOME: tmpHome });
-        delete env.CLAUDE_PLUGIN_DIR;
+        delete env.COPILOT_PLUGIN_DIR;
         delete env.COPILOT_PLUGIN_ROOT;
         return env;
       })(),

@@ -11,7 +11,7 @@
  *   - skipPush / skipFlipReady / skipArmAutoMerge gating
  *   - extractPrNumberFromUrl pure helper
  *   - salvageReviewerTranscript happy path + fallback
- *   - encodeWorktreePathForClaudeTmp shape matches real /private/tmp entries
+ *   - encodeWorktreePathForCopilotTmp shape matches real /private/tmp entries
  */
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -26,7 +26,7 @@ import type { DispatchVerdict } from '../dispatch/types.js';
 import {
   AGENT_ID_PATTERN,
   defaultHomeDir,
-  encodeWorktreePathForClaudeTmp,
+  encodeWorktreePathForCopilotTmp,
   extractPrNumberFromUrl,
   readVerdictJson,
   RECONCILE_REVIEWERS,
@@ -126,16 +126,16 @@ describe('reconcile — pure helpers', () => {
     });
   });
 
-  describe('encodeWorktreePathForClaudeTmp', () => {
+  describe('encodeWorktreePathForCopilotTmp', () => {
     it('matches real /private/tmp copilot entries (double-dash before .worktrees)', () => {
-      const encoded = encodeWorktreePathForClaudeTmp(
+      const encoded = encodeWorktreePathForCopilotTmp(
         '/Users/dominique/Documents/dev/ai-sdlc/ai-sdlc/.worktrees/aisdlc-284',
       );
       expect(encoded).toBe('-Users-dominique-Documents-dev-ai-sdlc-ai-sdlc--worktrees-aisdlc-284');
     });
 
     it('replaces every slash with a dash', () => {
-      const encoded = encodeWorktreePathForClaudeTmp('/a/b/c');
+      const encoded = encodeWorktreePathForCopilotTmp('/a/b/c');
       expect(encoded).toBe('-a-b-c');
     });
   });
@@ -186,7 +186,7 @@ describe('salvageReviewerTranscript', () => {
     const trickyDir = path.join(
       tmpRoot,
       'copilot-501',
-      encodeWorktreePathForClaudeTmp(worktreePath),
+      encodeWorktreePathForCopilotTmp(worktreePath),
     );
     mkdirSync(path.join(trickyDir, 'session-a', 'tasks'), { recursive: true });
     writeFileSync(
@@ -217,7 +217,7 @@ describe('salvageReviewerTranscript', () => {
   });
 
   it('salvages a transcript from a matching copilot-<uid>/<encoded>/<session>/tasks/ entry', () => {
-    const encoded = encodeWorktreePathForClaudeTmp(worktreePath);
+    const encoded = encodeWorktreePathForCopilotTmp(worktreePath);
     const sessionDir = path.join(tmpRoot, 'copilot-501', encoded, 'session-uuid', 'tasks');
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(path.join(sessionDir, 'agentxyz1.output'), 'salvaged content\n', 'utf8');
@@ -788,7 +788,7 @@ describe('salvageReviewerTranscript — edge paths', () => {
       // Add a second copilot-uid where <encoded> exists but the session dir
       // listing would race away — emulate via a FILE at the encoded path
       // (readdirSync throws ENOTDIR → catch path triggers).
-      const encoded = encodeWorktreePathForClaudeTmp(wt);
+      const encoded = encodeWorktreePathForCopilotTmp(wt);
       writeFileSync(path.join(tmpRoot, 'copilot-502'), 'not-a-dir', 'utf8');
       // Note: copilot-502 starts with copilot- so it matches; but it's a file
       // → path.join(tmpRoot, 'copilot-502', encoded) doesn't exist → continue.

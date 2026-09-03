@@ -102,7 +102,7 @@ const SENTINEL_ACTIVE_THRESHOLD_MS = 6 * 60 * 60 * 1000;
  * Scan ps output for a copilot -p/-p subprocess referencing the task ID.
  * Returns the PID if found, null otherwise. Mirrors the logic in already-in-flight.ts.
  */
-function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
+function findCopilotSubprocess(psOutput: string, taskId: string): number | null {
   const taskIdLower = taskId.toLowerCase();
   const taskIdUpper = taskId.toUpperCase();
   for (const line of psOutput.split('\n')) {
@@ -332,7 +332,7 @@ async function isSafeToAutoClean(
       execSync('ps -ax -o pid,command', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }));
   try {
     const psOutput = readProcessTable();
-    const pid = findClaudeSubprocess(psOutput, taskId);
+    const pid = findCopilotSubprocess(psOutput, taskId);
     if (pid !== null) {
       console.info(
         `[step-3] ${taskIdLower}: keeping branch (live copilot -p subprocess PID ${pid})`,

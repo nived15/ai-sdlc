@@ -310,7 +310,7 @@ describe('runSupervisorTick', () => {
     writeManifest(boardDir, mkManifest('AISDLC-500'));
     // Set COPILOT_CLI_SESSION on the parent so we can verify it's stripped from the
     // child env. process.env mutation is restored in afterEach via vi.
-    const originalClaudeCode = process.env.COPILOT_CLI_SESSION;
+    const originalCopilot = process.env.COPILOT_CLI_SESSION;
     process.env.COPILOT_CLI_SESSION = '1';
 
     try {
@@ -321,10 +321,10 @@ describe('runSupervisorTick', () => {
       const env = spawnedProcesses[0]!.env;
       expect(env.COPILOT_CLI_SESSION).toBeUndefined();
     } finally {
-      if (originalClaudeCode === undefined) {
+      if (originalCopilot === undefined) {
         delete process.env.COPILOT_CLI_SESSION;
       } else {
-        process.env.COPILOT_CLI_SESSION = originalClaudeCode;
+        process.env.COPILOT_CLI_SESSION = originalCopilot;
       }
     }
   });

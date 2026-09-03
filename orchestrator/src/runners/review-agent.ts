@@ -79,7 +79,7 @@ export interface ReviewAgentConfig {
 const DEFAULT_LARGE_CONTEXT_THRESHOLD_CHARS = 600_000;
 const DEFAULT_LARGE_CONTEXT_MODEL = process.env.AI_SDLC_REVIEW_LARGE_MODEL ?? 'reasoning';
 /** GitHub Models 1M-context beta header. Required when sending > 200k tokens. */
-const ANTHROPIC_LONG_CONTEXT_BETA = 'context-1m-2025-08-07';
+const LONG_CONTEXT_BETA = 'context-1m-2025-08-07';
 
 // ── CI boundary ─────────────────────────────────────────────────────
 
@@ -340,7 +340,7 @@ export class ReviewAgentRunner implements AgentRunner {
         'x-api-key': apiKey,
         'x-github-api-version': '2023-06-01',
       };
-      if (escalate) headers['github-models-beta'] = ANTHROPIC_LONG_CONTEXT_BETA;
+      if (escalate) headers['github-models-beta'] = LONG_CONTEXT_BETA;
 
       const res = await fetch(apiUrl, {
         method: 'POST',

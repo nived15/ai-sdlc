@@ -228,7 +228,7 @@ node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-182 --run --spawner 
 | `copilot` | shipped (AISDLC-349; default for `cli-orchestrator tick` since AISDLC-352) | Constructs the `CopilotHarnessAdapter` — shells out to the operator's installed `copilot -p` for each dispatch. Uses subscription auth (Agent SDK credit pool post-2026-06-15). Recommended for cron / daemon / sidecar dispatch from a plain shell. |
 | `copilot` | shipped (AISDLC-202.2) | Constructs the `CopilotHarnessAdapter` (callback-driven GitHub Copilot `spawn_agent` bridge). The CLI resolver wires a subprocess bridge whose path is read from `COPILOT_SPAWN_AGENT_BIN`; when that env var is unset the resolver fails with a configuration message before any pipeline mutation. Programmatic callers can construct `CopilotHarnessAdapter` directly with their own `CodexSpawnAgentFn`. Design map: `docs/operations/copilot-execution-path.md`. Billing: GitHub Copilot subscription. |
 | `copilot` | shipped (AISDLC-429.2 + AISDLC-429.3) | Constructs the `CopilotHarnessAdapter` (callback-driven GitHub Copilot CLI bridge). The CLI resolver wires a subprocess bridge whose path is read from `COPILOT_SPAWN_AGENT_BIN`; when that env var is unset the resolver fails with a configuration message before any pipeline mutation — refuses to silently fall back to `GITHUB_MODELS_TOKEN` billing. Programmatic callers can construct `CopilotHarnessAdapter` directly with their own `CopilotSpawnAgentFn`. Design map: [`docs/operations/copilot-execution-path.md`](../docs/operations/copilot-execution-path.md). Operator runbook: [`docs/operations/copilot-spawner.md`](../docs/operations/copilot-spawner.md). Billing: GitHub Copilot subscription. |
-| `copilot` | **removed** (RFC-0041 Phase 3.3 / AISDLC-377.6) | Was the `CopilotHarnessAdapter` inline-manifest path (AISDLC-198). Deleted after the AISDLC-377.4 deprecation-warning window. Yargs `--spawner copilot` is rejected at parse time; programmatic callers receive `CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE`. Migration: [`docs/operations/copilot-spawner.md`](../docs/operations/copilot-spawner.md). |
+| `copilot` | **removed** (RFC-0041 Phase 3.3 / AISDLC-377.6) | Was the `CopilotHarnessAdapter` inline-manifest path (AISDLC-198). Deleted after the AISDLC-377.4 deprecation-warning window. Yargs `--spawner copilot` is rejected at parse time; programmatic callers receive `UNSUPPORTED_SPAWNER_MESSAGE`. Migration: [`docs/operations/copilot-spawner.md`](../docs/operations/copilot-spawner.md). |
 
 ##### `--spawner copilot` — GitHub Copilot CLI host-bridge dispatch (AISDLC-202.2 + AISDLC-251)
 
@@ -555,7 +555,7 @@ pnpm test:watch            # iteration mode
 ## Documentation
 
 - [`docs/spawner.md`](./docs/spawner.md) — SubagentSpawner selection guide
-  (when to use ShellClaudeP / ClaudeCodeSDK / Mock / custom), lazy SDK import,
+  (when to use CopilotHarnessAdapter / Mock / custom), lazy SDK import,
   Q5 resolution.
 - [`docs/steps.md`](./docs/steps.md) — per-step contract, inputs, outputs,
   side effects, when each step runs.

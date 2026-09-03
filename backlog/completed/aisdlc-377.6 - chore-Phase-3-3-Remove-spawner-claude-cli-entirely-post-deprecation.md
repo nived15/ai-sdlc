@@ -16,7 +16,6 @@ dependencies:
 priority: low
 references:
   - spec/rfcs/RFC-0041-conductor-worker-process-architecture.md
-  - docs/operations/claude-cli-spawner-removed.md
 ---
 
 ## Scope (RFC-0041 §7 Phase 3.3)

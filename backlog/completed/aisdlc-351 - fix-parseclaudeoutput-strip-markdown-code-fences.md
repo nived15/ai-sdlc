@@ -12,7 +12,7 @@ dependencies:
   - AISDLC-349
 priority: critical
 references:
-  - pipeline-cli/src/runtime/shell-claude-p-spawner.ts
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
   - pipeline-cli/src/steps/09-iterate.ts
 ---
 

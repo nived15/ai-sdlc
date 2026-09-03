@@ -20,7 +20,7 @@ dispatchableReason: >-
   the leakage pattern interactively. No standalone code fix can be developed
   without first understanding the root cause through operator observation.
 references:
-  - CLAUDE.md
+  - .github/copilot-instructions.md
   - pnpm-workspace.yaml
   - pipeline-cli/src/__test-helpers/git-env.ts
 finalSummary: |

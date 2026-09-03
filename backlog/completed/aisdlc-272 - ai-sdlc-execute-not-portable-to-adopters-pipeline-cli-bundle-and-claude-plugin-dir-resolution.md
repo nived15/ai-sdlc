@@ -14,9 +14,7 @@ dependencies: []
 priority: critical
 references:
   - ai-sdlc-plugin/commands/execute.md
-  - ai-sdlc-plugin/.claude-plugin/plugin.json
   - ai-sdlc-plugin/plugin.json
-  - .claude-plugin/marketplace.json
 finalSummary: |
   ## Summary
   Fixed /ai-sdlc execute portability for adopter projects by (A) adding an

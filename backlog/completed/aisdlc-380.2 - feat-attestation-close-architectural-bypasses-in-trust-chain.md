@@ -15,7 +15,7 @@ dependencies:
   - AISDLC-380
 priority: critical
 references:
-  - .claude/hooks/enforce-blocked-actions.js
+  - ai-sdlc-plugin/hooks/enforce-blocked-actions.sh
   - ai-sdlc-plugin/hooks/enforce-blocked-actions.js
   - ai-sdlc-plugin/scripts/sign-reviewer-verdict.mjs
   - scripts/verify-reviewer-sub-attestations.mjs

@@ -114,16 +114,26 @@ describe('resolveSpawner', () => {
     expect(spawner).toBeInstanceOf(MockSpawner);
   });
 
-  it('rejects the retired `copilot-cli` kind with a pointed migration error', async () => {
+  it('rejects the retired `claude-cli` kind with a pointed migration error', async () => {
     // Legacy third-party spawner literals are rejected — the yargs
     // `choices: SPAWNER_KINDS` constraint already blocks them at parse time,
     // and this test exercises the programmatic-caller defense-in-depth path
     // that still receives the string literal.
-    await expect(resolveSpawner('copilot-cli' as unknown as SpawnerKind)).rejects.toThrow(
+    await expect(resolveSpawner('claude-cli' as unknown as SpawnerKind)).rejects.toThrow(
       /GitHub Copilot CLI/,
     );
     expect(UNSUPPORTED_SPAWNER_MESSAGE).toContain('--spawner copilot');
     expect(UNSUPPORTED_SPAWNER_MESSAGE).toContain('docs/operations/copilot-spawner.md');
+  });
+
+  it('does not treat the supported `copilot` kind as retired', () => {
+    // Regression guard: a bulk rename once collapsed the legacy vendor
+    // literals in RETIRED_SPAWNER_KINDS onto `copilot`, which made the only
+    // supported real spawner throw UNSUPPORTED_SPAWNER_MESSAGE.
+    expect(RETIRED_SPAWNER_KINDS).not.toContain('copilot');
+    for (const kind of SPAWNER_KINDS) {
+      expect(RETIRED_SPAWNER_KINDS).not.toContain(kind);
+    }
   });
 
   it('rejects every retired third-party spawner kind', async () => {

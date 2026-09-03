@@ -15,7 +15,7 @@ dependencies:
   - AISDLC-100.5
 references:
   - spec/rfcs/RFC-0012-two-tier-pipeline-architecture.md
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 parent_task_id: AISDLC-100
 priority: medium
 drift_log:

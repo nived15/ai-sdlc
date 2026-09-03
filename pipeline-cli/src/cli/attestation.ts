@@ -434,7 +434,7 @@ export function buildAttestationCli(argv: string[]): ReturnType<typeof yargs> {
             .option('harness', {
               type: 'string',
               demandOption: true,
-              describe: 'Harness: copilot | copilot.',
+              describe: 'Harness: copilot.',
             })
             .option('model', {
               type: 'string',

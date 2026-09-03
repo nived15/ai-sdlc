@@ -15,7 +15,7 @@ labels:
 dependencies: []
 references:
   - spec/rfcs/RFC-0012-two-tier-pipeline-architecture.md
-  - CLAUDE.md
+  - .github/copilot-instructions.md
   - pipeline-cli/src/execute-pipeline.ts
   - pipeline-cli/src/cli/execute.ts
   - ai-sdlc-plugin/scripts/sign-attestation.mjs

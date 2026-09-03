@@ -22,7 +22,7 @@ references:
   - pipeline-cli/package.json
   - release-please-config.json
   - .release-please-manifest.json
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 parent_task_id: AISDLC-100
 priority: high
 ---

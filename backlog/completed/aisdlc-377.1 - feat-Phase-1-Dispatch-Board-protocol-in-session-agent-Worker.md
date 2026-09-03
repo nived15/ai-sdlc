@@ -15,7 +15,7 @@ dependencies: []
 priority: critical
 references:
   - spec/rfcs/RFC-0041-conductor-worker-process-architecture.md
-  - pipeline-cli/src/runtime/shell-claude-p-spawner.ts
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
   - ai-sdlc-plugin/commands/orchestrator-tick.md
   - backlog/completed/aisdlc-353 - feat-document-subscription-only-tick-path-post-agent-sdk-credit.md
 ---

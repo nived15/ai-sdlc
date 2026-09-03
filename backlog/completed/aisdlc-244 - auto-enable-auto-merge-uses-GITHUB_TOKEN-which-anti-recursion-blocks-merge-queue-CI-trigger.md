@@ -17,7 +17,7 @@ dependencies: []
 priority: high
 references:
   - .github/workflows/auto-enable-auto-merge.yml
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 ---
 
 ## Description

@@ -1692,7 +1692,7 @@ After Step 15, print a JSON object summarising the run so the operator (or a wra
     "iterations": 1,
     "harnessNote": "" ,
     "verdicts": [
-      { "agentId": "code-reviewer", "harness": "copilot|copilot", "approved": true,
+      { "agentId": "code-reviewer", "harness": "copilot", "approved": true,
         "findings": { "critical": 0, "major": 0, "minor": 0, "suggestion": 0 } },
       { "agentId": "test-reviewer", "harness": "...", "approved": true, "findings": { "...": 0 } },
       { "agentId": "security-reviewer", "harness": "...", "approved": true, "findings": { "...": 0 } }

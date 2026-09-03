@@ -22,7 +22,7 @@
       "properties": {
         "harness": {
           "type": "string",
-          "description": "Name of the registered harness this plan applies to (e.g., copilot, copilot)."
+          "description": "Name of the registered harness this plan applies to (e.g., copilot)."
         },
         "billingMode": {
           "type": "string",

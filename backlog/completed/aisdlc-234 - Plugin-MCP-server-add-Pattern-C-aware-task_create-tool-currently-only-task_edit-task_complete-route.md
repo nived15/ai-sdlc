@@ -16,7 +16,7 @@ dependencies: []
 priority: medium
 references:
   - ai-sdlc-plugin/mcp-server/
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 ---
 
 ## Description

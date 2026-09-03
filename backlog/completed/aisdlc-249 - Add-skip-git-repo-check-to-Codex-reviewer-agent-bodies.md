@@ -12,9 +12,8 @@ labels:
 parentTaskId: AISDLC-202
 dependencies: []
 references:
-  - ai-sdlc-plugin/agents/code-reviewer-codex.md
-  - ai-sdlc-plugin/agents/test-reviewer-codex.md
-  - docs/operations/cross-harness-review.md
+  - ai-sdlc-plugin/agents/code-reviewer.md
+  - ai-sdlc-plugin/agents/test-reviewer.md
 priority: medium
 ---
 

@@ -1,6 +1,6 @@
 ---
 id: AISDLC-429
-title: 'feat(pipeline-cli): add `copilot` spawner kind — GitHub Copilot CLI as a coding harness alongside `claude` / `codex` / `api-key`'
+title: 'feat(pipeline-cli): GitHub Copilot CLI as the coding harness for `--spawner copilot`'
 status: To Do
 labels:
   - enhancement
@@ -15,8 +15,7 @@ assumes:
   - RFC-0012
 references:
   - pipeline-cli/src/cli/execute.ts
-  - pipeline-cli/src/runtime/spawners/codex-harness.ts
-  - pipeline-cli/src/runtime/shell-claude-p-spawner.ts
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
   - pipeline-cli/src/runtime/default-spawner.ts
   - pipeline-cli/src/runtime/subagent-spawner.ts
   - pipeline-cli/src/orchestrator/loop.ts
@@ -36,40 +35,35 @@ blocked:
 <!-- SECTION:DESCRIPTION:BEGIN -->
 ## Problem
 
-`pipeline-cli` currently accepts four `--spawner` kinds — `mock`, `api-key`, `claude` (default), and `codex` (see `SpawnerKind` in `pipeline-cli/src/cli/execute.ts:111`). Operators who pay for **GitHub Copilot** (Business / Enterprise / Pro+) have a coding-grade CLI of their own (`copilot` — the standalone GitHub Copilot CLI, distinct from `gh copilot`) that can drive a multi-step developer + reviewer loop. There is no first-class way to dispatch the AI-SDLC pipeline via that harness today; an operator on Copilot has to either bring an `ANTHROPIC_API_KEY` (paid API tokens) or spin up Claude Code separately to run `/ai-sdlc execute`.
-
-This is a parity gap with the `codex` work (AISDLC-202): once Codex CLI was added as a `SubagentSpawner`, Codex operators got the full Step 0-13 pipeline at subscription billing. Copilot users deserve the same path.
+Operators who pay for **GitHub Copilot** (Business / Enterprise / Pro+) have a coding-grade CLI (`copilot` — the standalone GitHub Copilot CLI, distinct from `gh copilot`) that can drive a multi-step developer + reviewer loop. The pipeline needs a first-class way to dispatch through that harness so `/ai-sdlc execute` runs on the operator's Copilot subscription.
 
 ## Goal
 
-Add `copilot` to `SpawnerKind`, ship a `CopilotHarnessAdapter` that implements `SubagentSpawner` by bridging to GitHub Copilot CLI's coding-agent invocation, and make `--spawner copilot` selectable from both `cli-execute` and `cli-orchestrator tick`. Mirror the AISDLC-202.2 (`CodexHarnessAdapter`) architecture: a callback-driven adapter that is host-agnostic, plus a default subprocess bridge that shells out to `$COPILOT_SPAWN_AGENT_BIN` (or the `copilot` CLI directly when available on `PATH`).
+Ship a `CopilotHarnessAdapter` that implements `SubagentSpawner` by bridging to GitHub Copilot CLI's coding-agent invocation, and make `--spawner copilot` selectable from both `cli-execute` and `cli-orchestrator tick`. The adapter is callback-driven and host-agnostic, plus a default subprocess bridge that shells out to `$COPILOT_SPAWN_AGENT_BIN`.
 
 ## Non-goals
 
-- Promoting `copilot` to the auto-detected default in `defaultSpawner()` — explicit opt-in only via `--spawner copilot` for the initial cut.
 - Building Copilot-specific RFC tooling, billing telemetry, or Copilot-side MCP servers. Treat Copilot CLI as a generic agent dispatcher: the adapter sends a system prompt + user prompt, gets back text + optional pre-parsed JSON, normalises to `SubagentResult`.
-- Cross-harness review integration — Copilot-spawned dispatches use the same 3-reviewer fan-out as the other spawners. A future task can extend cross-harness review across `claude` / `codex` / `copilot`.
-- Conductor/Worker (RFC-0041) Worker support. The initial cut only wires the `executePipeline()` path; Worker sessions stay Claude-Code-only until a follow-up task evaluates how a Copilot Worker would claim from the Dispatch Board.
+- Conductor/Worker (RFC-0041) Worker support. The initial cut only wires the `executePipeline()` path.
 
 ## Composes with
 
 - **RFC-0012 §8 (SubagentSpawner)** — the spawner contract this implements.
-- **AISDLC-202.2 (`CodexHarnessAdapter`)** — the architectural template. The new code lives next to `codex-harness.ts` (and `codex-harness.test.ts`) under `pipeline-cli/src/runtime/spawners/copilot-harness.{ts,test.ts}`.
-- **`cli-orchestrator tick --spawner` plumbing** — `SpawnerKind` is referenced in `pipeline-cli/src/orchestrator/loop.ts` (`umbrellaSpawnerKind`, `resolveUmbrellaSpawnerKind`). Both files need the new union member.
-- **`pipeline-cli/README.md`** — the "Spawner kinds" table needs a `copilot` row. `.github/copilot-instructions.md` already documents `mock` / `api-key` / `claude` / `codex` under "Spawner kinds for `cli-orchestrator tick --spawner <kind>`" — that table also needs a row.
+- **`cli-orchestrator tick --spawner` plumbing** — `SpawnerKind` is referenced in `pipeline-cli/src/orchestrator/loop.ts` (`umbrellaSpawnerKind`, `resolveUmbrellaSpawnerKind`).
+- **`pipeline-cli/README.md`** — the "Spawner kinds" table needs a `copilot` row, as does the spawner-kinds list in `.github/copilot-instructions.md`.
 
 ## Risk
 
-- **Copilot CLI surface stability**: the standalone `copilot` CLI is comparatively new (GA 2025). The adapter must isolate the wire format behind `CopilotSpawnAgentFn` (callback boundary), mirroring how `CodexHarnessAdapter` isolates Codex's `spawn_agent`. If the CLI's invocation grammar changes, only the subprocess bridge changes — the adapter contract is stable.
-- **Hermetic tests**: tests MUST mock `CopilotSpawnAgentFn` and never touch a real `copilot` binary, so `pnpm test` runs everywhere (matching AISDLC-202.2 AC #4).
-- **Billing safety**: Copilot CLI bills against the operator's GitHub Copilot subscription. The CLI parse path MUST fail clearly when neither `copilot` is on PATH nor `$COPILOT_SPAWN_AGENT_BIN` is set, rather than silently falling back to `ANTHROPIC_API_KEY` (mirrors the `codex` resolver's "configure CODEX_SPAWN_AGENT_BIN" message). Add this to the operator-runbook entry.
+- **Copilot CLI surface stability**: the standalone `copilot` CLI is comparatively new (GA 2025). The adapter must isolate the wire format behind `CopilotSpawnAgentFn` (callback boundary). If the CLI's invocation grammar changes, only the subprocess bridge changes — the adapter contract is stable.
+- **Hermetic tests**: tests MUST mock `CopilotSpawnAgentFn` and never touch a real `copilot` binary, so `pnpm test` runs everywhere.
+- **Billing safety**: Copilot CLI bills against the operator's GitHub Copilot subscription. The CLI parse path MUST fail clearly when `$COPILOT_SPAWN_AGENT_BIN` is unset, rather than silently falling back to any third-party inference key.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 
 <!-- AC:BEGIN -->
 - [ ] #1 All three sub-tasks (AISDLC-429.1, AISDLC-429.2, AISDLC-429.3) reach Done status.
-- [ ] #2 `pnpm --filter @ai-sdlc/pipeline-cli exec` exposes `--spawner copilot` end-to-end through `cli-execute` and `cli-orchestrator tick`, with the same operator-facing wiring the existing `claude` / `codex` / `api-key` kinds have.
+- [ ] #2 `pnpm --filter @ai-sdlc/pipeline-cli exec` exposes `--spawner copilot` end-to-end through `cli-execute` and `cli-orchestrator tick`, with full operator-facing wiring.
 - [ ] #3 Operator-facing documentation (`pipeline-cli/README.md` spawner-kinds table + `.github/copilot-instructions.md` "Spawner kinds" list + `docs/operations/copilot-spawner.md` runbook + cross-link from the operator runbook) is up to date and reviewable as the canonical source for picking the `copilot` kind.
 
 <!-- AC:END -->
@@ -77,7 +71,7 @@ Add `copilot` to `SpawnerKind`, ship a `CopilotHarnessAdapter` that implements `
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-**Adapter layout.** Copy the structural pattern from `pipeline-cli/src/runtime/spawners/codex-harness.ts`:
+**Adapter layout.**
 
 - `CopilotSpawnAgentRequest` / `CopilotSpawnAgentResponse` / `CopilotSpawnAgentFn` — the narrow boundary the host bridge implements.
 - `CopilotHarnessAdapter implements SubagentSpawner` with `spawn()` and `spawnParallel()`.
@@ -86,14 +80,14 @@ Add `copilot` to `SpawnerKind`, ship a `CopilotHarnessAdapter` that implements `
 
 **Subprocess bridge.** The default `subprocessCopilotSpawnAgent()` should:
 
-1. Prefer `$COPILOT_SPAWN_AGENT_BIN` when set (matches Codex's `$CODEX_SPAWN_AGENT_BIN` ergonomics — lets operators wrap the CLI in their own auth/transport).
-2. Otherwise resolve `copilot` on `PATH` and shell out. The exact invocation grammar is captured as part of the implementation discovery (see "Phase suggestion" below); document the chosen grammar in the operator runbook (AC #7) and keep the adapter contract stable across grammar revisions by funnelling all wire-format concerns through the bridge.
+1. Read `$COPILOT_SPAWN_AGENT_BIN` — this lets operators wrap the CLI in their own auth/transport — and fail with a clear configuration message when it is unset.
+2. Document the chosen invocation grammar in the operator runbook and keep the adapter contract stable across grammar revisions by funnelling all wire-format concerns through the bridge.
 3. Use `child_process.spawn` (not `execFile`) so we can stream stdout/stderr without buffering the full transcript in memory.
 4. Honour the per-call `timeoutMs` from the request.
 
-**Slug fallback.** Step 2's `computeBranchSlug` (`pipeline-cli/src/steps/02-compute-branch.ts`) already has the AISDLC-202.2 fix in it — no Copilot-specific change needed.
+**Slug fallback.** Step 2's `computeBranchSlug` (`pipeline-cli/src/steps/02-compute-branch.ts`) already handles the adapter's branch naming — no Copilot-specific change needed.
 
-**Phase suggestion (operator may split).** If the wire-format research for the `copilot` CLI invocation surfaces material gaps, prefer splitting along the AISDLC-202 precedent into three sub-tasks created via `task_create` BEFORE dispatching implementation:
+**Phase suggestion (operator may split).** If the wire-format research for the `copilot` CLI invocation surfaces material gaps, prefer splitting into three sub-tasks created via `task_create` BEFORE dispatching implementation:
 
 - Phase 1 sub-task: Document the Copilot execution path + invocation grammar gaps (no code).
 - Phase 2 sub-task: `CopilotHarnessAdapter` + `--spawner copilot` resolver (bulk of the work; covers AC #1 through #4 plus #8 and #9).

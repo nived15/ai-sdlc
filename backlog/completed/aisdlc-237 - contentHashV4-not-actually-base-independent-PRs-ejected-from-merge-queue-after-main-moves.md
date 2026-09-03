@@ -15,7 +15,7 @@ labels:
 dependencies: []
 priority: high
 references:
-  - CLAUDE.md
+  - .github/copilot-instructions.md
   - .github/workflows/verify-attestation.yml
 ---
 

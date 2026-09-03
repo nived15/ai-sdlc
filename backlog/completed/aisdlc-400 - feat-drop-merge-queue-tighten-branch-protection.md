@@ -8,7 +8,7 @@ references:
   - .github/workflows/verify-attestation.yml
   - .github/workflows/ai-sdlc-review.yml
   - .github/workflows/ai-sdlc-gate.yml
-  - CLAUDE.md
+  - .github/copilot-instructions.md
   - docs/operations/quality-gate.md
 priority: critical
 permittedExternalPaths: []

@@ -2613,7 +2613,7 @@ function buildDefaultMaxBudgetUsdLoader(workDir: string): (taskId: string) => nu
  *      dispatch — see docs/operations/copilot-spawner.md).
  *
  * The supported kinds are `mock` and `copilot`. Legacy third-party kinds
- * (`api-key`, `copilot`, `copilot-cli`, `copilot`, …) throw an actionable
+ * (`api-key`, `claude`, `claude-cli`, `codex`, …) throw an actionable
  * migration error.
  */
 export function resolveUmbrellaSpawnerKind(adapters: OrchestratorAdapters): SpawnerKind {

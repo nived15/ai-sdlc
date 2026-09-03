@@ -24,7 +24,7 @@ references:
   - pipeline-cli/bin/cli-classify-budget.mjs
   - pipeline-cli/src/cli/bin-invocation.test.ts
   - pipeline-cli/README.md
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 priority: highest
 ---
 

@@ -111,7 +111,7 @@ unset, the existing default behavior is unchanged.
 
 The legacy `copilot` inline-manifest spawner was removed in RFC-0041
 Phase 3.3 (AISDLC-377.6). See
-[`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md)
+[`docs/operations/copilot-spawner.md`](./copilot-spawner.md)
 for the migration breadcrumb.
 
 For `copilot`, the underlying `ai-sdlc-pipeline execute --spawner copilot` path
@@ -200,14 +200,13 @@ task status to its pre-dispatch value, removes the worktree, and
 See the "Recovering quarantined work" section below for forensic inspection.
 
 **If `failure.type === 'spawner-unavailable'`:**
-The configured spawner could not be resolved. Common causes: `copilot` binary
-not on PATH for `--spawner copilot`, `GITHUB_MODELS_TOKEN` unset for
-`--spawner copilot`, `COPILOT_SPAWN_AGENT_BIN` unset for `--spawner copilot`.
-Fix the env / install gap and re-dispatch the task.
+The configured spawner could not be resolved. The usual cause is
+`COPILOT_SPAWN_AGENT_BIN` being unset (or pointing at a missing file) for
+`--spawner copilot`. Fix the env / install gap and re-dispatch the task.
 
 **If `failure.type === 'unknown'`:**
 Inspect the `message` field. Common causes:
-- `GITHUB_MODELS_TOKEN` missing when `--spawner copilot` was requested.
+- `COPILOT_SPAWN_AGENT_BIN` missing when `--spawner copilot` was requested.
 - Validation failure in Step 1 (malformed task frontmatter).
 - Network errors during `gh pr create`.
 
@@ -268,7 +267,7 @@ subscription auth (Agent SDK credit pool post-2026-06-15).
 
 If you currently run `cli-orchestrator tick --spawner copilot` (or any
 script that does), see
-[`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md)
+[`docs/operations/copilot-spawner.md`](./copilot-spawner.md)
 for the full migration breadcrumb.
 
 ---

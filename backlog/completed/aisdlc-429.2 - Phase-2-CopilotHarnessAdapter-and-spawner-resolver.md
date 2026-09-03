@@ -15,8 +15,8 @@ assumes:
   - RFC-0012
 references:
   - pipeline-cli/src/cli/execute.ts
-  - pipeline-cli/src/runtime/spawners/codex-harness.ts
-  - pipeline-cli/src/runtime/spawners/codex-harness.test.ts
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
+  - pipeline-cli/src/runtime/spawners/copilot-harness.test.ts
   - pipeline-cli/src/runtime/subagent-spawner.ts
   - pipeline-cli/src/types.ts
 priority: high

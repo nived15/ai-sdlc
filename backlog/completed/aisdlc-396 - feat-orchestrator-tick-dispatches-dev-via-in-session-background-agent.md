@@ -13,7 +13,7 @@ references:
   - pipeline-cli/src/orchestrator/dispatch-bg-agent.ts
   - pipeline-cli/src/cli/dispatch.ts
   - docs/operations/orchestrator-promotion.md
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 priority: high
 ---
 

@@ -242,7 +242,7 @@ The loop respects `AISDLC-242` recoverable-abort detection — interrupted dispa
 Run through this before every autonomous tick session to avoid surprise API-key charges:
 
 1. **Use `--spawner copilot` (or rely on the default).**
-   Since AISDLC-352, `cli-orchestrator tick` defaults to `--spawner copilot`. You no longer need to pass the flag explicitly for cron/daemon dispatch. The legacy `--spawner copilot` inline-manifest path was removed in RFC-0041 Phase 3.3 (AISDLC-377.6); any script that still passes it will be rejected at parse time with `Invalid values: Choices: "mock", "api-key", "copilot", "copilot"`. Drop the flag (or replace with `--spawner copilot`) — see [`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md).
+   `cli-orchestrator tick` defaults to `--spawner copilot`, so you no longer need to pass the flag explicitly for cron/daemon dispatch. Retired third-party spawner literals are rejected at parse time with `Invalid values: Choices: "mock", "copilot"`. Drop the flag entirely, or pass `--spawner copilot` — see [`docs/operations/copilot-spawner.md`](./copilot-spawner.md).
 
 2. **Unset `GITHUB_MODELS_TOKEN` unless you intend to use API-key billing.**
    When `GITHUB_MODELS_TOKEN` is set and you run `cli-orchestrator tick --spawner copilot`, the CLI emits this warning to stderr:
@@ -357,7 +357,7 @@ Yes — same architecture, just smaller credit pool ($20/mo). One dispatch consu
 
 **Q. Does `ai-sdlc-pipeline execute --spawner copilot` use the SDK credit?**
 
-The `copilot` spawner was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) and is no longer a valid `--spawner` choice — see [`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md). For subscription billing without an interactive operator session, use `--spawner copilot` (shell-out to `copilot -p`, draws Agent SDK credit pool). For interactive-quota dispatch with zero incremental cost, use the Dispatch Board model: `/ai-sdlc orchestrator-tick` + N `/ai-sdlc dispatch-worker` sessions.
+The `copilot` spawner was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) and is no longer a valid `--spawner` choice — see [`docs/operations/copilot-spawner.md`](./copilot-spawner.md). For subscription billing without an interactive operator session, use `--spawner copilot` (shell-out to `copilot -p`, draws Agent SDK credit pool). For interactive-quota dispatch with zero incremental cost, use the Dispatch Board model: `/ai-sdlc orchestrator-tick` + N `/ai-sdlc dispatch-worker` sessions.
 
 **Q. My CI is silently skipping reviewers — is that a problem?**
 
@@ -378,7 +378,7 @@ Not today — the spawner choice is per-dispatch, not per-step. If this matters,
 - [`pipeline-cli/docs/spawner.md`](../../pipeline-cli/docs/spawner.md) — engineer-facing reference for the `SubagentSpawner` interface, custom spawner howto, and per-spawner contract details
 - [`docs/operations/operator-runbook.md`](./operator-runbook.md) — high-level operator workflows
 - [`docs/operations/orchestrator-runbook.md`](./orchestrator-runbook.md) — `cli-orchestrator` setup + monitoring
-- [`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md) — RFC-0041 Phase 3.3 (AISDLC-377.6) `--spawner copilot` removal & migration breadcrumb
+- [`docs/operations/copilot-spawner.md`](./copilot-spawner.md) — RFC-0041 Phase 3.3 (AISDLC-377.6) `--spawner copilot` removal & migration breadcrumb
 - [`spec/rfcs/RFC-0012-shared-pipeline-core.md`](../../spec/rfcs/RFC-0012-shared-pipeline-core.md) — Tier 1 vs Tier 2 architectural rationale
 - [`spec/rfcs/RFC-0010-parallel-execution-worktree-pooling.md`](../../spec/rfcs/RFC-0010-parallel-execution-worktree-pooling.md) §14 — subscription scheduling + token-budget governance
 

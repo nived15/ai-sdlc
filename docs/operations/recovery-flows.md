@@ -98,9 +98,9 @@ ai-sdlc-pipeline execute <task-id> \
 
 **Constraints:**
 - Does NOT re-dispatch the developer. The existing commits are the unit of work.
-- Requires a real spawner (`--spawner copilot`, `--spawner copilot`, or `--spawner copilot`) even for the reviewer-only sub-cases (the spawner is used to re-run reviewers in sub-case C).
+- Requires the real `copilot` spawner (`--spawner copilot`) even for the reviewer-only sub-cases (the spawner is used to re-run reviewers in sub-case C).
 - `--spawner mock` is refused.
-- The legacy `--spawner copilot` was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) — see [`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md).
+- Retired third-party spawner literals are rejected at parse time — see [`docs/operations/copilot-spawner.md`](./copilot-spawner.md).
 
 ---
 
@@ -205,4 +205,4 @@ The `draft PR` vs `ready PR` distinction in the trace is the AISDLC-273 Step 3 p
 | `--spawner copilot` | `COPILOT_SPAWN_AGENT_BIN` env | GitHub Copilot CLI host-bridge dispatch (AISDLC-202.2) |
 | `--max-iterations N` | — | Cap for Step 9 + rework loops (default 2) |
 
-> The legacy `--spawner copilot` (inline manifest mode, AISDLC-198) was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) — see [`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md).
+> The legacy `--spawner copilot` (inline manifest mode, AISDLC-198) was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) — see [`docs/operations/copilot-spawner.md`](./copilot-spawner.md).

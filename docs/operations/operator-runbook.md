@@ -42,7 +42,7 @@ infrastructure constraints.
 > The removal stands because the Dispatch Board model provides better
 > properties (operator-controlled parallelism, billing-pool isolation, durable
 > filesystem handoff). Migration breadcrumb:
-> [`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md).
+> [`docs/operations/copilot-spawner.md`](./copilot-spawner.md).
 
 ### Migration recipe — from `--spawner copilot` to `dispatch-worker`
 
@@ -686,11 +686,16 @@ The dev's commits are **NOT rolled back** — they are intact on the branch and 
 
 ### `IndependenceViolated`
 
-**Symptom.** Slack digest entry: review-stage ran on the same harness as the implementer because fallback emptied the chain.
+**Symptom.** Slack digest entry: a review stage did not run with reviewer
+independence — the reviewer session was not isolated from the implementer's.
 
 **Recovery.**
-1. If the original implementer's harness has recovered: re-run the review stage manually with `cli-requeue` (it'll get the fresh fallback chain).
-2. If the harness is persistently down: temporarily expand the stage's `harnessFallback` chain to include another vendor (e.g., add `copilot` after `copilot, copilot`).
+1. Re-run the review stage manually with `cli-requeue`. Each reviewer is
+   dispatched into a fresh session with a read-only tool grant, so a clean
+   re-dispatch normally restores independence on its own.
+2. If it recurs, check that the reviewer dispatch is not being handed a reused
+   session id, and confirm the reviewer roles are all present in the verdict
+   set — attestation verification rejects an incomplete reviewer set.
 3. If the pipeline declared `onFailure: abort` for `IndependenceViolated`, the run is suspended; operator decision required.
 
 ### `MigrationDiverged`

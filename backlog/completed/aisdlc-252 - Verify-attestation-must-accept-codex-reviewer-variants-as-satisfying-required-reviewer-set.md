@@ -18,8 +18,8 @@ priority: high
 references:
   - scripts/verify-attestation.mjs
   - orchestrator/src/runtime/attestations.ts
-  - ai-sdlc-plugin/agents/code-reviewer-codex.md
-  - ai-sdlc-plugin/agents/test-reviewer-codex.md
+  - ai-sdlc-plugin/agents/code-reviewer.md
+  - ai-sdlc-plugin/agents/test-reviewer.md
 ---
 
 ## Description

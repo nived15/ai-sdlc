@@ -15,7 +15,7 @@ references:
   - ai-sdlc-plugin/commands/orchestrator-tick.md
   - ai-sdlc-plugin/commands/execute.md
   - scripts/check-orchestrator-state.sh
-  - CLAUDE.md
+  - .github/copilot-instructions.md
   - VISION.md
 priority: medium
 ---

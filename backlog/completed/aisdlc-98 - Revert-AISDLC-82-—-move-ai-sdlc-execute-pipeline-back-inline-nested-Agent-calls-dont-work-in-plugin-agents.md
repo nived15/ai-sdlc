@@ -22,7 +22,7 @@ references:
   - >-
     backlog/completed/aisdlc-90 -
     Fix-execute-orchestrator-agent-frontmatter-Task-Agent-rename-MCP-namespace.md
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 priority: high
 drift_log:
   - date: '2026-05-03'

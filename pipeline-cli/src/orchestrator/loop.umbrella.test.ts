@@ -426,9 +426,9 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
     }
   });
 
-  it('throws actionable migration error when AI_SDLC_ORCHESTRATOR_SPAWNER=copilot-cli (retired kind)', async () => {
+  it('throws actionable migration error when AI_SDLC_ORCHESTRATOR_SPAWNER=claude-cli (retired kind)', async () => {
     const previousSpawner = process.env[ORCHESTRATOR_SPAWNER_ENV];
-    process.env[ORCHESTRATOR_SPAWNER_ENV] = 'copilot-cli';
+    process.env[ORCHESTRATOR_SPAWNER_ENV] = 'claude-cli';
 
     try {
       await expect(

@@ -54,7 +54,7 @@ requiresDocs:
 |---|---|---|
 | v1 | 2026-04-26 | Initial draft. Defines worktree pool, deterministic port allocator, parallelism caps, merge coordination. Cites Archon (`coleam00/Archon`) as prior art for the deterministic port-hash and worktree adoption patterns. |
 | v2 | 2026-04-26 | Added per-stage model routing (amends RFC-0004 §4) and the conditional review fan-out pattern. Both were originally scoped out; bundled in after CTO direction to keep parallel-execution wins in one document. |
-| v3 | 2026-04-26 | Added per-stage harness selection. Harness (`copilot`, `copilot`, `copilot`, `copilot`, `copilot`, `copilot`) is now orthogonal to model — GitHub Copilot CLI can drive non-GitHub Copilot models via Bedrock/Vertex/custom endpoints, and GitHub Copilot/GitHub Copilot can drive GitHub Copilot. Defines the HarnessAdapter interface, capability matrix, and fallback chain. Enables independent parallel review (e.g., GitHub Copilot reviewing GitHub Copilot's PR). |
+| v3 | 2026-04-26 | Added per-stage harness selection. Harness (`copilot`) is orthogonal to model — GitHub Copilot CLI can drive any model its plan exposes. Defines the HarnessAdapter interface, capability matrix, and fallback chain. Enables independent parallel review via isolated reviewer sessions. |
 | v4 | 2026-04-26 | Added subscription-aware scheduling. Reframes cost optimization from per-call unit pricing to "maximize utility of fixed subscription windows" (GitHub Copilot CLI 5-hour quotas, off-peak 2× multipliers, monthly GitHub Copilot caps). Introduces the SubscriptionLedger, per-stage `schedule` hints, off-peak deferral, and burn-down pacing. Goal: end every billing window having processed the maximum possible PPA-ordered work without exceeding quota. |
 | v5 | 2026-04-26 | Added per-worktree database isolation (resolves Q1). Defines `DatabaseBranchAdapter` interface, ships adapters for SQLite copy-per-worktree, Neon branching, generic Postgres snapshot-restore, and `external` (operator-managed). Adds `DatabaseBranchPool` resource, per-stage `databaseAccess` declaration, connection-string rewriting, and migration coordination. Production Postgres clients no longer have to wait for RFC-0011. |
 | v6 | 2026-04-26 | Resolved Q1 (cap default value). `Pipeline.spec.parallelism.maxConcurrent` is now optional, with a tier-aware default derived from declared `SubscriptionPlan`: no plan → 1 (today's behavior, no surprise regressions); `copilot-pro` → 3; `copilot-max-5x` → 5; `copilot-max-20x` → 10. Couples parallelism opt-in to the same signal that says "I want subscription utilization to be maximized." |
@@ -206,7 +206,7 @@ The fix is well-understood: each worktree gets its own database branch (Neon, Su
 - **Dependency install caching.** `pnpm` content-addressable store is sufficient for our workloads; no special mechanism is specified here.
 - **Speculative branching** (running multiple plan variants per issue and picking the winner). Out of scope.
 - **Adaptive model selection.** This RFC defines *declarative* per-stage routing (the operator picks the model in YAML). Learning-based selection (the orchestrator picks the model based on stage difficulty signals) is out of scope and would be a future RFC building on the per-stage-cost telemetry this RFC requires.
-- **Day-one parity across all harnesses.** This RFC defines the HarnessAdapter interface and the capability matrix. The reference implementation ships only `copilot` (parity with today) and `copilot` (highest-value second harness for independent parallel review). Adapters for `copilot`, `copilot`, `copilot`, and `copilot` are deferred to follow-up work but the interface MUST be sufficient to implement them without further schema changes.
+- **Day-one parity across all harnesses.** This RFC defines the HarnessAdapter interface and the capability matrix. The reference implementation ships only `copilot`. The interface MUST be sufficient to implement additional adapters without further schema changes.
 - **cross-session session migration.** A stage that starts on GitHub Copilot CLI cannot mid-flight transfer its conversation to GitHub Copilot. Each stage runs end-to-end on one harness; switching happens at stage boundaries.
 - **Authoritative subscription quota introspection.** GitHub Models does not currently expose GitHub Copilot CLI window state via API. The SubscriptionLedger is a *self-tracked best-effort estimate* based on observed token consumption against documented window caps, not a queried-from-vendor source of truth. The interface is forward-compatible with an authoritative API if/when one ships.
 - **Real-time spot-pricing arbitrage.** Continuously rerouting between providers on minute-by-minute price changes is out of scope. We optimize over hours-to-days windows, not seconds.
@@ -306,7 +306,7 @@ spec:
 | `model` | string | MAY | One of `haiku`, `sonnet`, `opus`, `opus[1m]`, `inherit`, or an explicit model ID. Defaults to `inherit`. |
 | `kind` | string | MAY | One of `agent` (default), `review-classifier`, `review-fanout`. Drives stage-specific execution semantics. |
 | `maxBudgetUsd` | number | MAY | Per-stage cost ceiling. When exceeded, the orchestrator MUST emit `BudgetExceeded` and apply the stage's `onFailure` policy. Hooks into RFC-0004 cost attribution. |
-| `harness` | string | MAY | One of `copilot` (default), `copilot`, `copilot`, `copilot`, `copilot`, `copilot`, `inherit`. Resolves against the orchestrator's adapter registry (§13.2). Pipeline-load MUST fail if an unregistered harness is named. |
+| `harness` | string | MAY | One of `copilot` (default), `inherit`. Resolves against the orchestrator's adapter registry (§13.2). Pipeline-load MUST fail if an unregistered harness is named. |
 | `harnessFallback` | array[string] | MAY | Ordered preference list. If the primary harness is unavailable (rate-limited, capability mismatch, runtime error during invocation), the orchestrator MUST attempt each fallback in order before applying `onFailure`. |
 | `requiresIndependentHarnessFrom` | array[string] | MAY | List of upstream stage names. The orchestrator MUST exclude any harness that ran one of those upstream stages from this stage's effective `harness` + `harnessFallback` chain. See §13.10. |
 | `schedule` | string | MAY | One of `now` (default), `off-peak`, `quota-permitting`, `defer-if-low-priority`. Drives subscription-aware dispatch (§14). |
@@ -930,17 +930,17 @@ Pipeline-load MUST fail with `UnknownHarness` if a stage names a harness not pre
 
 ### 13.3 Capability matrix (initial adapters)
 
-The reference implementation ships these two adapters at v1; the matrix below is the starting baseline and MUST be kept current as adapters evolve.
+The reference implementation ships a single adapter at v1; the matrix below is the starting baseline and MUST be kept current as the adapter evolves.
 
-| Capability | `copilot` | `copilot` | `copilot` (future) | `copilot` (future) | `copilot` (future) | `copilot` (future) |
-|---|---|---|---|---|---|---|
-| freshContext | ✅ | ✅ | ✅ | ✅ | ⚠️ stateful | ✅ |
-| customTools (MCP) | ✅ | ⚠️ partial | ❌ | ✅ | ❌ | ❌ |
-| streaming | ✅ | ✅ | ✅ | ✅ | ✅ | depends |
-| worktreeAwareCwd | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| skills | ✅ | ❌ | ❌ | ⚠️ partial | ❌ | ❌ |
-| artifactWrites | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ via tools only |
-| maxContextTokens | 1M (Opus) | 200K (GPT-5) | 2M (GitHub Copilot) | varies | varies | depends |
+| Capability | `copilot` |
+|---|---|
+| freshContext | ✅ |
+| customTools (MCP) | ✅ |
+| streaming | ✅ |
+| worktreeAwareCwd | ✅ |
+| skills | ✅ |
+| artifactWrites | ✅ |
+| maxContextTokens | model-dependent |
 
 The matrix is normative: stage validation (§13.4) checks declared requirements against this table.
 
@@ -1066,11 +1066,17 @@ When a stage declares `requiresIndependentHarnessFrom: [stageA, stageB, ...]`, t
     strategy: continue          # advisory; operator overrides for security-critical pipelines
 ```
 
-If `implement` runs on `copilot` (no fallback): `review-security` candidates = `[copilot, copilot]`, filtered = `[copilot]`. Dispatch on copilot. Independence preserved.
+Independence is structural rather than vendor-based: every reviewer stage is
+dispatched into a fresh `copilot` session with a read-only tool grant, so the
+reviewer cannot observe or reuse the implementer's session state.
 
-If `implement` falls back to `copilot`: `review-security` candidates = `[copilot, copilot]`, filtered = `[copilot]`. Dispatch on copilot. Independence preserved (different harness from implementer).
+If `implement` and `review-security` run in separate sessions: independence is preserved.
 
-If both `copilot` and `copilot` are unavailable: `implement` falls back through its chain (or the pipeline aborts per its `onFailure`). The independence question becomes moot because the pipeline isn't progressing.
+If a reviewer stage is dispatched into a session that already carried the
+implementer's context, the orchestrator MUST emit `IndependenceViolated` and
+apply the stage's `onFailure` policy.
+
+If the harness is unavailable entirely, `implement` cannot progress (or the pipeline aborts per its `onFailure`). The independence question becomes moot because the pipeline isn't progressing.
 
 ## 14. Subscription-Aware Scheduling
 
@@ -1881,7 +1887,7 @@ Phased delivery to land low-risk wins first.
 - [ ] Implement runtime fallback per §13.5; integration test that takes GitHub Copilot CLI "offline" via env var and verifies GitHub Copilot picks up the stage.
 - [ ] Update `review-critic` and `review-security` skills to declare `harness: copilot` per §11.3 recommended routing.
 - [ ] Integration test: end-to-end review where GitHub Copilot implements and GitHub Copilot critiques, verify both artifacts land in `$ARTIFACTS_DIR`.
-- [ ] Document the adapter-authoring guide for future `copilot` / `copilot` / `copilot` / `copilot` adapters; do NOT ship those adapters in v1.
+- [ ] Document the adapter-authoring guide for future harness adapters; do NOT ship additional adapters in v1.
 
 ### Phase 2.8 — Subscription-aware scheduling (2 weeks, sequenced after Phase 2.7)
 
@@ -2001,7 +2007,7 @@ The walkthrough that produced these resolutions is preserved as design rationale
 - **Prior art:** `coleam00/Archon` (`packages/git/src/worktree.ts`, `packages/core/src/utils/port-allocation.ts`, `packages/isolation/src/resolver.ts`, `.archon/workflows/defaults/archon-fix-github-issue.yaml`). Specifically borrows the deterministic port-hash, the cross-clone ownership guard, and the artifact-directory convention.
 - **Companion talk:** "Parallel Agentic Development" by Cole Medin (2026). The accompanying `w.sh`/`.ps1` worktree-setup scripts referenced in the talk are NOT in the Archon repo and were independently re-derived for this RFC.
 - **Internal specs:** RFC-0002 (Pipeline Orchestration), RFC-0004 (Cost Governance and Attribution), RFC-0008 (PPA Triad Integration).
-- **Internal code touched by this RFC:** `orchestrator/src/execute.ts` (single-issue → worker-pool migration; harness- and schedule-aware dispatch), `orchestrator/src/cost-governance.ts` (modelId + harnessId columns; ledger integration), `orchestrator/src/review-runner.ts` (classifier integration), `orchestrator/src/harness/{types.ts, registry.ts, adapters/{copilot,copilot}.ts}` (NEW — adapter framework), `orchestrator/src/scheduling/{ledger.ts, types.ts, off-peak.ts}` (NEW — SubscriptionLedger + scheduler), `ai-sdlc-plugin/agents/{code,test,security}-reviewer.md` (model: inherit; security & critic move to `harness: copilot`), `ai-sdlc-plugin/commands/triage.md` (model: haiku), `ai-sdlc-plugin/commands/review.md` (classifier-aware fan-out, harness-aware dispatch), `spec/examples/subscription-plans/*.yaml` (NEW — reference plans for common tiers).
+- **Internal code touched by this RFC:** `orchestrator/src/execute.ts` (single-issue → worker-pool migration; harness- and schedule-aware dispatch), `orchestrator/src/cost-governance.ts` (modelId + harnessId columns; ledger integration), `orchestrator/src/review-runner.ts` (classifier integration), `orchestrator/src/harness/{types.ts, registry.ts, adapters/copilot.ts}` (NEW — adapter framework), `orchestrator/src/scheduling/{ledger.ts, types.ts, off-peak.ts}` (NEW — SubscriptionLedger + scheduler), `ai-sdlc-plugin/agents/{code,test,security}-reviewer.md` (model: inherit; security & critic move to `harness: copilot`), `ai-sdlc-plugin/commands/triage.md` (model: haiku), `ai-sdlc-plugin/commands/review.md` (classifier-aware fan-out, harness-aware dispatch), `spec/examples/subscription-plans/*.yaml` (NEW — reference plans for common tiers).
 - **External billing documentation:** GitHub Copilot CLI Pro/Max plan limits and off-peak schedule (`docs.copilot.com/copilot/billing` — operator MUST verify against current docs when declaring SubscriptionPlans), GitHub Copilot GitHub Copilot Plus/Pro monthly cap details (`platform.github-copilot.com/docs/copilot`). The off-peak multiplier value (~2×) and exact window hours are subject to vendor change; SubscriptionPlans MUST be updated when vendor terms change.
 - **External database-branching documentation:** Neon branching API (`neon.tech/docs/manage/branches`), Supabase branching (`supabase.com/docs/guides/platform/branching`), AWS RDS snapshot/restore (`docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html`). Adapter implementations MUST cite the upstream API version they target.
 - **Database isolation code added:** `orchestrator/src/database/{types.ts, registry.ts, adapters/{sqlite-copy,neon,pg-snapshot-restore,external}.ts}` (NEW), connection-string injection in agent dispatch path, `cli-status --branches` command, stale-branch sweep on orchestrator startup, `spec/examples/database-branch-pools/*.yaml` (NEW — reference pool definitions for SQLite, Neon, RDS).

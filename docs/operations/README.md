@@ -14,7 +14,7 @@ The orchestrator runs a continuous reconciliation loop over your backlog, dispat
 |---------|-------------|
 | [`orchestrator-runbook.md`](orchestrator-runbook.md) | Day-to-day operations: auto-rebuild, in-flight detection, blocking tasks, quarantine recovery, worktree mutex, resume from interrupted runs |
 | [`orchestrator-promotion.md`](orchestrator-promotion.md) | Hybrid promotion runbook — soak corpus + spot-check evidence to flip `AI_SDLC_AUTONOMOUS_ORCHESTRATOR` default-on |
-| [`copilot-cli-spawner-removed.md`](copilot-cli-spawner-removed.md) | RFC-0041 Phase 3.3 (AISDLC-377.6) removal of the `--spawner copilot` inline-manifest path — migration breadcrumb for legacy scripts |
+| [`copilot-spawner.md`](copilot-spawner.md) | Operator runbook for `--spawner copilot`: `COPILOT_SPAWN_AGENT_BIN` configuration, billing, and troubleshooting |
 
 **Feature flag:** `AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental`
 

@@ -11,7 +11,7 @@ labels:
   - rfc-0012
 dependencies: []
 references:
-  - CLAUDE.md
+  - .github/copilot-instructions.md
   - ai-sdlc-plugin/commands/execute.md
   - ai-sdlc-plugin/scripts/resolve-pipeline-cli.sh
 priority: medium

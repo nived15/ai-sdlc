@@ -475,7 +475,7 @@ breadcrumb.
 |---|---|
 | Subscription-quota autonomous drain | `in-session-agent` via Dispatch Board + `/ai-sdlc dispatch-worker` in N operator-opened CC sessions. Foreground `Agent` calls integrate cleanly with the operator's interactive workflow. |
 | Headless/CI dispatch without active CC session | `--spawner copilot` (`CopilotHarnessAdapter`) — draws the operator's Agent SDK credit pool post-2026-06-15 and uses subscription auth pre-cutover. |
-| Existing scripts still passing `--spawner copilot` | Migrate to `--spawner copilot` (no behaviour difference for non-slash-command callers) or to the Dispatch Board model. See [`docs/operations/copilot-spawner.md`](../../docs/operations/copilot-spawner.md). |
+| Existing scripts still passing a retired third-party `--spawner` literal | Migrate to `--spawner copilot`, or to the Dispatch Board model. See [`docs/operations/copilot-spawner.md`](../../docs/operations/copilot-spawner.md). |
 
 ---
 

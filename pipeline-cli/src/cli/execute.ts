@@ -113,13 +113,20 @@ export const UNSUPPORTED_SPAWNER_MESSAGE =
   '  --spawner mock                (dry-run plumbing fixtures only)\n' +
   'Runbook: docs/operations/copilot-spawner.md';
 
-/** Legacy spawner literals that predate the Copilot-only dispatch model. */
+/**
+ * Legacy spawner literals that predate the Copilot-only dispatch model.
+ *
+ * These intentionally retain their original third-party names: the list exists
+ * to RECOGNISE stale operator configs and reject them with an actionable
+ * migration message. Renaming these to `copilot` would both fail to match the
+ * legacy literal and shadow the only supported kind.
+ */
 export const RETIRED_SPAWNER_KINDS: readonly string[] = [
   'api-key',
-  'copilot',
-  'copilot-cli',
-  'copilot',
-  'copilot',
+  'claude',
+  'claude-cli',
+  'codex',
+  'cursor',
   'generic-llm',
 ] as const;
 
@@ -175,7 +182,7 @@ export function buildApprovingMockSpawner(): MockSpawner {
  * Resolve a spawner from the `--spawner` flag. Async because the Copilot
  * bridge factory is resolved lazily.
  *
- * Legacy third-party kinds (`api-key`, `copilot`, `copilot`, …) are rejected
+ * Legacy third-party kinds (`api-key`, `claude`, `codex`, …) are rejected
  * with `UNSUPPORTED_SPAWNER_MESSAGE`; the yargs `choices: SPAWNER_KINDS`
  * constraint already gates them at parse time, but callers that bypass yargs
  * (programmatic callers, stale env exports) may still pass the literal.

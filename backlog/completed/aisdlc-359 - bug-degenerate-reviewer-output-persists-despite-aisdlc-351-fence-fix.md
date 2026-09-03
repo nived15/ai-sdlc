@@ -15,7 +15,7 @@ dependencies:
   - AISDLC-355
 priority: critical
 references:
-  - pipeline-cli/src/runtime/shell-claude-p-spawner.ts
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
   - pipeline-cli/src/steps/09-iterate.ts
   - ai-sdlc-plugin/agents/test-reviewer.md
 ---

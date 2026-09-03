@@ -7,7 +7,7 @@ references:
   - ai-sdlc-plugin/scripts/sign-attestation.mjs
   - scripts/verify-attestation.mjs
   - .github/workflows/verify-attestation.yml
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 priority: critical
 permittedExternalPaths: []
 ---

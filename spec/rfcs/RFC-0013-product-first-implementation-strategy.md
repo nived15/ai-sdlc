@@ -1452,7 +1452,7 @@ The AI developer tooling market is experiencing explosive growth:
 - Cognition (Devin + GitHub Copilot) raised $400M at a **$10.2B** valuation
 - The AI governance market is projected to grow from **$309M (2025)** to **$4.8B (2034)** at 35.7% CAGR
 
-No one is monetizing the AI SDLC orchestration layer yet. GitHub Copilot, Copilot, and GitHub Copilot monetize *code generation*. SonarQube and Snyk monetize *code scanning*. Jira and Linear monetize *project tracking*. Nobody monetizes the orchestration of AI agents through the full SDLC — the layer that coordinates all of these.
+No one is monetizing the AI SDLC orchestration layer yet. GitHub Copilot monetizes *code generation*. SonarQube and Snyk monetize *code scanning*. Jira and Linear monetize *project tracking*. Nobody monetizes the orchestration of AI agents through the full SDLC — the layer that coordinates all of these.
 
 ### Pricing Model: Open-Core + Managed Cloud
 

@@ -9,8 +9,6 @@ structural:
 
 semantic:
   enabled: false
-  provider: github-copilot
-  model: gpt-5
 
 # Hook behavior
 hook:

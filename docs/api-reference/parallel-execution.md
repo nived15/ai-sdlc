@@ -24,7 +24,7 @@ the harness-author companion lives in [adapter-authoring.md](../operations/adapt
 
 ## HarnessAdapter
 
-Every harness (Claude Code, Codex CLI, Gemini CLI, OpenCode, Aider,
+The GitHub Copilot CLI harness (
 generic-API) implements the `HarnessAdapter` interface. Adapters are
 registered at orchestrator startup and resolved per-stage by the
 `Stage.harness` field. RFC-0010 §13.1 is the normative definition; this
@@ -66,7 +66,7 @@ interface HarnessAdapter {
    * SubscriptionLedger key so two pipelines on the same vendor account
    * auto-pool. MUST be a one-way derivation (e.g., SHA-256 of the API key
    * + harness name) and MUST NOT leak the credential itself. Returns null
-   * when the harness cannot derive an account identity (e.g., generic-api
+   * when the harness cannot derive an account identity (e.g., copilot
    * with no auth scheme), in which case the orchestrator emits
    * LedgerKeyAmbiguous and degrades to per-pipeline ledger keying
    * (RFC-0010 §14.12).
@@ -138,7 +138,7 @@ spec:
     - primary-postgres
     - analytics-postgres
   subscriptionPlans:             # optional, references SubscriptionPlan resources by name (§6.6)
-    - claude-code-max-5x
+    - copilot-max-5x
 ```
 
 | Field | Required | Default | Purpose |
@@ -175,11 +175,11 @@ resolves it in this order (RFC-0010 §9.1):
 | Declared SubscriptionPlan | Default `maxConcurrent` | Rationale |
 |---|---|---|
 | (none declared) | `1` | Backward-compatible with today's serial behavior; no surprise regressions on plugin upgrade. |
-| `claude-code-pro` | `3` | Pro tier quota sustains ~3 concurrent Opus stages over a 5h window without exhausting hardCap. |
-| `claude-code-max-5x` | `5` | 5× quota → 5 concurrent stages without burndown alarm. |
-| `claude-code-max-20x` | `10` | 20× quota leaves headroom for the 10-cap ceiling we set in §6.1. |
-| `codex-plus` | `2` | Lower monthly cap; conservative default. |
-| `codex-pro` | `5` | Comparable to Max-5x. |
+| `copilot-pro` | `3` | Pro tier quota sustains ~3 concurrent Opus stages over a 5h window without exhausting hardCap. |
+| `copilot-max-5x` | `5` | 5× quota → 5 concurrent stages without burndown alarm. |
+| `copilot-max-20x` | `10` | 20× quota leaves headroom for the 10-cap ceiling we set in §6.1. |
+| `copilot-plus` | `2` | Lower monthly cap; conservative default. |
+| `copilot-pro` | `5` | Comparable to Max-5x. |
 | `pay-per-token` | `5` | No quota constraint; cap chosen for host-resource sanity. |
 | Multiple plans for the same harness | `sum(per-plan default)` | Operator with multiple seats gets additive headroom. |
 | Multiple harnesses across stages | `max(per-harness default)` | Dispatcher caps total in-flight; per-harness contention surfaces via `QuotaContention`. |
@@ -355,9 +355,9 @@ normative.
 apiVersion: ai-sdlc.dev/v1alpha1
 kind: SubscriptionPlan
 metadata:
-  name: claude-code-max-5x
+  name: copilot-max-5x
 spec:
-  harness: claude-code
+  harness: copilot
   billingMode: session-window           # "session-window" | "monthly-cap" | "pay-per-token"
   windowDuration: PT5H                  # ISO 8601, only for session-window
   windowQuotaTokens: 1000000            # documented per-window cap
@@ -376,12 +376,12 @@ spec:
 | Field | Required | Purpose |
 |---|---|---|
 | `harness` | yes | Name of the registered harness this plan applies to. |
-| `billingMode` | yes | One of `session-window` (rolling quotas), `monthly-cap` (Codex Plus/Pro), `pay-per-token` (no quota — preserves today's behavior). |
+| `billingMode` | yes | One of `session-window` (rolling quotas), `monthly-cap` (GitHub Copilot Plus/Pro), `pay-per-token` (no quota — preserves today's behavior). |
 | `windowDuration` | when `session-window` | ISO 8601 duration of the rolling window. |
 | `windowQuotaTokens` | when `session-window` or `monthly-cap` | Documented quota per window, multiplier-adjusted at off-peak times. |
 | `offPeak` | no | Multiplier configuration. Absent → no off-peak preference. |
 | `offPeak.schedule` | no | Operator-declared off-peak hours; orchestrator MUST NOT infer from any other source. |
-| `offPeak.multiplier` | no | Token allocation multiplier during off-peak. Claude Code Max is ~2× at the time of writing — verify against vendor docs. |
+| `offPeak.multiplier` | no | Token allocation multiplier during off-peak. GitHub Copilot CLI Max is ~2× at the time of writing — verify against vendor docs. |
 | `offPeak.lastVerified` | no | ISO 8601 date of last operator verification. Missing or > 30 days old emits `OffPeakScheduleStale` warning; > 90 days escalates the warning to ERROR. |
 | `pacingTarget` | no | Burn-down target [0,1]. Defaults to `0.80`. |
 | `hardCap` | no | Above this fraction of window quota, the orchestrator MUST NOT dispatch new work even if a stage has `schedule: now`. Defaults to `0.95`. |
@@ -439,7 +439,7 @@ interface WindowState {
   windowEnd: Date;
   consumedTokens: number;
   quotaTokens: number;
-  multiplier: number;          // 1.0 on-peak, 2.0 off-peak (Claude Code)
+  multiplier: number;          // 1.0 on-peak, 2.0 off-peak (GitHub Copilot CLI)
   utilizationFraction: number; // consumed / quota
   pacingTarget: number;
   hardCap: number;
@@ -464,10 +464,10 @@ behavior. RFC-0010 §6.3 is normative.
 |---|---|---|---|
 | `isolation` | `'worktree'` &#124; `'inplace'` | `worktree` (when `parallelism` is set) | RFC-0010 §6.3 — stages that must operate on the main checkout (e.g., release tagging) MUST set `inplace`. |
 | `holdsMergeGate` | boolean | `false` | RFC-0010 §6.3, §10 — when `true`, stage acquires the pipeline's merge gate for the duration of its execution. The final merge stage MUST set this to `true`. |
-| `model` | `'haiku'` &#124; `'sonnet'` &#124; `'opus'` &#124; `'opus[1m]'` &#124; `'inherit'` &#124; `<explicit model ID>` | `inherit` | RFC-0010 §6.3, §11 — per-stage model routing. |
+| `model` | `'fast'` &#124; `'balanced'` &#124; `'reasoning'` &#124; `'reasoning[1m]'` &#124; `'inherit'` &#124; `<explicit model ID>` | `inherit` | RFC-0010 §6.3, §11 — per-stage model routing. |
 | `kind` | `'agent'` &#124; `'review-classifier'` &#124; `'review-fanout'` | `agent` | RFC-0010 §6.3, §12 — drives stage-specific execution semantics. |
 | `maxBudgetUsd` | number | none | RFC-0010 §6.3, §11.5 — per-stage cost ceiling. When exceeded, orchestrator emits `BudgetExceeded` and applies `onFailure`. Hooks into RFC-0004 cost attribution. |
-| `harness` | `'claude-code'` &#124; `'codex'` &#124; `'gemini-cli'` &#124; `'opencode'` &#124; `'aider'` &#124; `'generic-api'` &#124; `'inherit'` | `claude-code` (or `Pipeline.spec.defaultHarness`) | RFC-0010 §6.3, §13 — per-stage harness selection. Single string; pipeline-load FAILS on unregistered harness. |
+| `harness` | `'copilot'` &#124; `'copilot'` &#124; `'copilot'` &#124; `'copilot'` &#124; `'copilot'` &#124; `'copilot'` &#124; `'inherit'` | `copilot` (or `Pipeline.spec.defaultHarness`) | RFC-0010 §6.3, §13 — per-stage harness selection. Single string; pipeline-load FAILS on unregistered harness. |
 | `harnessFallback` | `array[string]` | `[]` (or `Pipeline.spec.defaultHarnessFallback`) | RFC-0010 §6.3, §13.5 — ordered preference list. If the primary is unavailable (rate-limited, capability mismatch, runtime error), the orchestrator MUST attempt each fallback in order before applying `onFailure`. |
 | `requiresIndependentHarnessFrom` | `array[string]` | `[]` | RFC-0010 §6.3, §13.10 — independence guard for security-critical stages. |
 | `schedule` | `'now'` &#124; `'off-peak'` &#124; `'quota-permitting'` &#124; `'defer-if-low-priority'` | `now` | RFC-0010 §6.3, §14.3 — subscription-aware scheduling hints. |
@@ -491,10 +491,10 @@ model changes are NOT supported.
 
 | Alias | Resolves to (current) | Use case |
 |---|---|---|
-| `haiku` | `claude-haiku-4-5-20251001` | Classification, routing, formatting, structured-output extraction |
-| `sonnet` | `claude-sonnet-4-6` | Code review, refactoring, validation, default for everything else |
-| `opus` | `claude-opus-4-7` | Complex implementation, multi-file refactors, design work |
-| `opus[1m]` | `claude-opus-4-7[1m]` | Implementation against a large codebase context (>200K tokens) |
+| `haiku` | `copilot-haiku-4-5-20251001` | Classification, routing, formatting, structured-output extraction |
+| `sonnet` | `the balanced tier` | Code review, refactoring, validation, default for everything else |
+| `opus` | `the reasoning tier` | Complex implementation, multi-file refactors, design work |
+| `opus[1m]` | `the reasoning tier[1m]` | Implementation against a large codebase context (>200K tokens) |
 
 The registry (`orchestrator/src/models/registry.ts`) tracks each entry's
 `deprecatedAt: Date | null` and `removedAt: Date | null`. Pipeline-load
@@ -503,7 +503,7 @@ FAILS with `ModelRemoved` for removed ones (RFC-0010 §11.6).
 
 ### `harness` resolution
 
-`Pipeline.spec.defaultHarness` (default `claude-code`) and
+`Pipeline.spec.defaultHarness` (default `copilot`) and
 `Pipeline.spec.defaultHarnessFallback` mirror the model-resolution chain
 for harness selection (RFC-0010 §6.5). Stages with `harness: inherit`
 resolve to `defaultHarness`; stages omitting `harnessFallback` inherit

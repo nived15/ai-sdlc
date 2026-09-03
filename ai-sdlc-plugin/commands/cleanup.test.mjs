@@ -67,7 +67,7 @@ describe('/ai-sdlc cleanup body contract', () => {
     assert.match(body, /WORKTREE_PATH=".worktrees\/\$TASK_ID_LOWER"/);
   });
 
-  it('NEVER deletes branches automatically (CLAUDE.md governance)', () => {
+  it('NEVER deletes branches automatically (.github/copilot-instructions.md governance)', () => {
     assert.match(body, /Never deletes branches/i);
     // Confirm the body suggests the deletion command but does NOT execute it.
     assert.match(body, /NOT done automatically/i);

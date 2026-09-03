@@ -10,13 +10,13 @@
 
 | Path | Status | Reference |
 |---|---|---|
-| Claude Code Tier 1 `/ai-sdlc execute` | Supported attended path | [`ai-sdlc-plugin/commands/execute.md`](../../ai-sdlc-plugin/commands/execute.md) |
+| GitHub Copilot CLI Tier 1 `/ai-sdlc execute` | Supported attended path | [`ai-sdlc-plugin/commands/execute.md`](../../ai-sdlc-plugin/commands/execute.md) |
 | Tier 2 `executePipeline()` / `ai-sdlc-pipeline execute` | Supported where a real `SubagentSpawner` is configured | [`pipeline-cli/README.md`](../../pipeline-cli/README.md) |
-| Codex CLI orchestration | Operational (AISDLC-202.2 through AISDLC-202.4 + AISDLC-247 shipped; pilot validated 2026-05-09) | [Codex CLI Execution Path](./codex-execution-path.md) |
+| GitHub Copilot CLI orchestration | Operational (AISDLC-202.2 through AISDLC-202.4 + AISDLC-247 shipped; pilot validated 2026-05-09) | [GitHub Copilot CLI Execution Path](./copilot-execution-path.md) |
 | GitHub Copilot CLI orchestration | Operational (AISDLC-429.2 + AISDLC-429.3 shipped; real-CLI pilot pending) | [Copilot CLI Execution Path](./copilot-execution-path.md) (design) / [`--spawner copilot` Operator Runbook](./copilot-spawner.md) (operations) |
 
-The Codex cross-harness review path is production-ready. See
-[`docs/operations/cross-harness-review.md`](./cross-harness-review.md) for
+The GitHub Copilot independent parallel review path is production-ready. See
+[`docs/operations/copilot-spawner.md`](./copilot-spawner.md) for
 the bidirectional review convention and pilot procedure.
 
 ---
@@ -30,26 +30,26 @@ infrastructure constraints.
 | Pattern | How Workers run | Cost post-2026-06-15 | Parallelism | Best for |
 |---|---|---|---|---|
 | **`in-session-agent`** (Dispatch Board + `/ai-sdlc dispatch-worker`) | Foreground `Agent` call in each operator-opened CC session | **Subscription quota** — zero incremental cost | One task per CC session; open N sessions for N-wide parallel | High-volume autonomous drain on operator's subscription. Recommended default. |
-| **`claude-p-shell`** (supervisor daemon + `claude -p`) | `env -u CLAUDECODE claude -p` subprocess spawned by `cli-dispatch-supervisor` | Agent SDK credit pool then API tokens | N from one supervisor (bounded by `WorktreePool.parallelism.maxConcurrent`) | Headless CI, true daemon, ops contexts where no active CC session is available |
+| **`copilot-p-shell`** (supervisor daemon + `copilot -p`) | `env -u COPILOT_CLI_SESSION copilot -p` subprocess spawned by `cli-dispatch-supervisor` | Agent SDK credit pool then API tokens | N from one supervisor (bounded by `WorktreePool.parallelism.maxConcurrent`) | Headless CI, true daemon, ops contexts where no active CC session is available |
 
 > **Removed in RFC-0041 Phase 3.3 (AISDLC-377.6):** the legacy `--spawner
-> claude-cli` inline-manifest path (`Agent(... run_in_background: true)`
+> copilot-cli` inline-manifest path (`Agent(... run_in_background: true)`
 > inside the Conductor's own CC session). The original deprecation rationale
-> cited "Anthropic's hardcoded 600s background-agent watchdog (~85% kill
+> cited "GitHub Models's hardcoded 600s background-agent watchdog (~85% kill
 > rate)" — that claim was a misdiagnosis (forensic scan of 73 dev subagent
 > transcripts found 0 watchdog-shape kills, 80.8% clean completion, median
 > 16 min, max 2.5 h; the 19.2% failures were operator-initiated interrupts).
 > The removal stands because the Dispatch Board model provides better
 > properties (operator-controlled parallelism, billing-pool isolation, durable
 > filesystem handoff). Migration breadcrumb:
-> [`docs/operations/claude-cli-spawner-removed.md`](./claude-cli-spawner-removed.md).
+> [`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md).
 
-### Migration recipe — from `--spawner claude-cli` to `dispatch-worker`
+### Migration recipe — from `--spawner copilot` to `dispatch-worker`
 
-If you currently run `cli-orchestrator tick --spawner claude-cli` (or have any
+If you currently run `cli-orchestrator tick --spawner copilot` (or have any
 script / cron entry / CI step that passes it), the flag is rejected at parse
 time as of AISDLC-377.6 with `Invalid values: Choices: "mock", "api-key",
-"claude", "codex"`. Migrate as follows:
+"copilot", "copilot"`. Migrate as follows:
 
 1. **Set up the Dispatch Board** — ensure `.ai-sdlc/dispatch-config.yaml` exists with:
    ```yaml
@@ -64,13 +64,13 @@ time as of AISDLC-377.6 with `Invalid values: Choices: "mock", "api-key",
 3. **Switch the Conductor** to `/ai-sdlc orchestrator-tick` on its
    `ScheduleWakeup` loop. Ticks now write `queue/<id>.dispatch.json` and poll
    `done/` for verdicts (Dispatch Board protocol).
-4. **Remove `--spawner claude-cli`** from any cron entries, shell aliases, or
+4. **Remove `--spawner copilot`** from any cron entries, shell aliases, or
    CI steps. For plain-shell autonomous tick (cron/daemon/sidecar) the
-   replacement is `--spawner claude` (subscription billing via `claude -p`)
+   replacement is `--spawner copilot` (subscription billing via `copilot -p`)
    — that's already the default since AISDLC-352, so removing the flag is
    often the entire change.
 
-**For the supervisor (`claude-p-shell`) path** (headless/CI without active CC sessions), see
+**For the supervisor (`copilot-p-shell`) path** (headless/CI without active CC sessions), see
 [`docs/operations/dispatch-supervisor-install.md`](./dispatch-supervisor-install.md).
 
 ---
@@ -237,7 +237,7 @@ to do:
 |---|---|---|
 | `SecretScanBlocked` | Dev couldn't rewrite the literal-secret pattern in 2 attempts | Review the PR's diff. The literal value lives in source as a string — refactor to template-literal construction or move to env. PR is labelled `needs-human-attention` |
 | `PushRaceWithMergeQueue` | Push still rejected after 3 × 60s retries | Likely a merge-queue jam. Run `gh pr view <pr> --json state,mergeStateStatus`; check the queue. Push manually once the queue drains |
-| `RebaseConflict` | `/ai-sdlc rebase` resolver couldn't auto-resolve | Manual rebase per CLAUDE.md "Git Flow" section. Resolve markers, run verify, `git push --force-with-lease` |
+| `RebaseConflict` | `/ai-sdlc rebase` resolver couldn't auto-resolve | Manual rebase per .github/copilot-instructions.md "Git Flow" section. Resolve markers, run verify, `git push --force-with-lease` |
 | `VerificationFailure` | Dev re-implementation failed verify on both attempts | Review the verify output in the PR. May indicate AC was wrong, env mismatch, or genuine code issue — engineering judgment call |
 | `ReviewerMajorOrCritical` | Reviewer flagged critical/major findings on both dev attempts | Read the reviewer feedback in the PR body. Re-spawn dev manually with sharpened guidance, or hand-fix |
 | `EnvHookFailure` | `--no-verify` retry refused (source-touching change) OR push still failed | Investigate the env (PATH, husky, tooling). Source-touching changes require a working hook environment; never bypass |
@@ -498,7 +498,7 @@ Sum of shares across all tenants on the same `(harness, accountId)` MUST equal 1
 
 ### Independence enforcement
 
-Add `requiresIndependentHarnessFrom: [implement]` to `review-critic` and `review-security` stages. The reference pipeline ships with this declared. Without it, fallback can silently collapse cross-harness review onto the same harness as the implementer.
+Add `requiresIndependentHarnessFrom: [implement]` to `review-critic` and `review-security` stages. The reference pipeline ships with this declared. Without it, fallback can silently collapse independent parallel review onto the same harness as the implementer.
 
 For security-critical pipelines, set `onFailure: abort` on `IndependenceViolated`. For advisory pipelines, leave the default `continue` and watch for the warning in the digest.
 
@@ -690,7 +690,7 @@ The dev's commits are **NOT rolled back** — they are intact on the branch and 
 
 **Recovery.**
 1. If the original implementer's harness has recovered: re-run the review stage manually with `cli-requeue` (it'll get the fresh fallback chain).
-2. If the harness is persistently down: temporarily expand the stage's `harnessFallback` chain to include another vendor (e.g., add `aider` after `claude-code, codex`).
+2. If the harness is persistently down: temporarily expand the stage's `harnessFallback` chain to include another vendor (e.g., add `copilot` after `copilot, copilot`).
 3. If the pipeline declared `onFailure: abort` for `IndependenceViolated`, the run is suspended; operator decision required.
 
 ### `MigrationDiverged`
@@ -1179,52 +1179,52 @@ When path-mismatch files are detected, `syncParentUntrackedFiles` populates
 `result.skippedReason` mentions `path-mismatched file(s)` alongside exact-match
 skips.
 
-## Codex Pilot Results
+## GitHub Copilot Pilot Results
 
-This section captures Codex CLI execution path pilot results as they accumulate.
+This section captures GitHub Copilot CLI execution path pilot results as they accumulate.
 Each entry follows the template from
-[`docs/operations/cross-harness-review.md`](./cross-harness-review.md#pilot-results-log).
+[`docs/operations/copilot-spawner.md`](./copilot-spawner.md#pilot-results-log).
 
 For the full pilot procedure, prerequisites, and metric-capture template, see
-[`docs/operations/cross-harness-review.md`](./cross-harness-review.md#end-to-end-pilot-procedure).
+[`docs/operations/copilot-spawner.md`](./copilot-spawner.md#end-to-end-pilot-procedure).
 
-### Smoke test: code-reviewer-codex on PR #415 — 2026-05-09
+### Smoke test: code-reviewer-copilot on PR #415 — 2026-05-09
 
 **Task:** AISDLC-242 (Resume from interrupted orchestrator runs)
 **PR:** #415
-**Pilot scope:** Cross-harness code review only (not a full developer dispatch)
-**Status:** Passed — Codex review path is operational
+**Pilot scope:** cross-session code review only (not a full developer dispatch)
+**Status:** Passed — GitHub Copilot review path is operational
 
 | Metric | Result |
 |--------|--------|
 | Wall-clock (review) | 19 s |
 | Token usage | ~32,000 tokens |
-| Reviewer variant | `code-reviewer-codex` (o4-mini) |
+| Reviewer variant | `code-reviewer-copilot` (o4-mini) |
 | Sandbox mode | `-s read-only` |
 | `--skip-git-repo-check` | Required |
 | Findings | 2 majors: shell injection + logic gap |
 | DSSE attestation | Signed and verified via pre-push hook |
 | Anomalies | None |
 
-**Key outcome:** The Codex cross-harness reviewer caught 2 real bugs the
-Claude Code developer missed — shell injection via unquoted `$PR_BODY` in a
+**Key outcome:** The GitHub Copilot independent parallel reviewer caught 2 real bugs the
+GitHub Copilot CLI developer missed — shell injection via unquoted `$PR_BODY` in a
 `gh pr create` call and a state-machine transition logic gap. This validates
-that cross-harness independence produces real signal, not duplicated approval.
+that cross-session independence produces real signal, not duplicated approval.
 
 **Operational notes:**
 
 1. `--skip-git-repo-check` is required in this environment. Add it to all
-   review invocations until the Codex CLI default changes.
-2. Codex o4-mini returned raw JSON (no markdown fence) on the first attempt.
+   review invocations until the GitHub Copilot CLI default changes.
+2. GitHub Copilot o4-mini returned raw JSON (no markdown fence) on the first attempt.
    If your environment produces fenced output, the parse path handles it
    automatically.
 3. The `-s read-only` sandbox worked correctly — no write operations were
    attempted, confirming prompt injection containment.
 
-**Recommendation:** Use `code-reviewer-codex` for all Claude-developed PRs
-where cross-harness independence is desired. Wall-clock is 2-5x faster than
-Claude Sonnet reviewers and cost is lower. Security stays on Claude Opus (see
-`cross-harness-review.md`).
+**Recommendation:** Use `code-reviewer-copilot` for all GitHub Copilot-developed PRs
+where cross-session independence is desired. Wall-clock is 2-5x faster than
+the balanced tier reviewers and cost is lower. Security stays on the reasoning tier (see
+`cross-session-review.md`).
 
 ---
 
@@ -1440,7 +1440,7 @@ permissions and secrets they need. Suggested matrix:
 |---|---|---|
 | `verify-attestation.yml` | `contents:read`, `statuses:write`, `pull-requests:read` | `github.token` only |
 | `ai-sdlc-review.yml` (docs-only-check) | `contents:read`, `statuses:write`, `pull-requests:read` | `github.token` only |
-| `ai-sdlc-review.yml` (analyze) | `contents:read`, `pull-requests:read` | `ANTHROPIC_API_KEY`, `MARKER_HMAC_SECRET` |
+| `ai-sdlc-review.yml` (analyze) | `contents:read`, `pull-requests:read` | `GITHUB_MODELS_TOKEN`, `MARKER_HMAC_SECRET` |
 | `ai-sdlc-review.yml` (report) | `pull-requests:write`, `issues:read`, `statuses:write` | `github.token`, `SLACK_BOT_TOKEN` |
 | `auto-enable-auto-merge.yml` | `pull-requests:write` | `AI_SDLC_PAT` |
 | `auto-rearm-on-dequeue.yml` | `pull-requests:write` | `AI_SDLC_PAT` |
@@ -1454,7 +1454,7 @@ NEVER:
 These belong in `release.yml` which fires on `push` to `main` (no fork
 PR triggers). The hermetic test catches accidental references.
 
-The `analyze` job's `ANTHROPIC_API_KEY` is a partial exception: it IS
+The `analyze` job's `GITHUB_MODELS_TOKEN` is a partial exception: it IS
 exposed to a step that reads fork-controlled content (the PR diff). The
 mitigation is structural — the analyze job has NO GitHub write
 permissions, so even if the LLM is prompt-injected into emitting an
@@ -1515,4 +1515,4 @@ number for follow-up investigation.
 - [RFC-0004 — Cost Governance and Attribution](../../spec/rfcs/RFC-0004-cost-governance-and-attribution.md) — `costBudget` semantics; see also [Tutorial: Cost Governance](../tutorials/cost-governance.md) and [API Reference: Cost Governance](../api-reference/cost.md)
 - [RFC-0011 — Definition-of-Ready Gate](../../spec/rfcs/RFC-0011-definition-of-ready-gate.md) — normative spec for the seven-gate rubric, refusal flow (§6, §7.3), bypass (§7.4), escalation (§6.3), and `evaluationMode` lifecycle (§10) the "Definition-of-Ready (DoR) Gate" section above operationalizes
 - [DoR promotion runbook](./dor-promotion.md) — warn-only → enforce promotion procedure (corpus-driven exit criterion + override path)
-- [Project Slack Integration](../../../.claude/projects/-Users-dominique-Documents-dev-ai-sdlc/memory/project_slack_integration.md) — how digest entries reach the operator
+- [Project Slack Integration](../../../.copilot/projects/-Users-dominique-Documents-dev-ai-sdlc/memory/project_slack_integration.md) — how digest entries reach the operator

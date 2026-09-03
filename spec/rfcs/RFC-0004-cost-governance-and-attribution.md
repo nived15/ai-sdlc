@@ -45,7 +45,7 @@ This RFC proposes:
 
 AI agent costs are unpredictable and opaque:
 
-- **Token costs vary 300x between models**: Claude Haiku at $0.25/MTok input vs. Claude Opus at $15/MTok input. An agent that uses Opus for a simple rename costs 60x more than one that uses Haiku.
+- **Token costs vary 300x between models**: the fast tier at $0.25/MTok input vs. the reasoning tier at $15/MTok input. An agent that uses Opus for a simple rename costs 60x more than one that uses Haiku.
 - **Agent loops are invisible**: An agent that enters a reasoning loop can burn $50-100 in tokens in a single execution. Without real-time monitoring, nobody knows until the monthly bill.
 - **Parallel execution multiplies costs**: The orchestrator's multi-agent decomposition pattern (agents.md §3.2) runs agents in parallel. If three agents each use 100K tokens on an expensive model, a feature that should cost $5 costs $45.
 - **Failed retries are wasted money**: The retry strategy in RFC-0002's FailurePolicy means a 3-retry stage with a $10 agent invocation could spend $40 (including the original attempt) before failing permanently.
@@ -178,15 +178,15 @@ spec:
     modelPricing:
       source: config               # 'config' (static) or 'api' (fetch from provider)
       models:
-        claude-opus-4-6:
+        the reasoning tier:
           inputPerMTok: 15.00
           outputPerMTok: 75.00
           cacheReadPerMTok: 1.50
-        claude-sonnet-4-5:
+        the balanced tier:
           inputPerMTok: 3.00
           outputPerMTok: 15.00
           cacheReadPerMTok: 0.30
-        claude-haiku-4-5:
+        copilot-haiku-4-5:
           inputPerMTok: 0.80
           outputPerMTok: 4.00
           cacheReadPerMTok: 0.08
@@ -340,13 +340,13 @@ spec:
     # Route by task complexity to the right price/performance point
     rules:
       - complexity: [1, 3]
-        model: claude-haiku-4-5
+        model: copilot-haiku-4-5
         rationale: "Simple tasks: fast, cheap, sufficient quality"
       - complexity: [4, 6]
-        model: claude-sonnet-4-5
+        model: the balanced tier
         rationale: "Medium tasks: balanced cost/capability"
       - complexity: [7, 10]
-        model: claude-opus-4-6
+        model: the reasoning tier
         rationale: "Complex tasks: maximum reasoning capability"
 
     # Budget pressure: downshift models as budget depletes
@@ -360,8 +360,8 @@ spec:
 
     # Fallback: if preferred model is unavailable (outage, rate limit)
     fallbackChain:
-      - claude-sonnet-4-5
-      - claude-haiku-4-5
+      - the balanced tier
+      - copilot-haiku-4-5
       - gpt-4o                       # Cross-provider fallback
 ```
 
@@ -499,8 +499,8 @@ Extend the provenance metadata (metrics.md §4.1) with cost fields:
 ```yaml
 # Appended to PR description or stored in provenance store
 provenance:
-  model: claude-sonnet-4-5-20250929
-  tool: claude-code@1.2.0
+  model: the balanced tier
+  tool: copilot@1.2.0
   promptHash: "sha256:a1b2c3d4..."
   timestamp: "2026-02-16T10:30:00Z"
   humanReviewer: alice@acme.com
@@ -925,15 +925,15 @@ spec:
     modelPricing:
       source: config
       models:
-        claude-opus-4-6:
+        the reasoning tier:
           inputPerMTok: 15.00
           outputPerMTok: 75.00
           cacheReadPerMTok: 1.50
-        claude-sonnet-4-5:
+        the balanced tier:
           inputPerMTok: 3.00
           outputPerMTok: 15.00
           cacheReadPerMTok: 0.30
-        claude-haiku-4-5:
+        copilot-haiku-4-5:
           inputPerMTok: 0.80
           outputPerMTok: 4.00
           cacheReadPerMTok: 0.08
@@ -994,11 +994,11 @@ spec:
   modelSelection:
     rules:
       - complexity: [1, 3]
-        model: claude-haiku-4-5
+        model: copilot-haiku-4-5
       - complexity: [4, 6]
-        model: claude-sonnet-4-5
+        model: the balanced tier
       - complexity: [7, 10]
-        model: claude-opus-4-6
+        model: the reasoning tier
     budgetPressure:
       - above: 0.80
         downshift: 1
@@ -1036,13 +1036,13 @@ spec:
 
    **Resolution (2026-05-13):** **Open / deferred.** The `humanReviewCost` field is reserved on `CostBreakdown` (`reference/src/core/types.ts:269`) and documented as the dominant TCO term (`docs/api-reference/cost.md:208-210`), but no implementation populates it — `CostTracker.computeCost` (`orchestrator/src/cost-tracker.ts:47-74`) covers only token math. Question remains open and is appropriate to revisit when a concrete consumer (chargeback report, TCO dashboard) materializes. Recommended approach when re-opened: option (b) — measured `review_requested → review_submitted` latency × configurable role rate.
 
-2. **Cross-provider cost normalization** — When the fallback chain routes to a different provider (Anthropic → OpenAI), costs are not directly comparable (different pricing, different token counts for the same task). Should the spec define a normalized cost unit, or report raw provider-specific costs?
+2. **Cross-provider cost normalization** — When the fallback chain routes to a different provider (GitHub Models → GitHub Copilot), costs are not directly comparable (different pricing, different token counts for the same task). Should the spec define a normalized cost unit, or report raw provider-specific costs?
 
-   **Resolution (2026-05-13):** **Open / deferred — raw provider-specific costs reported.** The `DEFAULT_MODEL_COSTS` table (`orchestrator/src/defaults.ts:210-219`) covers only Anthropic Claude models; unknown-model fallback collapses to Sonnet pricing (`orchestrator/src/cost-tracker.ts:55-65`) — silently wrong for non-Anthropic providers. The implicit shipped answer is "raw provider-specific costs in USD," but cross-provider parity remains unsolved. Currently latent: the dogfood stack is Anthropic-only, making the normalization gap academic. Revisit when the framework genuinely operates a cross-provider fleet.
+   **Resolution (2026-05-13):** **Open / deferred — raw provider-specific costs reported.** The `DEFAULT_MODEL_COSTS` table (`orchestrator/src/defaults.ts:210-219`) covers only GitHub Models GitHub Copilot models; unknown-model fallback collapses to Sonnet pricing (`orchestrator/src/cost-tracker.ts:55-65`) — silently wrong for non-GitHub Models providers. The implicit shipped answer is "raw provider-specific costs in USD," but cross-provider parity remains unsolved. Currently latent: the dogfood stack is GitHub Models-only, making the normalization gap academic. Revisit when the framework genuinely operates a cross-provider fleet.
 
 3. **Cache savings attribution** — When a cached response avoids a $2 API call, who gets credit for the $2 savings? The agent that populated the cache, or the agent that benefited from the cache hit? This affects cost-per-agent metrics.
 
-   **Resolution (2026-05-13):** **Resolved — consumer attribution.** The shipped implementation attributes cache-read tokens (and the reduced cost) to the **consuming agent** — the one whose API call returned `cache_read_input_tokens`. `CostTracker.computeCost` (`orchestrator/src/cost-tracker.ts:47-74`) accepts `cacheReadTokens` and applies the model's `cacheReadPer1M` rate; the `cost_ledger` table (`orchestrator/src/state/store.ts:507,525`) stores `cache_read_tokens` per entry keyed by `agent_name` + `stage_name`. No bookkeeping exists for "who populated the cache," so the populating agent receives no credit. Defensible default: provider-side prompt caching is an Anthropic-managed implementation detail and there's no reliable way for the orchestrator to know which prior call seeded a given hit.
+   **Resolution (2026-05-13):** **Resolved — consumer attribution.** The shipped implementation attributes cache-read tokens (and the reduced cost) to the **consuming agent** — the one whose API call returned `cache_read_input_tokens`. `CostTracker.computeCost` (`orchestrator/src/cost-tracker.ts:47-74`) accepts `cacheReadTokens` and applies the model's `cacheReadPer1M` rate; the `cost_ledger` table (`orchestrator/src/state/store.ts:507,525`) stores `cache_read_tokens` per entry keyed by `agent_name` + `stage_name`. No bookkeeping exists for "who populated the cache," so the populating agent receives no credit. Defensible default: provider-side prompt caching is an GitHub Models-managed implementation detail and there's no reliable way for the orchestrator to know which prior call seeded a given hit.
 
 4. **Cost forecasting model** — The CostReconciler uses linear extrapolation for `projectedMonthEnd`. Real usage patterns are often non-linear (higher at sprint start, lower at sprint end). Should the spec define a specific forecasting method, or leave it to implementations?
 
@@ -1063,5 +1063,5 @@ spec:
 - [quality-gate.schema.json](../schemas/quality-gate.schema.json) — Existing gate rule types
 - [RFC-0002: Pipeline Orchestration Policy](./RFC-0002-pipeline-orchestration.md) — Stage failure policies (retry costs)
 - [RFC-0013: AI-SDLC Orchestrator Product Strategy](./RFC-0013-product-first-implementation-strategy.md) — Orchestrator architecture and commercial model
-- [Anthropic API Pricing](https://www.anthropic.com/pricing) — Model pricing reference
-- [OpenAI API Pricing](https://openai.com/api/pricing/) — Model pricing reference
+- [GitHub Models API Pricing](https://www.github-models.com/pricing) — Model pricing reference
+- [GitHub Copilot API Pricing](https://github-copilot.com/api/pricing/) — Model pricing reference

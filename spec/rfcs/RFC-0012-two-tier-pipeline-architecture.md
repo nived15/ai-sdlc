@@ -12,9 +12,9 @@ requiresDocs: []
 
 # RFC-0012: Two-Tier Pipeline Architecture with Shared Core Library
 
-**Status:** Implemented (pipeline-cli is the production runtime substrate; AISDLC-100.{1,2,3,5,6,7,8} phase tasks shipped + Codex adaptation AISDLC-202.{1,2,3,4} shipped; umbrella-task close-out lost in re-org per operator confirmation 2026-05-13)
+**Status:** Implemented (pipeline-cli is the production runtime substrate; AISDLC-100.{1,2,3,5,6,7,8} phase tasks shipped + GitHub Copilot adaptation AISDLC-202.{1,2,3,4} shipped; umbrella-task close-out lost in re-org per operator confirmation 2026-05-13)
 **Lifecycle:** Implemented (lifecycle audit 2026-05-13 promoted Signed Off → Implemented; the two-tier slash-command + library contract runs every `/ai-sdlc execute` invocation today)
-**Author:** Dominique Legault (with Claude assist)
+**Author:** Dominique Legault (with GitHub Copilot assist)
 **Created:** 2026-04-30
 **Updated:** 2026-05-13
 **Target Spec Version:** v1alpha1
@@ -34,7 +34,7 @@ requiresDocs: []
 | Version | Date | Author | Notes |
 |---|---|---|---|
 | v1 | 2026-04-30 | dominique | Initial draft after AISDLC-82's empirical failure surfaced the need for a different architecture. All 4 open questions from the design conversation resolved inline. |
-| v2 | 2026-05-09 | dominique | Codex CLI is now a supported harness option. Operator-led pilot validated 2026-05-09 via PR #415 code review: `code-reviewer-codex` (o4-mini, `-s read-only`) caught 2 real bugs (shell injection + logic gap) in 19s using ~32K tokens. The full `CodexHarnessAdapter` (`--spawner codex`) ships in AISDLC-202.2; attestation harness context in AISDLC-202.3; cross-harness review agents (`code-reviewer-codex`, `test-reviewer-codex`) in AISDLC-247. See `docs/operations/cross-harness-review.md` for the bidirectional review convention and pilot procedure. |
+| v2 | 2026-05-09 | dominique | GitHub Copilot CLI is now a supported harness option. Operator-led pilot validated 2026-05-09 via PR #415 code review: `code-reviewer-copilot` (o4-mini, `-s read-only`) caught 2 real bugs (shell injection + logic gap) in 19s using ~32K tokens. The full `CopilotHarnessAdapter` (`--spawner copilot`) ships in AISDLC-202.2; attestation harness context in AISDLC-202.3; independent parallel review agents (`code-reviewer-copilot`, `test-reviewer-copilot`) in AISDLC-247. See `docs/operations/copilot-spawner.md` for the bidirectional review convention and pilot procedure. |
 
 ## Table of Contents
 
@@ -61,9 +61,9 @@ requiresDocs: []
 
 Replace the failed AISDLC-82 execute-orchestrator-as-subagent pattern with a **two-tier architecture** that shares a single core library:
 
-- **Tier 1 (Attended Interactive)** — `/ai-sdlc execute <task-id>` slash command body runs Steps 0-13 inline in the main Claude Code session. Subscription-billed (Claude Code Max). Subagents spawn directly via the `Agent` tool (no nested-subagent restriction since main session has Agent).
-- **Tier 2 (Unattended Programmatic)** — TypeScript service `executePipeline()` callable from CLI, GitHub Actions, webhooks, cron. Subscription-billed by default via `claude -p` shell-out (operator's logged-in Claude Code session); API-key-billed alternative via Claude Code SDK.
-- **Shared Core** — separate npm package `@ai-sdlc/pipeline-cli` containing all deterministic step functions (validate, branch, worktree, attestation sign, push, etc.). Exposed three ways: TypeScript library imports (Tier 2), CLI subcommands (Tier 1 via Bash + portable use outside Claude Code), and MCP tools (plugin-native invocation).
+- **Tier 1 (Attended Interactive)** — `/ai-sdlc execute <task-id>` slash command body runs Steps 0-13 inline in the main Copilot CLI session. Subscription-billed (GitHub Copilot CLI Max). Subagents spawn directly via the `Agent` tool (no nested-subagent restriction since main session has Agent).
+- **Tier 2 (Unattended Programmatic)** — TypeScript service `executePipeline()` callable from CLI, GitHub Actions, webhooks, cron. Subscription-billed by default via `copilot -p` shell-out (operator's logged-in Copilot CLI session); API-key-billed alternative via GitHub Copilot CLI.
+- **Shared Core** — separate npm package `@ai-sdlc/pipeline-cli` containing all deterministic step functions (validate, branch, worktree, attestation sign, push, etc.). Exposed three ways: TypeScript library imports (Tier 2), CLI subcommands (Tier 1 via Bash + portable use outside GitHub Copilot CLI), and MCP tools (plugin-native invocation).
 
 The LLM-driven steps (developer subagent in Step 5, three reviewer subagents in Step 7) are the only tier-specific code. Everything else — git operations, file IO, attestation signing, PR creation, status flips — lives in one place.
 
@@ -73,15 +73,15 @@ This RFC supersedes AISDLC-82, which was based on the incorrect assumption that 
 
 ### 2.1 AISDLC-82 is unimplementable
 
-The empirical test against AISDLC-69.2 returned: `"No such tool available: Agent. Agent is not available inside subagents."` The Claude Code harness silently filters the `Agent` tool from any plugin-agent subagent invocation, regardless of frontmatter declarations. There is no plugin-side workaround. The execute-orchestrator-as-subagent pattern cannot ship.
+The empirical test against AISDLC-69.2 returned: `"No such tool available: Agent. Agent is not available inside subagents."` The GitHub Copilot CLI harness silently filters the `Agent` tool from any plugin-agent subagent invocation, regardless of frontmatter declarations. There is no plugin-side workaround. The execute-orchestrator-as-subagent pattern cannot ship.
 
 ### 2.2 We've been doing it the new way already
 
-For the entire session in which the AISDLC-90, AISDLC-93, and AISDLC-99 PRs shipped, the pipeline ran from the **main Claude Code session** — calling git, spawning developer + reviewer subagents directly via the Agent tool, signing attestations, opening PRs. That pattern works. The only thing missing is formalization: extracting the inline orchestration into a reusable library so it doesn't have to be rebuilt by hand each session.
+For the entire session in which the AISDLC-90, AISDLC-93, and AISDLC-99 PRs shipped, the pipeline ran from the **main Copilot CLI session** — calling git, spawning developer + reviewer subagents directly via the Agent tool, signing attestations, opening PRs. That pattern works. The only thing missing is formalization: extracting the inline orchestration into a reusable library so it doesn't have to be rebuilt by hand each session.
 
 ### 2.3 Multiple invocation contexts are the long-term need
 
-- **Today**: operator runs `/ai-sdlc execute X` interactively in a Claude Code session
+- **Today**: operator runs `/ai-sdlc execute X` interactively in a Copilot CLI session
 - **Soon**: `/loop /ai-sdlc execute X` for batch processing
 - **Mid-term**: GitHub webhook triggers pipeline on issue creation (Forge ingress for Alex-authored issues per RFC-0011)
 - **Mid-term**: cron triggers periodic backlog sweep
@@ -92,11 +92,11 @@ If the pipeline logic lives in one place and exposes clean invocation contracts,
 
 ### 2.4 Subscription utilization
 
-We're paying for Claude Code Max-20x. Default to that. Tier 2's default spawner (`ShellClaudePSpawner` via `claude -p`) uses the operator's logged-in subscription, no API tokens consumed. API-key alternative (`ClaudeCodeSDKSpawner`) is for environments where subscription auth isn't available (CI runners, Forge tenants on their own keys).
+We're paying for GitHub Copilot CLI Max-20x. Default to that. Tier 2's default spawner (`CopilotHarnessAdapter` via `copilot -p`) uses the operator's logged-in subscription, no API tokens consumed. API-key alternative (`CopilotHarnessAdapter`) is for environments where subscription auth isn't available (CI runners, Forge tenants on their own keys).
 
-### 2.5 Portability beyond Claude Code
+### 2.5 Portability beyond GitHub Copilot CLI
 
-A separate npm package `@ai-sdlc/pipeline-cli` makes the pipeline runnable in environments that don't have Claude Code installed: bare CI runners, contributor machines using a different IDE, future automation that doesn't speak the Claude Code plugin protocol. The CLI is the lowest-common-denominator interface.
+A separate npm package `@ai-sdlc/pipeline-cli` makes the pipeline runnable in environments that don't have GitHub Copilot CLI installed: bare CI runners, contributor machines using a different IDE, future automation that doesn't speak the GitHub Copilot CLI plugin protocol. The CLI is the lowest-common-denominator interface.
 
 ## 3. Goals and Non-Goals
 
@@ -105,7 +105,7 @@ A separate npm package `@ai-sdlc/pipeline-cli` makes the pipeline runnable in en
 - **G1.** Single source of truth for pipeline logic — the deterministic helpers live in one place and are unit-testable.
 - **G2.** Both attended (slash command) and unattended (service) tiers produce equivalent artifacts (same worktree shape, same attestations, same PR titles).
 - **G3.** Subscription billing as the default for both tiers when subscription auth is available.
-- **G4.** Portable CLI usable outside Claude Code.
+- **G4.** Portable CLI usable outside GitHub Copilot CLI.
 - **G5.** Composable with all existing infrastructure: AISDLC-74/84/85/87/93 (attestations), AISDLC-81 (per-worktree sentinels), AISDLC-83 (cross-repo writes), RFC-0011 DoR gate (when it ships), RFC-0010 worktree pool (when it ships).
 - **G6.** Pipeline versioning so attestations record which pipeline version produced them.
 - **G7.** No plugin subagent intermediary — slash command body IS the orchestrator.
@@ -113,7 +113,7 @@ A separate npm package `@ai-sdlc/pipeline-cli` makes the pipeline runnable in en
 ### 3.2 Non-Goals
 
 - **N1.** Maintain AISDLC-82's "main session fans out N parallel orchestrator subagents" pattern. (Disproven; abandoned.)
-- **N2.** Build a new SDK or runtime. We use Claude Code SDK + Claude Code Agent tool + shell-out to `claude -p`. No reinvention.
+- **N2.** Build a new SDK or runtime. We use GitHub Copilot CLI + GitHub Copilot CLI Agent tool + shell-out to `copilot -p`. No reinvention.
 - **N3.** Replace the existing `orchestrator/src/` TypeScript service. We refactor it to consume the new library; the service interface stays.
 - **N4.** Long-running daemon process for queue management. (Defer until volume justifies.)
 - **N5.** Auto-detect whether to use Tier 1 or Tier 2 based on context. The tiers are explicit invocation paths; operators choose.
@@ -128,11 +128,11 @@ A separate npm package `@ai-sdlc/pipeline-cli` makes the pipeline runnable in en
 ├──────────────────────────────────────────────────────────────────┤
 │  /ai-sdlc execute X         │  executePipeline({taskId, ...})    │
 │  (slash command body in     │  (TypeScript service, callable     │
-│   main Claude Code session) │   from CLI / GHA / webhook / cron) │
+│   main Copilot CLI session) │   from CLI / GHA / webhook / cron) │
 │                             │                                    │
-│  Subscription auth          │  Default: ShellClaudePSpawner      │
-│  (operator's session)       │   (subscription via `claude -p`)   │
-│                             │  Alt: ClaudeCodeSDKSpawner         │
+│  Subscription auth          │  Default: CopilotHarnessAdapter      │
+│  (operator's session)       │   (subscription via `copilot -p`)   │
+│                             │  Alt: CopilotHarnessAdapter         │
 │                             │   (API key)                        │
 │                             │                                    │
 │  Subagents: direct Agent    │  Subagents: SubagentSpawner        │
@@ -226,8 +226,8 @@ pipeline-cli/
 │   │   └── 13-cleanup.ts
 │   ├── runtime/
 │   │   ├── subagent-spawner.ts        # interface
-│   │   ├── shell-claude-p-spawner.ts  # Tier 2 default (subscription)
-│   │   ├── claude-code-sdk-spawner.ts # Tier 2 alt (API key)
+│   │   ├── shell-copilot-p-spawner.ts  # Tier 2 default (subscription)
+│   │   ├── copilot-spawner.ts # Tier 2 alt (API key)
 │   │   └── mock-spawner.ts            # for tests
 │   ├── types.ts
 │   ├── execute-pipeline.ts            # Tier 2 composite entry
@@ -415,7 +415,7 @@ The body becomes ~80 lines instead of the current ~400. All deterministic logic 
 /ai-sdlc execute --batch AISDLC-69.1,AISDLC-69.2,AISDLC-69.3
 ```
 
-**The scheduling pattern is per-task event-driven, NOT stage-batched Promise.all across tasks.** Each task is its own independent pipeline (state machine: dev-running → reviews-running → finalizing → pushing). The slash command body's batch-mode prose MUST tell Claude to react to each task's notifications individually, not synchronize across tasks at stage boundaries.
+**The scheduling pattern is per-task event-driven, NOT stage-batched Promise.all across tasks.** Each task is its own independent pipeline (state machine: dev-running → reviews-running → finalizing → pushing). The slash command body's batch-mode prose MUST tell GitHub Copilot to react to each task's notifications individually, not synchronize across tasks at stage boundaries.
 
 Body:
 
@@ -428,7 +428,7 @@ For each task in $TASKS (parsed from --batch), set up worktrees in parallel:
 for TASK in $TASKS; do ai-sdlc-pipeline setup-worktree $TASK; done
 ```
 
-Then in a single message, spawn N parallel developer subagents (one per task) — this gives Claude Code's "multi-tool-call in one message = parallel" concurrency.
+Then in a single message, spawn N parallel developer subagents (one per task) — this gives GitHub Copilot CLI's "multi-tool-call in one message = parallel" concurrency.
 
 **As each developer's completion notification arrives** (NOT after waiting for all developers):
 - Build that task's review prompts: `ai-sdlc-pipeline build-review-prompts $TASK`
@@ -442,7 +442,7 @@ Each task's pipeline (dev → reviews → finalize → push) runs independently.
 **Right pattern (DO THIS):** Fire all developers in one message for concurrency, then react per-notification. Each task's reviews start the moment ITS developer finishes, not when the slowest one does.
 ```
 
-The slash command body uses Claude Code's "multi-tool-call in one message = parallel" semantics for the LLM steps + asynchronous notification model for per-task pipelining. Deterministic steps within ONE task run sequentially via single CLI calls; parallelism is across tasks (developers) and within sub-stages of one task (3 reviewers).
+The slash command body uses GitHub Copilot CLI's "multi-tool-call in one message = parallel" semantics for the LLM steps + asynchronous notification model for per-task pipelining. Deterministic steps within ONE task run sequentially via single CLI calls; parallelism is across tasks (developers) and within sub-stages of one task (3 reviewers).
 
 For Tier 2 (TypeScript service): the same per-task pattern falls out of the language naturally — `Promise.all(taskIds.map(id => executePipeline({ taskId: id, spawner })))`. Each `executePipeline()` is its own state machine; concurrency is per-task by construction. No anti-pattern risk because there's no shared stage-batching code path.
 
@@ -454,7 +454,7 @@ The slash command body runs IN THE MAIN SESSION. Main session has:
 - Read/Write/Edit ✓
 - All the MCP tools ✓
 
-No nested subagent invocations needed. The "orchestrator" is Claude in the main session reading the slash command body and following the prose. The shared library handles the deterministic work; Claude handles the LLM dispatch.
+No nested subagent invocations needed. The "orchestrator" is GitHub Copilot in the main session reading the slash command body and following the prose. The shared library handles the deterministic work; GitHub Copilot handles the LLM dispatch.
 
 ## 7. Tier 2 — Unattended Programmatic (TypeScript Service)
 
@@ -502,21 +502,21 @@ export async function executePipeline(opts: PipelineOptions): Promise<PipelineRe
 ### 7.2 Invocation contexts
 
 ```typescript
-// CLI usage (operator's machine, subscription auth via claude -p)
-import { executePipeline, ShellClaudePSpawner } from '@ai-sdlc/pipeline-cli';
+// CLI usage (operator's machine, subscription auth via copilot -p)
+import { executePipeline, CopilotHarnessAdapter } from '@ai-sdlc/pipeline-cli';
 
 await executePipeline({
   taskId: process.argv[2],
-  spawner: new ShellClaudePSpawner(),  // default for Tier 2
+  spawner: new CopilotHarnessAdapter(),  // default for Tier 2
   workDir: process.cwd(),
 });
 
 // GitHub Action (CI runner, API key auth)
-import { executePipeline, ClaudeCodeSDKSpawner } from '@ai-sdlc/pipeline-cli';
+import { executePipeline, CopilotHarnessAdapter } from '@ai-sdlc/pipeline-cli';
 
 await executePipeline({
   taskId: process.env.TASK_ID,
-  spawner: new ClaudeCodeSDKSpawner({ apiKey: process.env.ANTHROPIC_API_KEY }),
+  spawner: new CopilotHarnessAdapter({ apiKey: process.env.GITHUB_MODELS_TOKEN }),
   workDir: process.cwd(),
 });
 
@@ -535,12 +535,12 @@ app.post('/webhook/issue-created', async (req, res) => {
 
 ```typescript
 // dogfood/src/watch.ts (migration target)
-import { executePipeline, ShellClaudePSpawner } from '@ai-sdlc/pipeline-cli';
+import { executePipeline, CopilotHarnessAdapter } from '@ai-sdlc/pipeline-cli';
 
 async function watchHandler(issueId: string) {
   return executePipeline({
     taskId: issueId,
-    spawner: new ShellClaudePSpawner(),  // or ClaudeCodeSDKSpawner if API-key
+    spawner: new CopilotHarnessAdapter(),  // or CopilotHarnessAdapter if API-key
     workDir: REPO_ROOT,
   });
 }
@@ -581,19 +581,19 @@ export interface SubagentSpawner {
 
 ### 8.2 Implementations
 
-#### `ShellClaudePSpawner` (Tier 2 default — subscription)
+#### `CopilotHarnessAdapter` (Tier 2 default — subscription)
 
 ```typescript
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-export class ShellClaudePSpawner implements SubagentSpawner {
+export class CopilotHarnessAdapter implements SubagentSpawner {
   async spawn(opts: SpawnOpts): Promise<SubagentResult> {
-    // Shells out to: claude -p "<prompt>" --cwd <opts.cwd>
-    // Uses operator's logged-in Claude Code session (subscription auth)
+    // Shells out to: copilot -p "<prompt>" --cwd <opts.cwd>
+    // Uses operator's logged-in Copilot CLI session (subscription auth)
     const start = Date.now();
     try {
-      const { stdout } = await promisify(execFile)('claude', [
+      const { stdout } = await promisify(execFile)('copilot', [
         '-p', opts.prompt,
         '--cwd', opts.cwd,
         '--subagent', opts.type,  // hint to load the right system prompt
@@ -618,22 +618,22 @@ export class ShellClaudePSpawner implements SubagentSpawner {
 }
 ```
 
-**Key benefit:** uses the operator's Claude Code subscription. No API tokens consumed. Each `claude -p` invocation is a fresh ephemeral session.
+**Key benefit:** uses the operator's GitHub Copilot CLI subscription. No API tokens consumed. Each `copilot -p` invocation is a fresh ephemeral session.
 
 **Cost:** new process per subagent (no shared session context). In practice this is fine because each subagent gets a self-contained prompt anyway.
 
-#### `ClaudeCodeSDKSpawner` (Tier 2 alternative — API key)
+#### `CopilotHarnessAdapter` (Tier 2 alternative — API key)
 
 ```typescript
-import { ClaudeCode } from '@anthropic-ai/claude-code';
+import { ClaudeCode } from '@github-models-ai/copilot';
 
-export class ClaudeCodeSDKSpawner implements SubagentSpawner {
+export class CopilotHarnessAdapter implements SubagentSpawner {
   constructor(private opts: { apiKey: string; model?: string }) {}
 
   async spawn(opts: SpawnOpts): Promise<SubagentResult> {
     const client = new ClaudeCode({
       apiKey: this.opts.apiKey,
-      model: this.opts.model ?? 'claude-sonnet-4-6',
+      model: this.opts.model ?? 'the balanced tier',
     });
     const result = await client.runAgent({
       subagentType: opts.type,
@@ -673,20 +673,20 @@ For unit tests of the iteration loop and step orchestration.
 // "Default Tier 2 spawner" helper
 export function defaultSpawner(): SubagentSpawner {
   if (await isClaudeCodeSubscriptionAvailable()) {
-    return new ShellClaudePSpawner();
+    return new CopilotHarnessAdapter();
   }
-  if (process.env.ANTHROPIC_API_KEY) {
-    return new ClaudeCodeSDKSpawner({ apiKey: process.env.ANTHROPIC_API_KEY });
+  if (process.env.GITHUB_MODELS_TOKEN) {
+    return new CopilotHarnessAdapter({ apiKey: process.env.GITHUB_MODELS_TOKEN });
   }
-  throw new Error('No spawner available — install Claude Code OR set ANTHROPIC_API_KEY');
+  throw new Error('No spawner available — install GitHub Copilot CLI OR set GITHUB_MODELS_TOKEN');
 }
 ```
 
-Tier 1 (slash command body) doesn't use SubagentSpawner — it spawns directly via the Claude Code Agent tool from main session.
+Tier 1 (slash command body) doesn't use SubagentSpawner — it spawns directly via the GitHub Copilot CLI Agent tool from main session.
 
 ## 9. MCP Tool Surface
 
-Per the user's Q3 answer: every step is also exposed as an MCP tool from the plugin's MCP server. This lets agents in any Claude Code session (not just the slash command body) invoke pipeline steps directly.
+Per the user's Q3 answer: every step is also exposed as an MCP tool from the plugin's MCP server. This lets agents in any Copilot CLI session (not just the slash command body) invoke pipeline steps directly.
 
 ### 9.1 Tool naming
 
@@ -707,12 +707,12 @@ mcp__plugin_ai-sdlc_ai-sdlc__pipeline_cleanup_task
 
 Each tool wraps the corresponding step function from `@ai-sdlc/pipeline-cli`. Same arguments as the CLI subcommand. Same return schema.
 
-### 9.2 Usage example (from any Claude Code session)
+### 9.2 Usage example (from any Copilot CLI session)
 
 ```
 Operator: "Validate AISDLC-91 and tell me what's wrong with it."
 
-Claude calls: mcp__plugin_ai-sdlc_ai-sdlc__pipeline_validate_task(taskId='AISDLC-91')
+GitHub Copilot calls: mcp__plugin_ai-sdlc_ai-sdlc__pipeline_validate_task(taskId='AISDLC-91')
 
 Returns: { ok: false, reason: 'no acceptance criteria', ... }
 ```
@@ -768,12 +768,12 @@ Steps can be deprecated and removed in major versions. The attestation envelope'
 |---|---|---|---|
 | **Phase 0** | 1 day | Fix AISDLC-99 (MCP server path bug) — blocking dependency for the MCP-tool-wrapping in Phase 3 | `mcp__plugin_ai-sdlc_ai-sdlc__task_edit` works against this project's actual `backlog/` |
 | **Phase 1** | 2-3 days | Create `pipeline-cli/` package; extract step functions from current `orchestrator/`. Behavior-preserving refactor. | All extracted step functions pass unit tests with MockSpawner |
-| **Phase 2** | 1 day | Implement `ShellClaudePSpawner` + `ClaudeCodeSDKSpawner` + `MockSpawner` | Spawner unit tests pass |
-| **Phase 3** | 1 day | Wrap step functions as MCP tools in plugin's `mcp-server/src/tools/pipeline-*.ts` | All MCP tools callable from a test Claude Code session |
+| **Phase 2** | 1 day | Implement `CopilotHarnessAdapter` + `CopilotHarnessAdapter` + `MockSpawner` | Spawner unit tests pass |
+| **Phase 3** | 1 day | Wrap step functions as MCP tools in plugin's `mcp-server/src/tools/pipeline-*.ts` | All MCP tools callable from a test Copilot CLI session |
 | **Phase 4** | 1 day | Refactor `commands/execute.md` to thin orchestration body using CLI subcommands + Agent calls. Delete `agents/execute-orchestrator.md`. Update agents.test.mjs and execute.test.mjs. | End-to-end manual test: `/ai-sdlc execute <safe-task>` from fresh session completes Steps 0-13 |
 | **Phase 5** | 1 day | Refactor `dogfood/src/watch.ts` (Tier 2 entry) to use `executePipeline()` from `pipeline-cli`. | Behavior parity with current `pnpm watch` |
 | **Phase 6** | 1 day | Add `pipelineVersion` to attestation envelope; update sign + verify scripts | Test envelope with new field validates |
-| **Phase 7** | 0.5 day | Documentation: update CLAUDE.md, write `pipeline-cli` README, write SubagentSpawner doc, write per-step doc | Docs reviewed, all examples runnable |
+| **Phase 7** | 0.5 day | Documentation: update .github/copilot-instructions.md, write `pipeline-cli` README, write SubagentSpawner doc, write per-step doc | Docs reviewed, all examples runnable |
 | **Phase 8** | 0.5 day | Publish `@ai-sdlc/pipeline-cli` to npm; cut a major plugin release that ships the new architecture | Plugin install pulls in CLI binary; both tiers work |
 
 Total: ~8-10 days wall-clock for a full ship. Most phases ship as separate PRs.
@@ -819,17 +819,17 @@ For the Tier 2 service:
 
 ## 13. Alternatives Considered
 
-### 13.1 Keep AISDLC-82 + wait for upstream Claude Code
+### 13.1 Keep AISDLC-82 + wait for upstream GitHub Copilot CLI
 
-**Rejected.** AISDLC-82's nested-Agent block is not on Anthropic's roadmap (per claude-code-guide research). Indefinite timeline. Meanwhile we'd be stuck with the manual-driver pattern (which is what this RFC formalizes anyway).
+**Rejected.** AISDLC-82's nested-Agent block is not on GitHub Models's roadmap (per copilot-guide research). Indefinite timeline. Meanwhile we'd be stuck with the manual-driver pattern (which is what this RFC formalizes anyway).
 
 ### 13.2 Build a custom Agent SDK app instead of two-tier
 
-**Rejected.** The Agent SDK reinvents what Claude Code already provides (subagent dispatch, tool propagation, session management). Pure cost over reusing Claude Code's infrastructure. Also doesn't get subscription auth for free.
+**Rejected.** The Agent SDK reinvents what GitHub Copilot CLI already provides (subagent dispatch, tool propagation, session management). Pure cost over reusing GitHub Copilot CLI's infrastructure. Also doesn't get subscription auth for free.
 
 ### 13.3 MCP-tool-driven full pipeline (single `pipeline_execute_full` tool)
 
-**Rejected (mostly).** MCP tools run in the MCP server's process, which can't directly call the Claude Code Agent tool. To do full-pipeline-from-MCP, the tool would need to internally use a SubagentSpawner. That's Tier 2's job. The `pipeline_*` MCP tools we're shipping are for individual steps (deterministic), not for the LLM dispatch.
+**Rejected (mostly).** MCP tools run in the MCP server's process, which can't directly call the GitHub Copilot CLI Agent tool. To do full-pipeline-from-MCP, the tool would need to internally use a SubagentSpawner. That's Tier 2's job. The `pipeline_*` MCP tools we're shipping are for individual steps (deterministic), not for the LLM dispatch.
 
 ### 13.4 Long-running daemon with queue
 
@@ -841,7 +841,7 @@ For the Tier 2 service:
 
 ### 13.6 Single tier — only Tier 1 (slash command)
 
-**Rejected.** Forge / unattended / CI / cron flows can't run in a Claude Code interactive session. Need Tier 2.
+**Rejected.** Forge / unattended / CI / cron flows can't run in a GitHub Copilot CLI interactive session. Need Tier 2.
 
 ### 13.7 Single tier — only Tier 2 (TypeScript service)
 
@@ -849,7 +849,7 @@ For the Tier 2 service:
 
 ## 14. Implementation Plan
 
-Per Section 11. Sequential phases shipped as separate PRs. Each phase is a backlog task (will be filed as AISDLC-100.X sub-tasks per CLAUDE.md "create all tasks before starting work").
+Per Section 11. Sequential phases shipped as separate PRs. Each phase is a backlog task (will be filed as AISDLC-100.X sub-tasks per .github/copilot-instructions.md "create all tasks before starting work").
 
 The implementation tasks themselves run through `/ai-sdlc execute` using the CURRENT (manual-driver) pattern — which is fine because that pattern works. Phase 4's PR is the one that switches `commands/execute.md` over; subsequent tasks use the new architecture.
 
@@ -857,16 +857,16 @@ The implementation tasks themselves run through `/ai-sdlc execute` using the CUR
 
 The 4 design questions raised in the architecture conversation were resolved inline:
 
-1. ✅ **Subscription billing for Tier 2 default?** YES — `ShellClaudePSpawner` (subscription via `claude -p`) is Tier 2 default. API-key alternative for environments without subscription auth.
-2. ✅ **CLI distribution channel?** Separate npm package `@ai-sdlc/pipeline-cli`. More portable to environments outside Claude Code.
+1. ✅ **Subscription billing for Tier 2 default?** YES — `CopilotHarnessAdapter` (subscription via `copilot -p`) is Tier 2 default. API-key alternative for environments without subscription auth.
+2. ✅ **CLI distribution channel?** Separate npm package `@ai-sdlc/pipeline-cli`. More portable to environments outside GitHub Copilot CLI.
 3. ✅ **MCP tool wrapping?** YES — every step exposed as an MCP tool too. Lets agents in any session use individual steps as building blocks.
 4. ✅ **Pipeline versioning?** YES — `pipelineVersion` added to attestation envelope. SemVer per package version.
 
 Remaining open questions for implementation:
 
-- **Q5: How does `claude -p` know which subagent to invoke?** — `--subagent <type>` flag is a hypothetical; need to confirm it exists OR design an alternative (prompt prefix?).
+- **Q5: How does `copilot -p` know which subagent to invoke?** — `--subagent <type>` flag is a hypothetical; need to confirm it exists OR design an alternative (prompt prefix?).
 - **Q6: Per-tenant spawner config (Forge future)?** — When Forge ships, each tenant may have a different spawner (their own API key, their own subscription account). Design the spawner-selection mechanism with this in mind even if we don't build it for v1.
-- **Q7: How to test `claude -p` integration without burning subscription quota?** — Mock spawner for unit tests. For integration tests, run against a single safe task. Document a test budget.
+- **Q7: How to test `copilot -p` integration without burning subscription quota?** — Mock spawner for unit tests. For integration tests, run against a single safe task. Document a test budget.
 - **Q8: Plugin install path for the CLI binary?** — When `/plugin install ai-sdlc` runs, does it auto-install `@ai-sdlc/pipeline-cli` globally, or as a peer dep? Need to decide and document.
 
 ## 16. References

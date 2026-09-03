@@ -1,22 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { HarnessRegistry, UnknownHarnessError } from './registry.js';
-import { ClaudeCodeAdapter } from './adapters/claude-code.js';
-import { CodexAdapter } from './adapters/codex.js';
+import { CopilotAdapter } from './adapters/copilot.js';
 import { createDefaultHarnessRegistry } from './index.js';
 
 describe('HarnessRegistry', () => {
   it('register + get round-trips', () => {
     const reg = new HarnessRegistry();
-    const adapter = new ClaudeCodeAdapter();
+    const adapter = new CopilotAdapter();
     reg.register(adapter);
-    expect(reg.get('claude-code')).toBe(adapter);
+    expect(reg.get('copilot')).toBe(adapter);
   });
 
   it('has() reflects registration state', () => {
     const reg = new HarnessRegistry();
-    expect(reg.has('claude-code')).toBe(false);
-    reg.register(new ClaudeCodeAdapter());
-    expect(reg.has('claude-code')).toBe(true);
+    expect(reg.has('copilot')).toBe(false);
+    reg.register(new CopilotAdapter());
+    expect(reg.has('copilot')).toBe(true);
   });
 
   it('get throws UnknownHarnessError for unregistered names', () => {
@@ -26,16 +25,15 @@ describe('HarnessRegistry', () => {
 
   it('list returns registered harness names', () => {
     const reg = new HarnessRegistry();
-    reg.register(new ClaudeCodeAdapter());
-    reg.register(new CodexAdapter());
-    expect(reg.list().sort()).toEqual(['claude-code', 'codex'].sort());
+    reg.register(new CopilotAdapter());
+    expect(reg.list()).toEqual(['copilot']);
   });
 });
 
 describe('createDefaultHarnessRegistry', () => {
-  it('ships with claude-code and codex adapters', () => {
+  it('ships with the GitHub Copilot adapter', () => {
     const reg = createDefaultHarnessRegistry();
-    expect(reg.has('claude-code')).toBe(true);
-    expect(reg.has('codex')).toBe(true);
+    expect(reg.has('copilot')).toBe(true);
+    expect(reg.list()).toEqual(['copilot']);
   });
 });

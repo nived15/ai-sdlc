@@ -95,9 +95,9 @@ that case:
    contains such changes.
 
 2. **No execution isolation with credential stripping.** Reviewer subagents run
-   in the operator's local Claude Code session with full `Bash`/`Write`/`Read`
+   in the operator's local Copilot CLI session with full `Bash`/`Write`/`Read`
    tools and full ambient credentials (`~/.ai-sdlc/signing-key.pem`,
-   `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`). CI (AISDLC-381) correctly refuses to
+   `GITHUB_TOKEN`, `GITHUB_MODELS_TOKEN`). CI (AISDLC-381) correctly refuses to
    `pnpm install`/`build`/execute fork content — but that means untrusted code is
    *never actually run/tested*, only statically reviewed. There is no contained
    environment in which untrusted tests can run with high-privilege tokens
@@ -120,7 +120,7 @@ that case:
    boundary, and only then mints the attestation.
 
 NVIDIA OpenShell — a policy-enforced sandbox runtime that wraps existing coding
-agents (Claude Code, Codex, OpenCode) **without code changes** — is already in
+agents (the GitHub Copilot CLI) **without code changes** — is already in
 use here and is the natural substrate for gaps 2 and 4.
 
 ## Goals
@@ -303,7 +303,7 @@ network:                                 # deny-by-default egress
     - host: github.com                   # clone target branch only; read scope
       binary: '/usr/bin/git'
     - host: inference.local              # provider credentials injected HERE via proxy, NOT in env
-      comment: "Anthropic API key injected at proxy layer; agent never receives it"
+      comment: "GitHub Models API key injected at proxy layer; agent never receives it"
 # NEVER present in the sandbox env: ~/.ai-sdlc/signing-key.pem, GITHUB_TOKEN(write),
 # NPM_TOKEN, AI_SDLC_PAT. These live only in the Stage-4 clean room.
 ```
@@ -332,7 +332,7 @@ The existing `code-reviewer`, `test-reviewer`, and `security-reviewer` subagents
 run **inside the same sandbox** as Stage 2 (so they too are credential-stripped),
 fanned out per the RFC-0010 §13 contract. **Provider credentials are injected by
 the `inference.local` proxy out-of-process** — the reviewer process connects to
-`inference.local` for model inference and never receives the `ANTHROPIC_API_KEY`
+`inference.local` for model inference and never receives the `GITHUB_MODELS_TOKEN`
 directly. This satisfies the RFC's original credential-withholding design and
 preserves the agentic-review upgrade path (agentic reviewers with full tool
 access remain within the sandbox boundary; the proxy controls egress).
@@ -598,7 +598,7 @@ Two architectural decisions were recorded via operator decision rubric on 2026-0
 - **MicroVM/Firecracker** — documented upgrade driver; the RFC-0022 compliance path (HIPAA / FedRAMP High / PCI-DSS Level 1).
 - **NVIDIA OpenShell** — optional driver, demoted from design-reference to alternative pending resolution of a GitHub-runner install-hang; wires into the `SandboxDriver` abstraction without pipeline changes when available.
 
-**AQ2 — In-sandbox reviewer execution via `inference.local`:** The 3-reviewer matrix (code / test / security) runs inside the sandbox (same isolation boundary as Stage 2). Provider credentials are injected by the `inference.local` credential-withholding proxy out-of-process. The reviewer process connects to `inference.local` for model inference and never holds the `ANTHROPIC_API_KEY` directly. This matches the RFC's original credential-withholding design intent and keeps the agentic-review upgrade path open (agentic reviewers with full tool access remain within the sandbox boundary; the proxy controls egress).
+**AQ2 — In-sandbox reviewer execution via `inference.local`:** The 3-reviewer matrix (code / test / security) runs inside the sandbox (same isolation boundary as Stage 2). Provider credentials are injected by the `inference.local` credential-withholding proxy out-of-process. The reviewer process connects to `inference.local` for model inference and never holds the `GITHUB_MODELS_TOKEN` directly. This matches the RFC's original credential-withholding design intent and keeps the agentic-review upgrade path open (agentic reviewers with full tool access remain within the sandbox boundary; the proxy controls egress).
 
 ### Phase 7 task list (AISDLC-508..515)
 
@@ -693,7 +693,7 @@ Phase 7 is complete when all of the following hold simultaneously in CI:
 - [RFC-0022 — Compliance Posture + Audit Surface](RFC-0022-compliance-posture-audit-surface.md) (`secretScanStrictness`, `attestationRequired`, `reviewerAuthorityModel`)
 - [RFC-0039 — Adopter-Defined Pipeline Gate Extension](RFC-0039-adopter-defined-pipeline-gate-extension.md)
 - [RFC-0038 — Adopter-Defined Reviewer Extension Point](RFC-0038-adopter-defined-reviewer-extension-point.md)
-- [RFC-0010 §13 — cross-harness reviewer matrix](RFC-0010-parallel-execution-worktree-pooling.md)
+- [RFC-0010 §13 — independent parallel reviewer matrix](RFC-0010-parallel-execution-worktree-pooling.md)
 - AISDLC-381 — fork-PR CI hardening (`pull_request_target`, sandboxed `pr-content/` checkout)
 - `.ai-sdlc/agent-role.yaml` `blockedPaths` + `ai-sdlc-plugin/hooks/enforce-blocked-actions.js` (agent-side write-prevention — distinct from the inbound diff gate)
 - NVIDIA OpenShell — [GitHub](https://github.com/NVIDIA/OpenShell), [Docs](https://docs.nvidia.com/openshell/), [Security Best Practices](https://docs.nvidia.com/openshell/latest/security/best-practices) (credential injection via `inference.local`, Landlock FS, OPA/Rego deny-by-default egress, seccomp-BPF)

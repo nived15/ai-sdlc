@@ -27,12 +27,12 @@ describe('handleSessionEnd', () => {
   });
 
   it('ends session and returns cost receipt', () => {
-    const session = deps.sessions.create({ developer: 'alice', tool: 'claude-code' });
+    const session = deps.sessions.create({ developer: 'alice', tool: 'copilot' });
     deps.sessions.linkIssue(session.sessionId, 42, 'branch');
 
     handleTrackUsage(deps, {
       sessionId: session.sessionId,
-      model: 'claude-opus-4-6',
+      model: 'reasoning',
       inputTokens: 1000,
       outputTokens: 500,
     });
@@ -45,7 +45,7 @@ describe('handleSessionEnd', () => {
     expect(result!.totalInputTokens).toBe(1000);
     expect(result!.totalOutputTokens).toBe(500);
     expect(result!.durationMs).toBeGreaterThanOrEqual(0);
-    expect(result!.byModel['claude-opus-4-6']).toBeDefined();
+    expect(result!.byModel['reasoning']).toBeDefined();
   });
 
   it('saves episodic record', () => {
@@ -60,7 +60,7 @@ describe('handleSessionEnd', () => {
   });
 
   it('saves audit entry', () => {
-    const session = deps.sessions.create({ developer: 'carol', tool: 'cursor' });
+    const session = deps.sessions.create({ developer: 'carol', tool: 'vscode' });
     handleSessionEnd(deps, { sessionId: session.sessionId });
 
     const entries = deps.store.queryAuditEntries({ action: 'session.end' });
@@ -80,7 +80,7 @@ describe('handleSessionEnd', () => {
   });
 
   it('uses active session when no sessionId provided', () => {
-    const session = deps.sessions.create({ developer: 'eve', tool: 'claude-code' });
+    const session = deps.sessions.create({ developer: 'eve', tool: 'copilot' });
     deps.sessions.linkIssue(session.sessionId, 99, 'explicit');
 
     const result = handleSessionEnd(deps, { summary: 'Done' });

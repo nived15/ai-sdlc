@@ -147,7 +147,7 @@ export interface AutoClassifyOpts {
   /**
    * `LlmInvoker` to drive the classification. Required because the
    * substrate has no global invoker — pipeline-cli is SDK-free. Callers
-   * wire an Anthropic Haiku adapter (or `FakeLlmInvoker` in tests). When
+   * wire an GitHub Haiku adapter (or `FakeLlmInvoker` in tests). When
    * the caller can't supply an invoker (e.g. the CLI in a context with
    * no LLM access), they SHOULD skip auto-classification entirely
    * rather than calling these helpers — the helpers fall open

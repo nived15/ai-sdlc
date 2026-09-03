@@ -9,7 +9,7 @@
  * different here: Step 5 resolves `sign-attestation.mjs` relative to THIS
  * SCRIPT's own on-disk directory rather than `<worktree>/ai-sdlc-plugin/
  * scripts/sign-attestation.mjs`. That's what makes the plugin copy work
- * when it's installed OUTSIDE the monorepo (plugin cache, CLAUDE_PLUGIN_ROOT
+ * when it's installed OUTSIDE the monorepo (plugin cache, COPILOT_PLUGIN_ROOT
  * checkout) — see the "self-location resolution" describe block below.
  *
  * Run with: node --test ai-sdlc-plugin/scripts/check-attestation-sign.test.mjs
@@ -55,10 +55,10 @@ function cleanEnv(extra = {}) {
   if (!('AI_SDLC_V6_CUTOVER_ACTIVE' in extra)) {
     env.AI_SDLC_V6_CUTOVER_ACTIVE = '1';
   }
-  delete env.CODEX_VERSION;
+  delete env.COPILOT_VERSION;
   // AISDLC-555: never let the real plugin env vars leak into a test that's
   // deliberately exercising the "neither var is set" resolution path.
-  if (!('CLAUDE_PLUGIN_ROOT' in extra)) delete env.CLAUDE_PLUGIN_ROOT;
+  if (!('COPILOT_PLUGIN_ROOT' in extra)) delete env.COPILOT_PLUGIN_ROOT;
   if (!('CLAUDE_PLUGIN_DIR' in extra)) delete env.CLAUDE_PLUGIN_DIR;
   for (const [k, v] of Object.entries(extra)) env[k] = v;
   return env;
@@ -128,7 +128,7 @@ function writeVerdictFile(root, taskId) {
       [
         {
           agentId: 'code-reviewer',
-          harness: 'claude-code',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -292,7 +292,7 @@ describe('ai-sdlc-plugin/scripts/check-attestation-sign.sh (AISDLC-555)', () => 
   // cache directory copied wholesale into a scratch/adopter repo test. These
   // tests copy check-attestation-sign.sh to a throwaway directory alongside
   // a fake sign-attestation.mjs and confirm it's found and invoked WITHOUT
-  // any AI_SDLC_SIGN_ATTESTATION_CMD override and WITHOUT CLAUDE_PLUGIN_ROOT
+  // any AI_SDLC_SIGN_ATTESTATION_CMD override and WITHOUT COPILOT_PLUGIN_ROOT
   // / CLAUDE_PLUGIN_DIR being set — proving resolution is anchored to the
   // script's own directory, not the invoking shell's environment.
   describe('self-location resolution (no monorepo, no plugin env vars)', () => {
@@ -335,7 +335,7 @@ process.stdout.write('signed via self-location resolution\\n');
       writeVerdictFile(root, 'AISDLC-555');
       const scriptPath = join(pluginDir, 'check-attestation-sign.sh');
       // Deliberately no AI_SDLC_SIGN_ATTESTATION_CMD override, no
-      // CLAUDE_PLUGIN_ROOT/CLAUDE_PLUGIN_DIR — proves the resolution is
+      // COPILOT_PLUGIN_ROOT/CLAUDE_PLUGIN_DIR — proves the resolution is
       // anchored to the script's own on-disk location.
       const r = runHook(scriptPath, root, {});
       assert.equal(

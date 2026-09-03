@@ -11,11 +11,11 @@
  *     stop cleans up gracefully).
  *   - AC #4: Stale heartbeat sweep fires at the configured threshold and
  *     SIGTERMs the spawned Worker.
- *   - AC #5: `env -u CLAUDECODE` confirmed before spawn.
+ *   - AC #5: `env -u COPILOT_CLI_SESSION` confirmed before spawn.
  *   - AC #8: 3-manifest queue + 3 mock spawns → 3 verdicts collected,
  *     concurrency cap respected.
  *
- * Real `claude` is never invoked — the test injects a stub `spawn` that
+ * Real `copilot` is never invoked — the test injects a stub `spawn` that
  * returns a `MockChildProcess` with controllable `exit` semantics.
  */
 
@@ -36,7 +36,7 @@ import {
 } from './board.js';
 import {
   acquirePidLock,
-  buildClaudeArgv,
+  buildCopilotArgv,
   buildManifestPrompt,
   createSupervisorState,
   isProcessAlive,
@@ -62,7 +62,7 @@ function mkManifest(taskId: string, overrides: Partial<DispatchManifest> = {}): 
     branch: `ai-sdlc/${taskId.toLowerCase()}-feat-x`,
     worktree: `.worktrees/${taskId.toLowerCase()}`,
     baseSha: 'abc1234',
-    workerKind: 'claude-p-shell',
+    workerKind: 'copilot-p-shell',
     dispatchedAt: '2026-05-20T10:00:00.000Z',
     dispatchedBy: 'conductor-test',
     spec: {
@@ -130,37 +130,37 @@ function makeMockSpawnFactory(): {
 }
 
 // ---------------------------------------------------------------------------
-// buildClaudeArgv + buildManifestPrompt — pure helpers
+// buildCopilotArgv + buildManifestPrompt — pure helpers
 // ---------------------------------------------------------------------------
 
-describe('buildClaudeArgv', () => {
-  it('emits the expected --print --output-format json --permission-mode argv shape', () => {
-    const argv = buildClaudeArgv(mkManifest('AISDLC-100'));
-    expect(argv).toContain('--print');
-    expect(argv).toContain('--output-format');
-    expect(argv).toContain('json');
-    expect(argv).toContain('--permission-mode');
-    expect(argv).toContain('bypassPermissions');
+describe('buildCopilotArgv', () => {
+  it('emits the expected --allow-all-tools --no-color --log-level --agent argv shape', () => {
+    const argv = buildCopilotArgv(mkManifest('AISDLC-100'));
+    expect(argv).toContain('--allow-all-tools');
+    expect(argv).toContain('--no-color');
+    expect(argv).toContain('--log-level');
+    expect(argv).toContain('error');
     expect(argv).toContain('--agent');
     expect(argv).toContain('developer');
+    expect(argv).toContain('-p');
   });
 
   it('includes --resume <sessionId> when lastSessionId is set (OQ-4 iteration)', () => {
-    const argv = buildClaudeArgv(mkManifest('AISDLC-101', { lastSessionId: 'session-abc-123' }));
+    const argv = buildCopilotArgv(mkManifest('AISDLC-101', { lastSessionId: 'session-abc-123' }));
     expect(argv).toContain('--resume');
     expect(argv).toContain('session-abc-123');
   });
 
   it('omits --resume when lastSessionId is undefined', () => {
-    const argv = buildClaudeArgv(mkManifest('AISDLC-102'));
+    const argv = buildCopilotArgv(mkManifest('AISDLC-102'));
     expect(argv).not.toContain('--resume');
   });
 
   it('places the prompt body as the final positional argument', () => {
-    const argv = buildClaudeArgv(mkManifest('AISDLC-103'));
+    const argv = buildCopilotArgv(mkManifest('AISDLC-103'));
     const prompt = argv[argv.length - 1];
     expect(prompt).toContain('AISDLC-103');
-    expect(prompt).toContain('claude-p-shell Worker');
+    expect(prompt).toContain('copilot-p-shell Worker');
   });
 });
 
@@ -292,7 +292,7 @@ describe('runSupervisorTick', () => {
     expect(peekQueue(boardDir).inflight).toBe(2);
   });
 
-  it('skips in-session-agent manifests (only claims claude-p-shell + any)', () => {
+  it('skips in-session-agent manifests (only claims copilot-p-shell + any)', () => {
     writeManifest(boardDir, mkManifest('AISDLC-400'));
     writeManifest(boardDir, mkManifest('AISDLC-401', { workerKind: 'in-session-agent' }));
     writeManifest(boardDir, mkManifest('AISDLC-402', { workerKind: 'any' }));
@@ -306,12 +306,12 @@ describe('runSupervisorTick', () => {
     expect(peekQueue(boardDir).queued).toBe(1);
   });
 
-  it('scrubs CLAUDECODE from the child env (AC #5)', () => {
+  it('scrubs COPILOT_CLI_SESSION from the child env (AC #5)', () => {
     writeManifest(boardDir, mkManifest('AISDLC-500'));
-    // Set CLAUDECODE on the parent so we can verify it's stripped from the
+    // Set COPILOT_CLI_SESSION on the parent so we can verify it's stripped from the
     // child env. process.env mutation is restored in afterEach via vi.
-    const originalClaudeCode = process.env.CLAUDECODE;
-    process.env.CLAUDECODE = '1';
+    const originalClaudeCode = process.env.COPILOT_CLI_SESSION;
+    process.env.COPILOT_CLI_SESSION = '1';
 
     try {
       const { spawn, spawnedProcesses } = makeMockSpawnFactory();
@@ -319,12 +319,12 @@ describe('runSupervisorTick', () => {
       runSupervisorTick({ boardDir, maxConcurrent: 1, staleMs: 30 * 60_000, state, spawn });
       expect(spawnedProcesses).toHaveLength(1);
       const env = spawnedProcesses[0]!.env;
-      expect(env.CLAUDECODE).toBeUndefined();
+      expect(env.COPILOT_CLI_SESSION).toBeUndefined();
     } finally {
       if (originalClaudeCode === undefined) {
-        delete process.env.CLAUDECODE;
+        delete process.env.COPILOT_CLI_SESSION;
       } else {
-        process.env.CLAUDECODE = originalClaudeCode;
+        process.env.COPILOT_CLI_SESSION = originalClaudeCode;
       }
     }
   });
@@ -357,7 +357,7 @@ describe('runSupervisorTick', () => {
   it('writes a spawn-rejected diagnostic when spawn throws', () => {
     writeManifest(boardDir, mkManifest('AISDLC-700'));
     const failingSpawn: SupervisorSpawn = () => {
-      throw new Error('ENOENT: claude binary missing');
+      throw new Error('ENOENT: copilot binary missing');
     };
     runSupervisorTick({
       boardDir,
@@ -382,7 +382,7 @@ describe('runSupervisorTick', () => {
     writeManifest(boardDir, mkManifest('AISDLC-704'));
     const asyncErrorSpawn: SupervisorSpawn = (command, args, options) => {
       const child = new MockChildProcess(98765, command, args, options);
-      setImmediate(() => child.emit('error', new Error('spawn claude ENOENT')));
+      setImmediate(() => child.emit('error', new Error('spawn copilot ENOENT')));
       return child as unknown as ReturnType<SupervisorSpawn>;
     };
     runSupervisorTick({
@@ -477,7 +477,7 @@ describe('runSupervisorTick', () => {
     const hb: InflightHeartbeat = {
       taskId: 'AISDLC-800',
       workerId: 'mock-worker',
-      workerKind: 'claude-p-shell',
+      workerKind: 'copilot-p-shell',
       pid: spawnedProcesses[0]!.pid,
       startedAt: new Date(Date.now() - 60 * 60_000).toISOString(),
       lastHeartbeat: new Date(Date.now() - 60 * 60_000).toISOString(),
@@ -510,7 +510,7 @@ describe('runSupervisorTick', () => {
     writeHeartbeat(boardDir, {
       taskId: 'AISDLC-801',
       workerId: 'mock-worker',
-      workerKind: 'claude-p-shell',
+      workerKind: 'copilot-p-shell',
       pid: spawnedProcesses[0]!.pid,
       startedAt: new Date(Date.now() - 60 * 60_000).toISOString(),
       lastHeartbeat: new Date(Date.now() - 60 * 60_000).toISOString(),
@@ -581,7 +581,7 @@ describe('runSupervisorTick', () => {
           outcome: 'success',
           completedAt: new Date().toISOString(),
           workerId: `mock-${child.pid}`,
-          workerKind: 'claude-p-shell',
+          workerKind: 'copilot-p-shell',
           durationMs: 600_000,
         }),
         'utf-8',
@@ -621,7 +621,7 @@ describe('runSupervisorTick', () => {
     expect(spawnedProcesses).toHaveLength(1);
   });
 
-  it('preserves operator env (OQ-2) — inherits parent env except CLAUDECODE', () => {
+  it('preserves operator env (OQ-2) — inherits parent env except COPILOT_CLI_SESSION', () => {
     writeManifest(boardDir, mkManifest('AISDLC-1200'));
     // Plant a sentinel env var to verify it gets forwarded.
     process.env.AISDLC_SENTINEL_FOR_TEST = 'preserved';
@@ -654,7 +654,7 @@ describe('runSupervisorTick', () => {
     expect(result.reapedTaskIds).toEqual([]);
   });
 
-  it('uses the injected claudeBinary when provided', () => {
+  it('uses the injected copilotBinary when provided', () => {
     writeManifest(boardDir, mkManifest('AISDLC-1300'));
     const { spawn, spawnedProcesses } = makeMockSpawnFactory();
     runSupervisorTick({
@@ -663,9 +663,9 @@ describe('runSupervisorTick', () => {
       staleMs: 30 * 60_000,
       state: createSupervisorState(),
       spawn,
-      claudeBinary: '/opt/claude-staging/bin/claude',
+      copilotBinary: '/opt/copilot-staging/bin/copilot',
     });
-    expect(spawnedProcesses[0]!.command).toBe('/opt/claude-staging/bin/claude');
+    expect(spawnedProcesses[0]!.command).toBe('/opt/copilot-staging/bin/copilot');
   });
 
   it('atomic-claim guarantee: a manifest is never spawned twice across consecutive ticks (AC #2)', () => {
@@ -678,7 +678,7 @@ describe('runSupervisorTick', () => {
 
     expect(spawnedProcesses).toHaveLength(1);
     // Sanity: also try claiming directly — nothing left in queue.
-    expect(claimNext(boardDir, 'claude-p-shell').claimed).toBe(false);
+    expect(claimNext(boardDir, 'copilot-p-shell').claimed).toBe(false);
   });
 });
 
@@ -694,7 +694,7 @@ describe('runSupervisorTick — fallback to manifest.dispatchedAt for staleness'
     });
     writeManifest(boardDir, oldManifest);
     // Manually claim so the manifest is in inflight/ but no heartbeat exists.
-    claimNext(boardDir, 'claude-p-shell');
+    claimNext(boardDir, 'copilot-p-shell');
 
     const { spawn } = makeMockSpawnFactory();
     const state = createSupervisorState();

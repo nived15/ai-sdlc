@@ -1,7 +1,7 @@
 /**
  * Hermetic tests for `verifyBacklogIntegrity()` (AISDLC-203).
  *
- * Guards the duplicate-detection gate that closes the Codex copy-only
+ * Guards the duplicate-detection gate that closes the GitHub Copilot copy-only
  * completion pattern (AISDLC-175, 181, 184, 191, 197, 201, 203).
  */
 
@@ -49,7 +49,7 @@ afterEach(teardownWorkDir);
 
 describe('extractTaskIdFromFilename', () => {
   it('extracts lowercase taskId from standard backlog filename', () => {
-    expect(extractTaskIdFromFilename('aisdlc-203 - codex-workflow-atomic.md')).toBe('aisdlc-203');
+    expect(extractTaskIdFromFilename('aisdlc-203 - copilot-workflow-atomic.md')).toBe('aisdlc-203');
   });
 
   it('handles mixed-case prefix', () => {
@@ -98,7 +98,7 @@ describe('verifyBacklogIntegrity — clean state', () => {
 
 describe('verifyBacklogIntegrity — duplicate detection (regression AISDLC-203)', () => {
   it('returns ok=false when a task ID appears in both tasks/ and completed/', () => {
-    // Simulate the Codex copy-only pattern.
+    // Simulate the GitHub Copilot copy-only pattern.
     touch('tasks', 'aisdlc-201 - existing-task.md');
     touch('completed', 'aisdlc-201 - existing-task.md');
 

@@ -15,7 +15,7 @@ describe('CostTracker', () => {
 
   describe('computeCost', () => {
     it('computes cost for known models', () => {
-      const cost = CostTracker.computeCost(1000, 500, 'claude-sonnet-4-5-20250929');
+      const cost = CostTracker.computeCost(1000, 500, 'balanced');
       // 1000 * 3 / 1M + 500 * 15 / 1M = 0.003 + 0.0075 = 0.0105
       expect(cost).toBeCloseTo(0.0105, 4);
     });
@@ -26,7 +26,7 @@ describe('CostTracker', () => {
     });
 
     it('computes opus cost correctly', () => {
-      const cost = CostTracker.computeCost(10000, 5000, 'claude-opus-4-6');
+      const cost = CostTracker.computeCost(10000, 5000, 'reasoning');
       // 10000 * 15 / 1M + 5000 * 75 / 1M = 0.15 + 0.375 = 0.525
       expect(cost).toBeCloseTo(0.525, 3);
     });
@@ -38,7 +38,7 @@ describe('CostTracker', () => {
         runId: 'run-1',
         agentName: 'code-agent',
         pipelineType: 'execute',
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'balanced',
         inputTokens: 5000,
         outputTokens: 2000,
       });
@@ -50,7 +50,7 @@ describe('CostTracker', () => {
         runId: 'run-1',
         agentName: 'code-agent',
         pipelineType: 'execute',
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'balanced',
         inputTokens: 1_000_000,
         outputTokens: 500_000,
       });
@@ -88,7 +88,7 @@ describe('CostTracker', () => {
         runId: 'run-1',
         agentName: 'agent-a',
         pipelineType: 'execute',
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'balanced',
         inputTokens: 1000,
         outputTokens: 500,
         costUsd: 0.1,
@@ -97,7 +97,7 @@ describe('CostTracker', () => {
         runId: 'run-2',
         agentName: 'agent-b',
         pipelineType: 'execute',
-        model: 'claude-opus-4-6',
+        model: 'reasoning',
         inputTokens: 2000,
         outputTokens: 1000,
         costUsd: 0.5,
@@ -109,8 +109,8 @@ describe('CostTracker', () => {
       expect(summary.avgCostPerRun).toBeCloseTo(0.3, 2);
       expect(summary.costByAgent['agent-a']).toBeCloseTo(0.1, 2);
       expect(summary.costByAgent['agent-b']).toBeCloseTo(0.5, 2);
-      expect(summary.costByModel['claude-sonnet-4-5-20250929']).toBeCloseTo(0.1, 2);
-      expect(summary.costByModel['claude-opus-4-6']).toBeCloseTo(0.5, 2);
+      expect(summary.costByModel['balanced']).toBeCloseTo(0.1, 2);
+      expect(summary.costByModel['reasoning']).toBeCloseTo(0.5, 2);
     });
   });
 
@@ -220,7 +220,7 @@ describe('CostTracker', () => {
   describe('recordEmbeddingCost (RFC-0019 AISDLC-337)', () => {
     it('records embeddingTokens line item with correct pipelineType', () => {
       const id = tracker.recordEmbeddingCost({
-        provider: 'openai-text-embedding-3-small',
+        provider: 'github-models-embedding-small',
         modelVersion: '2024-01-25',
         accountId: 'abc123hash',
         consumerLabel: 'rfc-0009-tessellation-drift',
@@ -238,7 +238,7 @@ describe('CostTracker', () => {
 
     it('records consumerLabel as agentName for per-consumer attribution', () => {
       tracker.recordEmbeddingCost({
-        provider: 'openai-text-embedding-3-small',
+        provider: 'github-models-embedding-small',
         modelVersion: '2024-01-25',
         accountId: null,
         consumerLabel: 'rfc-0008-ppa-similarity',
@@ -254,7 +254,7 @@ describe('CostTracker', () => {
 
     it('records provider@modelVersion as model field', () => {
       tracker.recordEmbeddingCost({
-        provider: 'openai-text-embedding-3-small',
+        provider: 'github-models-embedding-small',
         modelVersion: '2024-01-25',
         accountId: null,
         consumerLabel: 'test-consumer',
@@ -265,12 +265,12 @@ describe('CostTracker', () => {
 
       const entries = store.getCostEntries({});
       const embEntry = entries.find((e) => e.pipelineType === 'embeddingTokens');
-      expect(embEntry!.model).toBe('openai-text-embedding-3-small@2024-01-25');
+      expect(embEntry!.model).toBe('github-models-embedding-small@2024-01-25');
     });
 
     it('records tokens as inputTokens', () => {
       tracker.recordEmbeddingCost({
-        provider: 'openai-text-embedding-3-small',
+        provider: 'github-models-embedding-small',
         modelVersion: '2024-01-25',
         accountId: null,
         consumerLabel: 'test-tokens',

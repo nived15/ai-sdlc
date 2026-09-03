@@ -32,14 +32,14 @@ export interface VectorStoreEntry {
 
   /**
    * Canonical adapter name at write time per RFC-0019 §2.3.
-   * Example: 'openai-text-embedding-3-small'.
+   * Example: 'github-models-embedding-small'.
    * Part of the vector's identity — cross-provider comparisons are invalid.
    */
   embeddingProvider: string;
 
   /**
    * Adapter model version at write time per RFC-0019 §2.3.
-   * Example: '2024-01-25' (OpenAI snapshot date).
+   * Example: '2024-01-25' (GitHub Copilot snapshot date).
    * Used to detect cross-version stale vectors for re-embed.
    */
   embeddingModelVersion: string;
@@ -115,7 +115,7 @@ export interface EmbeddingStorageBackend {
    * JSONL backend: O(n) linear scan — acceptable up to ~100K entries.
    *
    * @param textHash - SHA-256 hash of the source text.
-   * @param provider - Adapter name (e.g., 'openai-text-embedding-3-small').
+   * @param provider - Adapter name (e.g., 'github-models-embedding-small').
    * @param modelVersion - Adapter model version (e.g., '2024-01-25').
    */
   read(textHash: string, provider: string, modelVersion: string): Promise<VectorStoreEntry | null>;

@@ -431,7 +431,7 @@ describe('runOrchestratorTick — resume path (AISDLC-242 AC #7)', () => {
 
 // ── AISDLC-242 Major-2 fix: in-flight bypass for recoverable worktrees ──
 //
-// Regression fixture for the bug identified in the Codex code review:
+// Regression fixture for the bug identified in the GitHub Copilot code review:
 // `reconstructInFlightFromWorktrees()` adds any worktree with an `.active-task`
 // sentinel to the in-flight map (dispatchPromise: null). When the next tick
 // runs, the AlreadyInFlight pre-filter blocks the candidate before `picks` is

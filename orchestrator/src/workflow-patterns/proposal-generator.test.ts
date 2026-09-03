@@ -64,7 +64,7 @@ describe('generateProposal', () => {
     const proposal = generateProposal(makePattern());
 
     expect(proposal.artifactType).toBe('command');
-    expect(proposal.artifactPath).toMatch(/^\.claude\/commands\/auto-.*\.md$/);
+    expect(proposal.artifactPath).toMatch(/^\\.github\\/commands\/auto-.*\.md$/);
     expect(proposal.draftContent).toContain('---');
     expect(proposal.draftContent).toContain('name:');
     expect(proposal.draftContent).toContain('pnpm build');
@@ -82,7 +82,7 @@ describe('generateProposal', () => {
     );
 
     expect(proposal.artifactType).toBe('skill');
-    expect(proposal.artifactPath).toMatch(/^\.claude\/skills\/auto-.*\/SKILL\.md$/);
+    expect(proposal.artifactPath).toMatch(/^\\.github\\/skills\/auto-.*\/SKILL\.md$/);
     expect(proposal.draftContent).toContain('name:');
     expect(proposal.draftContent).toContain('Workflow');
   });
@@ -109,7 +109,7 @@ describe('generateProposal', () => {
     );
 
     expect(proposal.artifactType).toBe('hook');
-    expect(proposal.artifactPath).toMatch(/^\.claude\/hooks\/auto-.*\.sh$/);
+    expect(proposal.artifactPath).toMatch(/^\\.github\\/hooks\/auto-.*\.sh$/);
     expect(proposal.draftContent).toContain('#!/bin/bash');
     expect(proposal.draftContent).toContain('set -euo pipefail');
   });

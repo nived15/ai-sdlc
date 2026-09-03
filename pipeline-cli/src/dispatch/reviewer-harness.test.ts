@@ -1,16 +1,17 @@
 /**
  * Hermetic unit tests for the reviewer-harness selector (AISDLC-483).
  *
- * AC-5: asserts that with no override env vars set, the selection logic
- * resolves:
- *   - code-reviewer  → code-reviewer-codex  (codex harness)
- *   - test-reviewer  → test-reviewer-codex  (codex harness)
- *   - security       → security-reviewer    (claude-code, opus)
- *   - developer      → developer            (claude-code, sonnet)
+ * Asserts that with no override env vars set, the selection logic resolves:
+ *   - code-reviewer  → code-reviewer      (copilot, balanced)
+ *   - test-reviewer  → test-reviewer      (copilot, balanced)
+ *   - security       → security-reviewer  (copilot, reasoning)
+ *   - developer      → developer          (copilot, balanced)
  *
  * Also covers:
- *   - AI_SDLC_REVIEWER_HARNESS=claude forces Claude-native agents for
- *     code/test, leaves security + developer unchanged.
+ *   - AI_SDLC_REVIEWER_MODEL_TIER pins the tier for the three review roles
+ *     and leaves developer dispatch unchanged.
+ *   - An invalid tier value is ignored rather than silently downgrading
+ *     the security review.
  *   - resolveReviewerByClassifierName maps 'testing'/'critic'/'security'
  *     correctly.
  *   - Unknown classifier names produce a safe fallback (no panic).
@@ -19,160 +20,113 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  COPILOT_HARNESS,
   resolveReviewer,
   resolveReviewerByClassifierName,
-  REVIEWER_HARNESS_ENV,
+  REVIEWER_MODEL_TIER_ENV,
 } from './reviewer-harness.js';
 
 // Capture + restore the env var around each test so tests don't bleed.
-const ORIGINAL_ENV = process.env[REVIEWER_HARNESS_ENV];
+const ORIGINAL_ENV = process.env[REVIEWER_MODEL_TIER_ENV];
 
 beforeEach(() => {
-  delete process.env[REVIEWER_HARNESS_ENV];
+  delete process.env[REVIEWER_MODEL_TIER_ENV];
 });
 
 afterEach(() => {
   if (ORIGINAL_ENV === undefined) {
-    delete process.env[REVIEWER_HARNESS_ENV];
+    delete process.env[REVIEWER_MODEL_TIER_ENV];
   } else {
-    process.env[REVIEWER_HARNESS_ENV] = ORIGINAL_ENV;
+    process.env[REVIEWER_MODEL_TIER_ENV] = ORIGINAL_ENV;
   }
 });
 
-describe('resolveReviewer — default (no override)', () => {
-  it('routes code review to code-reviewer-codex with codex harness', () => {
-    const result = resolveReviewer('code');
-    expect(result.agentName).toBe('code-reviewer-codex');
-    expect(result.harness).toBe('codex');
+describe('resolveReviewer — default routing', () => {
+  it('routes code review to code-reviewer on Copilot at the balanced tier', () => {
+    expect(resolveReviewer('code')).toEqual({
+      agentName: 'code-reviewer',
+      harness: COPILOT_HARNESS,
+      model: 'balanced',
+    });
   });
 
-  it('routes test review to test-reviewer-codex with codex harness', () => {
-    const result = resolveReviewer('test');
-    expect(result.agentName).toBe('test-reviewer-codex');
-    expect(result.harness).toBe('codex');
+  it('routes test review to test-reviewer on Copilot at the balanced tier', () => {
+    expect(resolveReviewer('test')).toEqual({
+      agentName: 'test-reviewer',
+      harness: COPILOT_HARNESS,
+      model: 'balanced',
+    });
   });
 
-  it('routes security review to security-reviewer with claude-code harness at opus', () => {
-    const result = resolveReviewer('security');
-    expect(result.agentName).toBe('security-reviewer');
-    expect(result.harness).toBe('claude-code');
-    expect(result.model).toBe('opus');
+  it('routes security review to the reasoning tier', () => {
+    expect(resolveReviewer('security')).toEqual({
+      agentName: 'security-reviewer',
+      harness: COPILOT_HARNESS,
+      model: 'reasoning',
+    });
   });
 
-  it('routes developer to developer with claude-code harness at sonnet', () => {
-    const result = resolveReviewer('developer');
-    expect(result.agentName).toBe('developer');
-    expect(result.harness).toBe('claude-code');
-    expect(result.model).toBe('sonnet');
-  });
-});
-
-describe('resolveReviewer — AI_SDLC_REVIEWER_HARNESS=claude override (via env)', () => {
-  beforeEach(() => {
-    process.env[REVIEWER_HARNESS_ENV] = 'claude';
+  it('routes the developer role to Copilot at the balanced tier', () => {
+    expect(resolveReviewer('developer')).toEqual({
+      agentName: 'developer',
+      harness: COPILOT_HARNESS,
+      model: 'balanced',
+    });
   });
 
-  it('forces code review to claude-native code-reviewer', () => {
-    const result = resolveReviewer('code');
-    expect(result.agentName).toBe('code-reviewer');
-    expect(result.harness).toBe('claude-code');
-    expect(result.model).toBe('sonnet');
-  });
-
-  it('forces test review to claude-native test-reviewer', () => {
-    const result = resolveReviewer('test');
-    expect(result.agentName).toBe('test-reviewer');
-    expect(result.harness).toBe('claude-code');
-    expect(result.model).toBe('sonnet');
-  });
-
-  it('does NOT change security-reviewer (always claude-native)', () => {
-    const result = resolveReviewer('security');
-    expect(result.agentName).toBe('security-reviewer');
-    expect(result.harness).toBe('claude-code');
-    expect(result.model).toBe('opus');
-  });
-
-  it('does NOT change developer (always claude-native sonnet)', () => {
-    const result = resolveReviewer('developer');
-    expect(result.agentName).toBe('developer');
-    expect(result.harness).toBe('claude-code');
-    expect(result.model).toBe('sonnet');
+  it('never resolves a harness other than copilot', () => {
+    for (const role of ['code', 'test', 'security', 'developer'] as const) {
+      expect(resolveReviewer(role).harness).toBe('copilot');
+    }
   });
 });
 
-describe('resolveReviewer — explicit overrideHarness parameter', () => {
-  it('explicit claude override takes precedence over env var (no env set)', () => {
-    const result = resolveReviewer('code', 'claude');
-    expect(result.agentName).toBe('code-reviewer');
-    expect(result.harness).toBe('claude-code');
+describe('resolveReviewer — model-tier override', () => {
+  it('honours an explicit tier argument for the review roles', () => {
+    expect(resolveReviewer('code', 'reasoning').model).toBe('reasoning');
+    expect(resolveReviewer('test', 'inherit').model).toBe('inherit');
+    expect(resolveReviewer('security', 'balanced').model).toBe('balanced');
   });
 
-  it('explicit empty string restores default even when env var is set', () => {
-    process.env[REVIEWER_HARNESS_ENV] = 'claude';
-    // Explicitly passing empty string should... hmm, the resolver reads env when
-    // overrideHarness is undefined. An explicit '' would read as falsy but not
-    // undefined — let's verify the behaviour is "use default" when not 'claude'.
-    const result = resolveReviewer('code', '');
-    expect(result.agentName).toBe('code-reviewer-codex');
-    expect(result.harness).toBe('codex');
+  it('honours the env var when no explicit tier is passed', () => {
+    process.env[REVIEWER_MODEL_TIER_ENV] = 'inherit';
+    expect(resolveReviewer('code').model).toBe('inherit');
+    expect(resolveReviewer('security').model).toBe('inherit');
   });
 
-  it('unknown override value is treated as default (codex)', () => {
-    const result = resolveReviewer('test', 'something-else');
-    expect(result.agentName).toBe('test-reviewer-codex');
-    expect(result.harness).toBe('codex');
-  });
-});
-
-describe('resolveReviewerByClassifierName — default (no override)', () => {
-  it("maps 'critic' to code-reviewer-codex", () => {
-    const result = resolveReviewerByClassifierName('critic');
-    expect(result.agentName).toBe('code-reviewer-codex');
-    expect(result.harness).toBe('codex');
+  it('leaves developer dispatch unaffected by the override', () => {
+    process.env[REVIEWER_MODEL_TIER_ENV] = 'inherit';
+    expect(resolveReviewer('developer').model).toBe('balanced');
   });
 
-  it("maps 'testing' to test-reviewer-codex", () => {
-    const result = resolveReviewerByClassifierName('testing');
-    expect(result.agentName).toBe('test-reviewer-codex');
-    expect(result.harness).toBe('codex');
-  });
-
-  it("maps 'security' to security-reviewer (claude-code, opus)", () => {
-    const result = resolveReviewerByClassifierName('security');
-    expect(result.agentName).toBe('security-reviewer');
-    expect(result.harness).toBe('claude-code');
-    expect(result.model).toBe('opus');
-  });
-
-  it('unknown classifier name falls back to claude-code with given name as agentName', () => {
-    const result = resolveReviewerByClassifierName('custom-review');
-    expect(result.agentName).toBe('custom-review');
-    expect(result.harness).toBe('claude-code');
-    expect(result.model).toBe('sonnet');
+  it('ignores an invalid tier rather than downgrading security review', () => {
+    expect(resolveReviewer('security', 'not-a-tier').model).toBe('reasoning');
+    expect(resolveReviewer('code', 'not-a-tier').model).toBe('balanced');
   });
 });
 
-describe('resolveReviewerByClassifierName — AI_SDLC_REVIEWER_HARNESS=claude override', () => {
-  beforeEach(() => {
-    process.env[REVIEWER_HARNESS_ENV] = 'claude';
+describe('resolveReviewerByClassifierName', () => {
+  it('maps testing → test-reviewer', () => {
+    expect(resolveReviewerByClassifierName('testing').agentName).toBe('test-reviewer');
   });
 
-  it("maps 'critic' to claude-native code-reviewer", () => {
-    const result = resolveReviewerByClassifierName('critic');
-    expect(result.agentName).toBe('code-reviewer');
-    expect(result.harness).toBe('claude-code');
+  it('maps critic → code-reviewer', () => {
+    expect(resolveReviewerByClassifierName('critic').agentName).toBe('code-reviewer');
   });
 
-  it("maps 'testing' to claude-native test-reviewer", () => {
-    const result = resolveReviewerByClassifierName('testing');
-    expect(result.agentName).toBe('test-reviewer');
-    expect(result.harness).toBe('claude-code');
+  it('maps security → security-reviewer at the reasoning tier', () => {
+    expect(resolveReviewerByClassifierName('security')).toEqual({
+      agentName: 'security-reviewer',
+      harness: COPILOT_HARNESS,
+      model: 'reasoning',
+    });
   });
 
-  it('security is unaffected by override', () => {
-    const result = resolveReviewerByClassifierName('security');
-    expect(result.agentName).toBe('security-reviewer');
-    expect(result.model).toBe('opus');
+  it('falls back safely for an unknown classifier name', () => {
+    expect(resolveReviewerByClassifierName('mystery-reviewer')).toEqual({
+      agentName: 'mystery-reviewer',
+      harness: COPILOT_HARNESS,
+      model: 'balanced',
+    });
   });
 });

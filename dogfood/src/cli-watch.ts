@@ -14,10 +14,10 @@
  * spawner; final results are reported on stdout.
  *
  * Spawner selection (RFC-0012 §8.3):
- *   - `--spawner shell` (or default `auto` when `claude` CLI is on PATH) →
- *     `ShellClaudePSpawner` (subscription billing, preferred per RFC §2.4).
+ *   - `--spawner shell` (or default `auto` when `copilot` CLI is on PATH) →
+ *     `CopilotHarnessAdapter` (subscription billing, preferred per RFC §2.4).
  *   - `--spawner sdk`   (or `auto` falling back to `ANTHROPIC_API_KEY`) →
- *     `ClaudeCodeSDKSpawner` (API-key billing for unattended/CI runs).
+ *     `CopilotHarnessAdapter` (API-key billing for unattended/CI runs).
  *   - `--spawner mock`  → `MockSpawner` (deterministic test fixture; intended
  *     for smoke tests + this file's own integration tests).
  *
@@ -78,23 +78,23 @@ function parseArgs(argv: string[]): ParsedArgs {
 /**
  * Build the `SubagentSpawner` matching the requested kind. Exported so tests
  * can inject `--spawner mock` and verify pipeline orchestration without
- * touching `claude` / the SDK.
+ * touching the GitHub Copilot CLI.
  */
 export async function resolveSpawner(kind: SpawnerKind): Promise<SubagentSpawner> {
   if (kind === 'mock') {
     return makeApprovingMockSpawner();
   }
   // shell / sdk / auto: defer to the pipeline-cli resolver. defaultSpawner()
-  // prefers ShellClaudePSpawner when `claude` is on PATH and falls back to
-  // ClaudeCodeSDKSpawner when ANTHROPIC_API_KEY is set. Explicit `--spawner`
+  // constructs CopilotHarnessAdapter over the configured bridge; it falls back to
+  // CopilotHarnessAdapter when ANTHROPIC_API_KEY is set. Explicit `--spawner`
   // overrides the auto-detection by short-circuiting one of the two probes.
   if (kind === 'shell') {
     // Force the shell branch: pretend env has no API key so we never fall
-    // through to the SDK spawner if `claude` is missing.
+    // through to an error if the bridge is missing.
     return defaultSpawner({ env: () => undefined });
   }
   if (kind === 'sdk') {
-    // Force the SDK branch: pretend `claude` isn't on PATH so we skip it.
+    // Force the error branch: pretend the bridge env var is unset.
     return defaultSpawner({ which: async () => false });
   }
   return defaultSpawner();

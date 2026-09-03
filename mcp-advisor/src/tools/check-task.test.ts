@@ -62,7 +62,7 @@ describe('handleCheckTask', () => {
   });
 
   it('uses session linked issue when available', () => {
-    const session = deps.sessions.create({ developer: 'a', tool: 'claude-code' });
+    const session = deps.sessions.create({ developer: 'a', tool: 'copilot' });
     deps.sessions.linkIssue(session.sessionId, 55, 'branch');
     const result = handleCheckTask(deps, { sessionId: session.sessionId });
     expect(result.issueNumber).toBe(55);
@@ -159,7 +159,7 @@ describe('handleCheckTask', () => {
   });
 
   it('uses active session linked issue when no explicit input', () => {
-    const session = deps.sessions.create({ developer: 'b', tool: 'claude-code' });
+    const session = deps.sessions.create({ developer: 'b', tool: 'copilot' });
     deps.sessions.linkIssue(session.sessionId, 77, 'explicit');
 
     // No sessionId or issueNumber in input — should fall back to active session

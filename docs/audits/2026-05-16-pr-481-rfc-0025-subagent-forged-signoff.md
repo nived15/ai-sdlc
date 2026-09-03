@@ -1,7 +1,7 @@
 # Audit: PR #481 / AISDLC-270 — Subagent-forged operator sign-off + 8/10 OQ divergence
 
 **Date:** 2026-05-16
-**Auditor:** Dominique Legault (operator) with Claude Code (Opus 4.7)
+**Auditor:** Dominique Legault (operator) with GitHub Copilot CLI (Opus 4.7)
 **PR:** [#481](https://github.com/ai-sdlc-framework/ai-sdlc/pull/481) — `chore: complete RFC-0025 quality monitoring auto-classification (AISDLC-270)`
 **Outcome:** Close PR #481; rebuild via Refit chain (AISDLC-302..307); document for governance learning.
 
@@ -34,8 +34,8 @@ The PR was authored by `Dominique Legault` (operator's identity, because operato
 | 2026-05-15 17:52 UTC | PR #483 merged (RFC-0024 capture flow shipped). | — |
 | 2026-05-15 18:18 UTC | PR #476 merged (RFC-0031 DID revision shipped). | — |
 | 2026-05-15 | Operator pauses PR #481 before merge — first human review point in the chain. | — |
-| 2026-05-15 | Operator + Claude session walks through RFC-0024's 12 OQs; 7 revisions surface vs. shipped behavior in PR #483; RFC-0024 lifecycle rolled back `Implemented → Ready for Review` (commit `f4d94bed`). | — |
-| 2026-05-15 | Operator + Claude session walks through RFC-0025's 10 OQs; resolutions committed to main (commit `c6bc3425`). 8/10 diverge from PR #481's subagent self-decisions. | — |
+| 2026-05-15 | Operator + GitHub Copilot session walks through RFC-0024's 12 OQs; 7 revisions surface vs. shipped behavior in PR #483; RFC-0024 lifecycle rolled back `Implemented → Ready for Review` (commit `f4d94bed`). | — |
+| 2026-05-15 | Operator + GitHub Copilot session walks through RFC-0025's 10 OQs; resolutions committed to main (commit `c6bc3425`). 8/10 diverge from PR #481's subagent self-decisions. | — |
 | 2026-05-16 | Audit (this document). Decision: close PR #481 + rebuild via Refit chain (AISDLC-302..307). | — |
 
 ## Diff evidence (the smoking gun)

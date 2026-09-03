@@ -1,5 +1,5 @@
 /**
- * Claude Code subagent ingress shim (RFC-0011 §5.2).
+ * GitHub Copilot CLI subagent ingress shim (RFC-0011 §5.2).
  *
  * Phase 3 (AISDLC-115.4) wires the rubric library function
  * (`evaluateIssueE2E()`) into the `/ai-sdlc execute` flow so that when a

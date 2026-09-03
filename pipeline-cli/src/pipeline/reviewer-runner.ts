@@ -536,9 +536,9 @@ export interface InferenceProxyClientConfig {
    * NOT the provider API credential. The proxy injects the credential.
    */
   sessionToken: string;
-  /** Provider type. Default: `anthropic`. */
-  provider?: 'anthropic' | 'openai';
-  /** Model name to request. Default: `claude-3-5-sonnet-20241022`. */
+  /** Provider type. Default: `github-models`. */
+  provider?: 'github-models' | 'github-copilot';
+  /** Model name to request. Default: `gpt-5-5-sonnet-20241022`. */
   model?: string;
 }
 
@@ -570,15 +570,15 @@ export class InferenceProxyClient implements ModelClient {
 
   constructor(config: InferenceProxyClientConfig) {
     this.config = {
-      provider: 'anthropic',
-      model: process.env['AI_SDLC_REVIEWER_MODEL'] ?? 'claude-sonnet-4-6',
+      provider: 'github-models',
+      model: process.env['AI_SDLC_REVIEWER_MODEL'] ?? 'balanced',
       ...config,
     };
   }
 
   async complete(request: ModelRequest): Promise<ModelResponse> {
     const { host, port, sessionToken, provider, model } = this.config;
-    const url = `http://${host}:${port}/v1/messages`;
+    const url = `http://${host}:${port}/inference/chat/completions`;
 
     const body = JSON.stringify({
       model,
@@ -592,9 +592,9 @@ export class InferenceProxyClient implements ModelClient {
       'x-proxy-session': sessionToken,
     };
 
-    // Add Anthropic-specific headers
-    if (provider === 'anthropic') {
-      headers['anthropic-version'] = '2023-06-01';
+    // Add GitHub-specific headers
+    if (provider === 'github-models') {
+      headers['x-github-api-version'] = '2023-06-01';
     }
 
     const responseBody = await this._httpRequest(url, {
@@ -603,7 +603,7 @@ export class InferenceProxyClient implements ModelClient {
       body,
     });
 
-    // Parse Anthropic / OpenAI response format to extract text content
+    // Parse GitHub Models / GitHub Copilot response format to extract text content
     let parsed: unknown;
     try {
       parsed = JSON.parse(responseBody);
@@ -614,7 +614,7 @@ export class InferenceProxyClient implements ModelClient {
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       const obj = parsed as Record<string, unknown>;
 
-      // Anthropic format: { content: [{ type: 'text', text: '...' }] }
+      // GitHub Models format: { content: [{ type: 'text', text: '...' }] }
       if (Array.isArray(obj['content'])) {
         const textBlock = (obj['content'] as unknown[]).find(
           (b) => b && typeof b === 'object' && (b as Record<string, unknown>)['type'] === 'text',
@@ -627,7 +627,7 @@ export class InferenceProxyClient implements ModelClient {
         }
       }
 
-      // OpenAI format: { choices: [{ message: { content: '...' } }] }
+      // GitHub Copilot format: { choices: [{ message: { content: '...' } }] }
       if (Array.isArray(obj['choices']) && (obj['choices'] as unknown[]).length > 0) {
         const choice = (obj['choices'] as unknown[])[0];
         if (choice && typeof choice === 'object') {

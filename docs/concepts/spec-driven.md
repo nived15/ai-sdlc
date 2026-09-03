@@ -159,7 +159,7 @@ AI-SDLC is the back-of-funnel system. The front of the funnel — idea → contr
 │  Front of funnel             │  spec  │  AI-SDLC                                │
 │                              │ ──────▶│                                         │
 │  spec-kit (recommended)      │artifact│  DoR Gate → PPA → execute →             │
-│  adopter RFC scaffold        │        │  cross-harness review → attest → merge  │
+│  adopter RFC scaffold        │        │  independent parallel review → attest → merge  │
 │  Linear / Notion / Confluence│        │                                         │
 │  plain markdown              │        │  contract → shipped + governed           │
 │                              │        │                                         │

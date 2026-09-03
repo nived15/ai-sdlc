@@ -7,13 +7,13 @@
  * Security invariants tested:
  *  - AQ2-1: Proxy start/stop lifecycle owned by the orchestrator (try/finally).
  *  - AQ2-2: `INFERENCE_PROXY_HOST/PORT/SESSION` env vars are set from proxy result.
- *  - AQ2-3: The provider credential (ANTHROPIC_API_KEY) is NOT in `sandboxEnv`
+ *  - AQ2-3: The provider credential (GITHUB_MODELS_TOKEN) is NOT in `sandboxEnv`
  *            (buildReviewerProxyEnv does not include the key).
  *  - AQ2-4: `buildProxyHostArg` produces the correct `--add-host` docker arg.
  *  - AQ2-5: `buildDockerRunArgs` includes `extraDockerArgs` before the image name.
  *  - AQ2-6: `runSandbox` passes `sandboxEnv` and `proxyHostArgs` to the driver.
  *  - AQ2-7: credential withholding invariant — `validateSandboxEnv` blocks
- *            ANTHROPIC_API_KEY in sandbox env.
+ *            GITHUB_MODELS_TOKEN in sandbox env.
  *  - AQ2-8: `_ucvgSeams.inferenceProxyFactory` defaults to `createInferenceProxy`.
  *  - AQ2-9: Integration gap: real proxy + container requires AI_SDLC_SANDBOX_INTEGRATION_TESTS=1.
  *
@@ -52,11 +52,11 @@ function mkTmpDir(prefix: string): string {
 // ── AQ2-3: buildReviewerProxyEnv does NOT include the credential ───────────────
 
 describe('AQ2-3: buildReviewerProxyEnv — credential withholding', () => {
-  const FAKE_CREDENTIAL = 'sk-ant-api03-test-DO-NOT-LEAK-1234567890abcdef';
+  const FAKE_CREDENTIAL = 'ghp-test-test-DO-NOT-LEAK-1234567890abcdef';
 
-  it('does not include ANTHROPIC_API_KEY in the proxy env', () => {
+  it('does not include GITHUB_MODELS_TOKEN in the proxy env', () => {
     const env = buildReviewerProxyEnv({ port: 9090, sessionToken: 'tok-abc' });
-    expect(env['ANTHROPIC_API_KEY']).toBeUndefined();
+    expect(env['GITHUB_MODELS_TOKEN']).toBeUndefined();
     expect(JSON.stringify(env)).not.toContain(FAKE_CREDENTIAL);
   });
 
@@ -74,10 +74,10 @@ describe('AQ2-3: buildReviewerProxyEnv — credential withholding', () => {
     expect(env['INFERENCE_PROXY_SESSION']).toBe('mysession');
   });
 
-  it('includes ANTHROPIC_BASE_URL and OPENAI_BASE_URL pointing to inference.local', () => {
+  it('includes GITHUB_MODELS_BASE_URL and COPILOT_API_BASE_URL pointing to inference.local', () => {
     const env = buildReviewerProxyEnv({ port: 8765, sessionToken: 'tok' });
-    expect(env['ANTHROPIC_BASE_URL']).toBe('http://inference.local:8765');
-    expect(env['OPENAI_BASE_URL']).toBe('http://inference.local:8765');
+    expect(env['GITHUB_MODELS_BASE_URL']).toBe('http://inference.local:8765');
+    expect(env['COPILOT_API_BASE_URL']).toBe('http://inference.local:8765');
   });
 
   it('does not include any value containing the credential string', () => {
@@ -86,7 +86,7 @@ describe('AQ2-3: buildReviewerProxyEnv — credential withholding', () => {
     const envStr = JSON.stringify(env);
     expect(envStr).not.toContain(FAKE_CREDENTIAL);
     // Must not contain any common API key prefixes either
-    expect(envStr).not.toContain('sk-ant-api03');
+    expect(envStr).not.toContain('ghp-test-api03');
     expect(envStr).not.toContain('sk-live');
   });
 });
@@ -277,7 +277,7 @@ describe('AQ2-6: runSandbox — sandboxEnv and proxyHostArgs passthrough', () =>
 //
 // Note: validateSandboxEnv blocks WITHHELD_ENV_VARS (GITHUB_TOKEN, NPM_TOKEN,
 // AI_SDLC_PAT, AI_SDLC_SIGNING_KEY) which are the signing/write credentials.
-// ANTHROPIC_API_KEY is NOT blocked by validateSandboxEnv — instead, the AQ2
+// GITHUB_MODELS_TOKEN is NOT blocked by validateSandboxEnv — instead, the AQ2
 // invariant is enforced by buildReviewerProxyEnv() which simply never includes it.
 // The proxy holds the API key; the sandbox env only gets the proxy discovery vars.
 
@@ -325,13 +325,13 @@ describe('AQ2-7: validateSandboxEnv — blocks signing/write credentials', () =>
     expect(() => validateSandboxEnv(undefined)).not.toThrow();
   });
 
-  it('AQ2 invariant: buildReviewerProxyEnv never includes ANTHROPIC_API_KEY (proxy holds it)', () => {
-    // The AQ2 credential-withholding invariant for ANTHROPIC_API_KEY is enforced
+  it('AQ2 invariant: buildReviewerProxyEnv never includes GITHUB_MODELS_TOKEN (proxy holds it)', () => {
+    // The AQ2 credential-withholding invariant for GITHUB_MODELS_TOKEN is enforced
     // by buildReviewerProxyEnv() not including it — the proxy process is the only
     // place the credential lives. validateSandboxEnv does not need to check it
     // because the caller (runSandboxAndReview) never passes it.
     const proxyEnv = buildReviewerProxyEnv({ port: 8080, sessionToken: 'tok' });
-    expect(proxyEnv['ANTHROPIC_API_KEY']).toBeUndefined();
+    expect(proxyEnv['GITHUB_MODELS_TOKEN']).toBeUndefined();
     // The proxy env is safe to pass as sandboxEnv without credential leakage
     expect(() => validateSandboxEnv(proxyEnv)).not.toThrow();
   });
@@ -372,7 +372,7 @@ describe('AQ2-8: _ucvgSeams.inferenceProxyFactory seam', () => {
     // Call it to verify it works
     const result = await _ucvgSeams.inferenceProxyFactory({
       prNumber: 99,
-      credential: 'sk-ant-test',
+      credential: 'ghp-test',
     });
     expect(factoryCallCount).toBe(1);
     expect(result.port).toBe(9999);
@@ -412,7 +412,7 @@ describe('AQ2-1: Proxy lifecycle — seam injectable + stop() contract', () => {
     // Call the factory directly (simulating what runSandboxAndReview does)
     const result = await _ucvgSeams.inferenceProxyFactory({
       prNumber: 99,
-      credential: 'sk-ant-test',
+      credential: 'ghp-test',
     });
 
     // The factory result must have proxy (with stop()), port, sessionToken
@@ -439,7 +439,7 @@ describe('AQ2-1: Proxy lifecycle — seam injectable + stop() contract', () => {
 
     const result = await _ucvgSeams.inferenceProxyFactory({
       prNumber: 42,
-      credential: 'sk-ant-test',
+      credential: 'ghp-test',
       bindAddress: '0.0.0.0',
       useHttp: true,
     });
@@ -487,10 +487,10 @@ describe('AQ2-2: resolveModelClient — proxy env vars → InferenceProxyClient'
 // ── AQ2-9: Integration gap documentation ──────────────────────────────────────
 
 describe('AQ2-9: Integration gap documentation', () => {
-  it('documents that real end-to-end AQ2 requires AI_SDLC_SANDBOX_INTEGRATION_TESTS=1 + ANTHROPIC_API_KEY', () => {
+  it('documents that real end-to-end AQ2 requires AI_SDLC_SANDBOX_INTEGRATION_TESTS=1 + GITHUB_MODELS_TOKEN', () => {
     // Real AQ2 path (live Docker + live proxy + real model calls) requires:
     //  1. AI_SDLC_SANDBOX_INTEGRATION_TESTS=1
-    //  2. ANTHROPIC_API_KEY set (in the runner env, NOT in the container env)
+    //  2. GITHUB_MODELS_TOKEN set (in the runner env, NOT in the container env)
     //  3. Docker available (DockerSandboxDriver)
     //  4. The InferenceProxy started by the orchestrator before the sandbox run
     //
@@ -504,7 +504,7 @@ describe('AQ2-9: Integration gap documentation', () => {
     //  - Seam inject/override (AQ2-8)
     //
     // The only irreducible integration gap: a live Docker container + real
-    // InferenceProxy + real Anthropic API call. That is validated on the
+    // InferenceProxy + real GitHub Models API call. That is validated on the
     // fork harness by the operator (live e2e validation step, not automated here).
     expect(true).toBe(true); // Structural — this test is documentation.
   });
@@ -516,7 +516,7 @@ describe('AQ2-9: Integration gap documentation', () => {
     expect(() => validateSandboxEnv(proxyEnv)).not.toThrow();
 
     // And verify the proxy env does NOT contain credential keys
-    expect(Object.keys(proxyEnv)).not.toContain('ANTHROPIC_API_KEY');
+    expect(Object.keys(proxyEnv)).not.toContain('GITHUB_MODELS_TOKEN');
     expect(Object.keys(proxyEnv)).not.toContain('GITHUB_TOKEN');
     expect(Object.keys(proxyEnv)).not.toContain('NPM_TOKEN');
     expect(Object.keys(proxyEnv)).not.toContain('AI_SDLC_PAT');

@@ -43,13 +43,13 @@ before(() => {
 function cleanEnv(extra = {}) {
   const inherited = { ...process.env };
   // AISDLC-554: these steer the signer's runtime resolution (candidates 3-4),
-  // and Claude Code sets them in exactly the plugin-hook context where tests
+  // and GitHub Copilot CLI sets them in exactly the plugin-hook context where tests
   // may run. Leaking them from the ambient shell silently flips the negative
   // resolution tests into false passes — the runtime IS found, so
   // "fails when absent everywhere" stops testing anything. Strip them from the
   // inherited env, but let a test opt back in explicitly via `extra`.
   delete inherited.CLAUDE_PLUGIN_DIR;
-  delete inherited.CLAUDE_PLUGIN_ROOT;
+  delete inherited.COPILOT_PLUGIN_ROOT;
   const env = { ...inherited, ...extra };
   delete env.GIT_DIR;
   delete env.GIT_WORK_TREE;
@@ -189,7 +189,7 @@ describe('sign-attestation.mjs', () => {
     const verdictsPath = join(fixture.root, 'verdicts.json');
     writeFileSync(
       verdictsPath,
-      JSON.stringify([{ agentId: 'code-reviewer', harness: 'codex', approved: true }]),
+      JSON.stringify([{ agentId: 'code-reviewer', harness: 'copilot', approved: true }]),
     );
     const res = runHelper(
       fixture.root,
@@ -209,19 +209,19 @@ describe('sign-attestation.mjs', () => {
       JSON.stringify([
         {
           agentId: 'code-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'test-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'security-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -280,7 +280,7 @@ describe('sign-attestation.mjs', () => {
       JSON.stringify([
         {
           agentId: 'code-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -312,19 +312,19 @@ describe('sign-attestation.mjs', () => {
       JSON.stringify([
         {
           agentId: 'code-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'test-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'security-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -356,19 +356,19 @@ describe('sign-attestation.mjs', () => {
       JSON.stringify([
         {
           agentId: 'code-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'test-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'security-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -404,19 +404,19 @@ describe('sign-attestation.mjs', () => {
       JSON.stringify([
         {
           agentId: 'code-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'test-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'security-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -501,9 +501,9 @@ describe('sign-attestation.mjs', () => {
     writeFileSync(
       verdictsPath,
       JSON.stringify([
-        { agentId: 'code-reviewer', harness: 'codex', approved: true, findings: {} },
-        { agentId: 'test-reviewer', harness: 'codex', approved: true, findings: {} },
-        { agentId: 'security-reviewer', harness: 'codex', approved: true, findings: {} },
+        { agentId: 'code-reviewer', harness: 'copilot', approved: true, findings: {} },
+        { agentId: 'test-reviewer', harness: 'copilot', approved: true, findings: {} },
+        { agentId: 'security-reviewer', harness: 'copilot', approved: true, findings: {} },
       ]),
     );
     const res = runHelper(
@@ -566,7 +566,7 @@ describe('sign-attestation.mjs', () => {
       JSON.stringify([
         {
           agentId: 'code-reviewer',
-          harness: 'claude-code',
+          harness: 'copilot',
           approved: false,
           findings: [
             { severity: 'critical', message: 'null dereference' },
@@ -577,13 +577,13 @@ describe('sign-attestation.mjs', () => {
         },
         {
           agentId: 'test-reviewer',
-          harness: 'claude-code',
+          harness: 'copilot',
           approved: true,
           findings: [{ severity: 'suggestion', message: 'rename variable' }],
         },
         {
           agentId: 'security-reviewer',
-          harness: 'claude-code',
+          harness: 'copilot',
           approved: true,
           findings: [],
         },
@@ -635,7 +635,7 @@ describe('sign-attestation.mjs', () => {
         verdicts: [
           {
             agentId: 'code-reviewer',
-            harness: 'claude-code',
+            harness: 'copilot',
             approved: false,
             findings: [
               { severity: 'critical', message: 'use-after-free' },
@@ -644,13 +644,13 @@ describe('sign-attestation.mjs', () => {
           },
           {
             agentId: 'test-reviewer',
-            harness: 'claude-code',
+            harness: 'copilot',
             approved: true,
             findings: [],
           },
           {
             agentId: 'security-reviewer',
-            harness: 'claude-code',
+            harness: 'copilot',
             approved: true,
             findings: [],
           },
@@ -686,19 +686,19 @@ describe('sign-attestation.mjs', () => {
       JSON.stringify([
         {
           agentId: 'code-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: false,
           findings: { critical: 2, major: 3, minor: 1, suggestion: 0 },
         },
         {
           agentId: 'test-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 1 },
         },
         {
           agentId: 'security-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -740,19 +740,19 @@ describe('sign-attestation.mjs', () => {
     const verdicts = JSON.stringify([
       {
         agentId: 'code-reviewer',
-        harness: 'codex',
+        harness: 'copilot',
         approved: true,
         findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
       },
       {
         agentId: 'test-reviewer',
-        harness: 'codex',
+        harness: 'copilot',
         approved: true,
         findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
       },
       {
         agentId: 'security-reviewer',
-        harness: 'codex',
+        harness: 'copilot',
         approved: true,
         findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
       },
@@ -874,19 +874,19 @@ describe('sign-attestation.mjs', () => {
       JSON.stringify([
         {
           agentId: 'code-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'test-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'security-reviewer',
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -1019,7 +1019,7 @@ describe('sign-attestation.mjs — adopter runtime resolution (AISDLC-554)', () 
     assert.match(res.stdout.trim(), /^[a-f0-9]{64}$/);
   });
 
-  it('resolves the plugin runtimeDependency copy via CLAUDE_PLUGIN_ROOT, with nothing installed in the repo', () => {
+  it('resolves the plugin runtimeDependency copy via COPILOT_PLUGIN_ROOT, with nothing installed in the repo', () => {
     const root = join(base, 'app');
     const fixture = setupRepo(tmpHome, root);
     rmSync(join(fixture.root, 'orchestrator'), { recursive: true, force: true });
@@ -1030,7 +1030,7 @@ describe('sign-attestation.mjs — adopter runtime resolution (AISDLC-554)', () 
 
     const res = runHelper(fixture.root, ['--print-content-hash'], {
       HOME: tmpHome,
-      CLAUDE_PLUGIN_ROOT: pluginDir,
+      COPILOT_PLUGIN_ROOT: pluginDir,
     });
     assert.equal(res.status, 0, `stderr: ${res.stderr}`);
     assert.match(res.stdout.trim(), /^[a-f0-9]{64}$/);
@@ -1053,14 +1053,14 @@ describe('sign-attestation.mjs — adopter runtime resolution (AISDLC-554)', () 
 
     const res = runHelper(fixture.root, ['--print-content-hash'], {
       HOME: tmpHome,
-      CLAUDE_PLUGIN_ROOT: pluginDir,
+      COPILOT_PLUGIN_ROOT: pluginDir,
     });
     assert.equal(res.status, 0, `stderr: ${res.stderr}`);
     assert.match(res.stdout.trim(), /^[a-f0-9]{64}$/);
   });
 
   it('declares @ai-sdlc/orchestrator as a runtimeDependency so the plugin copy actually gets installed', () => {
-    // The CLAUDE_PLUGIN_ROOT candidate above is only reachable because
+    // The COPILOT_PLUGIN_ROOT candidate above is only reachable because
     // install-runtime-deps.sh installs what plugin.json declares. Without this
     // entry the zero-config path silently degrades to the error case.
     const manifest = JSON.parse(
@@ -1091,7 +1091,7 @@ describe('sign-attestation.mjs — adopter runtime resolution (AISDLC-554)', () 
       env: (() => {
         const env = cleanEnv({ HOME: tmpHome });
         delete env.CLAUDE_PLUGIN_DIR;
-        delete env.CLAUDE_PLUGIN_ROOT;
+        delete env.COPILOT_PLUGIN_ROOT;
         return env;
       })(),
       encoding: 'utf-8',
@@ -1125,7 +1125,7 @@ describe('sign-attestation.mjs — adopter runtime resolution (AISDLC-554)', () 
 
     const res = runHelper(fixture.root, ['--print-content-hash'], {
       HOME: tmpHome,
-      CLAUDE_PLUGIN_ROOT: pluginDir,
+      COPILOT_PLUGIN_ROOT: pluginDir,
     });
     assert.equal(res.status, 0, `stderr: ${res.stderr}`);
     assert.match(res.stdout.trim(), /^[a-f0-9]{64}$/);
@@ -1153,7 +1153,7 @@ describe('sign-attestation.mjs — adopter runtime resolution (AISDLC-554)', () 
 
     const res = runHelper(fixture.root, ['--print-content-hash'], {
       HOME: tmpHome,
-      CLAUDE_PLUGIN_ROOT: pluginDir,
+      COPILOT_PLUGIN_ROOT: pluginDir,
     });
     assert.equal(res.status, 0, `stderr: ${res.stderr}`);
     assert.match(res.stderr, /skipped stale @ai-sdlc\/orchestrator.*0\.14\.0-beta\.1/);

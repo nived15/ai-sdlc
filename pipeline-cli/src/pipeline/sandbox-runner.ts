@@ -28,7 +28,7 @@
  *   - `GITHUB_TOKEN` with write scope
  *   - `NPM_TOKEN`
  *   - `AI_SDLC_PAT`
- * Anthropic provider credentials are injected at the sandbox-local inference
+ * GitHub Models provider credentials are injected at the sandbox-local inference
  * router (`inference.local`) — the agent process never receives them directly.
  *
  * ## Docker hardening (AISDLC-508)
@@ -1971,7 +1971,7 @@ export interface RunSandboxInput {
    * so the in-container process can reach the host-side `inference.local` proxy.
    *
    * SECURITY CONSTRAINT: These MUST NOT include any of the withheld credentials
-   * (ANTHROPIC_API_KEY, AI_SDLC_SIGNING_KEY, GITHUB_TOKEN, NPM_TOKEN, AI_SDLC_PAT).
+   * (GITHUB_MODELS_TOKEN, AI_SDLC_SIGNING_KEY, GITHUB_TOKEN, NPM_TOKEN, AI_SDLC_PAT).
    * `validateSandboxEnv` enforces this before the driver receives them.
    */
   sandboxEnv?: Record<string, string>;

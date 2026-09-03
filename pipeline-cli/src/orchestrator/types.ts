@@ -493,18 +493,18 @@ export interface PipelineOutcomeDetail {
  * the failure type without re-parsing stderr.
  *
  * AISDLC-239 adds three new `type` variants for subprocess-level failures
- * detected by `ShellClaudePSpawner`'s enhanced diagnostics:
+ * detected by `CopilotHarnessAdapter`'s enhanced diagnostics:
  *
- *  - `'claude-cli-api-error'` — the `claude --print` process exited non-zero
- *    AND stderr matched an Anthropic API error pattern (rate_limit,
+ *  - `'copilot-cli-api-error'` — the `copilot -p` process exited non-zero
+ *    AND stderr matched an GitHub Models API error pattern (rate_limit,
  *    authentication_error, overloaded_error, etc.). These are retryable
  *    once the API-side condition clears.
- *  - `'claude-cli-empty-output-fast'` — the `claude --print` process exited 0
+ *  - `'copilot-cli-empty-output-fast'` — the `copilot -p` process exited 0
  *    but stdout was empty AND the wall-clock was under 5 seconds. This
  *    typically indicates a local auth/config issue (the CLI quit before the
  *    session even started) rather than an actual subagent execution failure.
- *    Check `claude auth status` or re-login.
- *  - `'claude-cli-killed'` — the process was killed by a signal (SIGTERM /
+ *    Check `copilot /login status` or re-login.
+ *  - `'copilot-cli-killed'` — the process was killed by a signal (SIGTERM /
  *    SIGKILL). The `watchdogFired` boolean on `SubprocessDiagnostics`
  *    distinguishes the orchestrator's own 30-min watchdog from an external
  *    kill (e.g. OOM killer).
@@ -516,9 +516,9 @@ export interface PipelineFailureDetail {
     | 'developer-json-contract-violated'
     | 'aborted'
     | 'spawner-unavailable'
-    | 'claude-cli-api-error'
-    | 'claude-cli-empty-output-fast'
-    | 'claude-cli-killed'
+    | 'copilot-cli-api-error'
+    | 'copilot-cli-empty-output-fast'
+    | 'copilot-cli-killed'
     | 'unknown'
     /**
      * AISDLC-232 — Step 11 late-rebase hit semantic conflicts that could not

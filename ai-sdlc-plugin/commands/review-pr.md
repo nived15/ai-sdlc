@@ -95,7 +95,7 @@ explicitly — `(suppressed by .ai-sdlc/review-policy.md: <rule>)`.
 ## Step 5 — Never merge
 
 Do **not** run `gh pr merge` regardless of verdict. The skill reports;
-humans merge. This is a hard rule from CLAUDE.md.
+humans merge. This is a hard rule from .github/copilot-instructions.md.
 
 ## Notes
 

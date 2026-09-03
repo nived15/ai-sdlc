@@ -174,7 +174,7 @@ describe('anonymiseText', () => {
     expect(out).toContain('<worktree>');
   });
 
-  it('strips OpenAI-style tokens', () => {
+  it('strips inference-key-style tokens', () => {
     const out = anonymiseText('OPENAI_API_KEY=sk-abcdefghijklmnopqrstuvwxyz123456');
     expect(out).toContain('<REDACTED-TOKEN>');
     expect(out).not.toContain('sk-abcdefghijklmnop');

@@ -84,7 +84,7 @@ export {
   type ReviewerName,
 } from './classifier/classifier.js';
 
-// AISDLC-147 patch 2 — Anthropic API budget-exhaustion classifier.
+// AISDLC-147 patch 2 — Copilot API budget-exhaustion classifier.
 export {
   BUDGET_EXHAUSTED_SUBSTRINGS,
   classifyOneReviewer,
@@ -164,7 +164,7 @@ export {
 // RFC-0041 Phase 2 (AISDLC-377.3) — Worker Supervisor + cost-warning hook.
 export {
   acquirePidLock as dispatchAcquirePidLock,
-  buildClaudeArgv as dispatchBuildClaudeArgv,
+  buildCopilotArgv as dispatchBuildCopilotArgv,
   buildManifestPrompt as dispatchBuildManifestPrompt,
   CALIBRATION_FLOOR as DISPATCH_COST_CALIBRATION_FLOOR,
   claimNext as dispatchClaimNext,
@@ -176,7 +176,7 @@ export {
   DEFAULT_ITERATION_BUDGET as DISPATCH_DEFAULT_ITERATION_BUDGET,
   DEFAULT_PER_TASK_USD as DISPATCH_DEFAULT_PER_TASK_USD,
   ensureBoardDirs as dispatchEnsureBoardDirs,
-  estimateClaudePShellCost as dispatchEstimateClaudePShellCost,
+  estimateCopilotPShellCost as dispatchEstimateCopilotPShellCost,
   formatCostWarning as dispatchFormatCostWarning,
   isProcessAlive as dispatchIsProcessAlive,
   isSupervisorMissing as dispatchIsSupervisorMissing,
@@ -198,12 +198,12 @@ export {
   writeManifest as dispatchWriteManifest,
   writeResumeSignal as dispatchWriteResumeSignal,
   writeVerdict as dispatchWriteVerdict,
-  buildClaudePInitialArgv as dispatchBuildClaudePInitialArgv,
-  buildClaudePResumeArgv as dispatchBuildClaudePResumeArgv,
+  buildCopilotInitialArgv as dispatchBuildCopilotInitialArgv,
+  buildCopilotResumeArgv as dispatchBuildCopilotResumeArgv,
   DEFAULT_RESUME_AGENT as DISPATCH_DEFAULT_RESUME_AGENT,
-  extractSessionIdFromClaudeOutput as dispatchExtractSessionIdFromClaudeOutput,
-  type BuildClaudePInitialArgvOpts as DispatchBuildClaudePInitialArgvOpts,
-  type BuildClaudePResumeArgvOpts as DispatchBuildClaudePResumeArgvOpts,
+  extractSessionIdFromCopilotOutput as dispatchExtractSessionIdFromClaudeOutput,
+  type BuildCopilotInitialArgvOpts as DispatchBuildCopilotInitialArgvOpts,
+  type BuildCopilotResumeArgvOpts as DispatchBuildCopilotResumeArgvOpts,
   type BoardSubdir as DispatchBoardSubdir,
   type ClaimResult as DispatchClaimResult,
   type CostEstimate as DispatchCostEstimate,

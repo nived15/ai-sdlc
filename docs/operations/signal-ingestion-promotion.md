@@ -235,7 +235,7 @@ case-insensitive) just like the deps + orchestrator flags. Truthy values
 (`1`/`true`/`yes`/`on`) remain honoured for compatibility with anyone
 who scripted the opt-in.
 
-**CLAUDE.md note:** add a one-liner under the `## Feature flags` section
+**.github/copilot-instructions.md note:** add a one-liner under the `## Feature flags` section
 matching the format used for the other promoted flags:
 
 ```markdown

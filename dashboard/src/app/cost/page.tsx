@@ -107,7 +107,7 @@ export default function CostPage() {
   }));
 
   const modelBarData: BarChartDatum[] = byModel.map((r) => ({
-    label: (r.model as string).replace('claude-', '').slice(0, 12),
+    label: (r.model as string).replace('gpt-', '').slice(0, 12),
     value: r.cost_usd as number,
   }));
 

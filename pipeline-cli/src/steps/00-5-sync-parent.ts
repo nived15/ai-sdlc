@@ -398,7 +398,7 @@ export async function syncParentUntrackedFiles(opts: SyncParentOptions): Promise
       `chore: sync ${newFiles.length} untracked task file${newFiles.length === 1 ? '' : 's'} (AISDLC-217)\n\n` +
       `Auto-synced by Step 0.5 (backstop for Pattern C untracked-file drift).\n\n` +
       `Files:\n${newFiles.map((f) => `- ${f}`).join('\n')}\n\n` +
-      `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`;
+      `Co-Authored-By: the balanced tier 4.6 <noreply@github-models.com>`;
 
     const commitResult = await runner('git', ['commit', '-m', commitMsg], {
       cwd: syncWorktreePath,

@@ -27,7 +27,7 @@ import type { VectorStoreEntry } from './types.js';
 
 function makeEntry(
   text: string,
-  provider = 'openai-text-embedding-3-small',
+  provider = 'github-models-embedding-small',
   modelVersion = '2024-01-25',
   overrides?: Partial<VectorStoreEntry>,
 ): VectorStoreEntry {
@@ -46,7 +46,7 @@ function makeEntry(
 function makeOldEntry(text: string, daysAgo: number): VectorStoreEntry {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
-  return makeEntry(text, 'openai-text-embedding-3-small', '2024-01-25', {
+  return makeEntry(text, 'github-models-embedding-small', '2024-01-25', {
     writtenAt: d.toISOString(),
   });
 }
@@ -85,12 +85,12 @@ describe('JsonlEmbeddingStorageBackend', () => {
   // ── AC#5: Vectors carry (embeddingProvider, embeddingModelVersion) provenance
 
   it('preserves embeddingProvider and embeddingModelVersion on write→read', async () => {
-    const entry = makeEntry('test text', 'openai-text-embedding-3-small', '2024-01-25');
+    const entry = makeEntry('test text', 'github-models-embedding-small', '2024-01-25');
     await backend.write(entry);
 
-    const found = await backend.read(entry.textHash, 'openai-text-embedding-3-small', '2024-01-25');
+    const found = await backend.read(entry.textHash, 'github-models-embedding-small', '2024-01-25');
     expect(found).not.toBeNull();
-    expect(found!.embeddingProvider).toBe('openai-text-embedding-3-small');
+    expect(found!.embeddingProvider).toBe('github-models-embedding-small');
     expect(found!.embeddingModelVersion).toBe('2024-01-25');
   });
 
@@ -98,7 +98,7 @@ describe('JsonlEmbeddingStorageBackend', () => {
     await backend.write(makeEntry('hello'));
     const result = await backend.read(
       'nonexistent-hash',
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
       '2024-01-25',
     );
     expect(result).toBeNull();
@@ -114,14 +114,14 @@ describe('JsonlEmbeddingStorageBackend', () => {
   it('stores entries in separate JSONL files per provider+version', async () => {
     const { existsSync } = await import('node:fs');
 
-    await backend.write(makeEntry('text-a', 'openai-text-embedding-3-small', '2024-01-25'));
-    await backend.write(makeEntry('text-b', 'openai-text-embedding-3-large', '2024-01-25'));
+    await backend.write(makeEntry('text-a', 'github-models-embedding-small', '2024-01-25'));
+    await backend.write(makeEntry('text-b', 'github-copilot-text-embedding-3-large', '2024-01-25'));
 
     expect(
-      existsSync(join(tmpDir, '_embeddings', 'openai-text-embedding-3-small-2024-01-25.jsonl')),
+      existsSync(join(tmpDir, '_embeddings', 'github-models-embedding-small-2024-01-25.jsonl')),
     ).toBe(true);
     expect(
-      existsSync(join(tmpDir, '_embeddings', 'openai-text-embedding-3-large-2024-01-25.jsonl')),
+      existsSync(join(tmpDir, '_embeddings', 'github-copilot-text-embedding-3-large-2024-01-25.jsonl')),
     ).toBe(true);
   });
 
@@ -130,7 +130,7 @@ describe('JsonlEmbeddingStorageBackend', () => {
   it('write→read round-trip preserves all fields', async () => {
     const entry: VectorStoreEntry = {
       vector: [1.1, 2.2, 3.3],
-      embeddingProvider: 'openai-text-embedding-3-small',
+      embeddingProvider: 'github-models-embedding-small',
       embeddingModelVersion: '2024-01-25',
       writtenAt: '2026-05-01T12:00:00.000Z',
       text: 'hello world',
@@ -139,7 +139,7 @@ describe('JsonlEmbeddingStorageBackend', () => {
     };
 
     await backend.write(entry);
-    const found = await backend.read(entry.textHash, 'openai-text-embedding-3-small', '2024-01-25');
+    const found = await backend.read(entry.textHash, 'github-models-embedding-small', '2024-01-25');
 
     expect(found).not.toBeNull();
     expect(found!.vector).toEqual([1.1, 2.2, 3.3]);
@@ -150,7 +150,7 @@ describe('JsonlEmbeddingStorageBackend', () => {
   it('auto-computes textHash when omitted on write', async () => {
     const entry: VectorStoreEntry = {
       vector: [0.1],
-      embeddingProvider: 'openai-text-embedding-3-small',
+      embeddingProvider: 'github-models-embedding-small',
       embeddingModelVersion: '2024-01-25',
       writtenAt: new Date().toISOString(),
       text: 'compute my hash',
@@ -160,7 +160,7 @@ describe('JsonlEmbeddingStorageBackend', () => {
     await backend.write(entry);
 
     const expectedHash = JsonlEmbeddingStorageBackend.hashText('compute my hash');
-    const found = await backend.read(expectedHash, 'openai-text-embedding-3-small', '2024-01-25');
+    const found = await backend.read(expectedHash, 'github-models-embedding-small', '2024-01-25');
     expect(found).not.toBeNull();
     expect(found!.textHash).toBe(expectedHash);
   });
@@ -201,9 +201,9 @@ describe('JsonlEmbeddingStorageBackend', () => {
   // ── scan() ────────────────────────────────────────────────────────────────
 
   it('scan() with no filter yields all entries across all providers', async () => {
-    await backend.write(makeEntry('entry-1', 'openai-text-embedding-3-small', '2024-01-25'));
-    await backend.write(makeEntry('entry-2', 'openai-text-embedding-3-small', '2024-01-25'));
-    await backend.write(makeEntry('entry-3', 'openai-text-embedding-3-large', '2024-01-25'));
+    await backend.write(makeEntry('entry-1', 'github-models-embedding-small', '2024-01-25'));
+    await backend.write(makeEntry('entry-2', 'github-models-embedding-small', '2024-01-25'));
+    await backend.write(makeEntry('entry-3', 'github-copilot-text-embedding-3-large', '2024-01-25'));
 
     const all: VectorStoreEntry[] = [];
     for await (const e of backend.scan()) {
@@ -214,11 +214,11 @@ describe('JsonlEmbeddingStorageBackend', () => {
   });
 
   it('scan() with provider filter yields only matching entries', async () => {
-    await backend.write(makeEntry('entry-a', 'openai-text-embedding-3-small', '2024-01-25'));
-    await backend.write(makeEntry('entry-b', 'openai-text-embedding-3-large', '2024-01-25'));
+    await backend.write(makeEntry('entry-a', 'github-models-embedding-small', '2024-01-25'));
+    await backend.write(makeEntry('entry-b', 'github-copilot-text-embedding-3-large', '2024-01-25'));
 
     const found: VectorStoreEntry[] = [];
-    for await (const e of backend.scan({ provider: 'openai-text-embedding-3-small' })) {
+    for await (const e of backend.scan({ provider: 'github-models-embedding-small' })) {
       found.push(e);
     }
 
@@ -251,7 +251,7 @@ describe('JsonlEmbeddingStorageBackend', () => {
 
   it('delete() is a no-op when entry does not exist', async () => {
     await expect(
-      backend.delete('nonexistent-hash', 'openai-text-embedding-3-small', '2024-01-25'),
+      backend.delete('nonexistent-hash', 'github-models-embedding-small', '2024-01-25'),
     ).resolves.toBeUndefined();
   });
 
@@ -286,12 +286,12 @@ describe('JsonlEmbeddingStorageBackend', () => {
   });
 
   it('count() with provider filter counts correctly', async () => {
-    await backend.write(makeEntry('a', 'openai-text-embedding-3-small', '2024-01-25'));
-    await backend.write(makeEntry('b', 'openai-text-embedding-3-small', '2024-01-25'));
-    await backend.write(makeEntry('c', 'openai-text-embedding-3-large', '2024-01-25'));
+    await backend.write(makeEntry('a', 'github-models-embedding-small', '2024-01-25'));
+    await backend.write(makeEntry('b', 'github-models-embedding-small', '2024-01-25'));
+    await backend.write(makeEntry('c', 'github-copilot-text-embedding-3-large', '2024-01-25'));
 
-    expect(await backend.count({ provider: 'openai-text-embedding-3-small' })).toBe(2);
-    expect(await backend.count({ provider: 'openai-text-embedding-3-large' })).toBe(1);
+    expect(await backend.count({ provider: 'github-models-embedding-small' })).toBe(2);
+    expect(await backend.count({ provider: 'github-copilot-text-embedding-3-large' })).toBe(1);
     expect(await backend.count()).toBe(3);
   });
 
@@ -365,14 +365,14 @@ describe('JsonlEmbeddingStorageBackend', () => {
 
   it('gc() with provider filter only removes matching entries', async () => {
     const oldSmall = makeOldEntry('old-small', 100);
-    oldSmall.embeddingProvider = 'openai-text-embedding-3-small';
+    oldSmall.embeddingProvider = 'github-models-embedding-small';
     const oldLarge = makeOldEntry('old-large', 100);
-    oldLarge.embeddingProvider = 'openai-text-embedding-3-large';
+    oldLarge.embeddingProvider = 'github-copilot-text-embedding-3-large';
     oldLarge.textHash = JsonlEmbeddingStorageBackend.hashText('old-large');
 
     await backend.write(oldSmall);
     await backend.write(
-      makeEntry('old-large', 'openai-text-embedding-3-large', '2024-01-25', {
+      makeEntry('old-large', 'github-copilot-text-embedding-3-large', '2024-01-25', {
         writtenAt: (() => {
           const d = new Date();
           d.setDate(d.getDate() - 100);
@@ -385,7 +385,7 @@ describe('JsonlEmbeddingStorageBackend', () => {
     cutoff.setDate(cutoff.getDate() - 90);
 
     const removed = await backend.gcWithCutoffDate(cutoff, {
-      provider: 'openai-text-embedding-3-small',
+      provider: 'github-models-embedding-small',
     });
 
     // Only the small-provider entry should be removed.

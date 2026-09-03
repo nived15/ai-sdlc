@@ -21,7 +21,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { deriveFeatureId, importSpec, resolveTasksMdPath } from './import.js';
-import type { RefineBacklogTaskResult } from '../dor/ingress-claude.js';
+import type { RefineBacklogTaskResult } from '../dor/ingress.js';
 
 let workDir: string;
 let specRoot: string;

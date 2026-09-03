@@ -173,7 +173,7 @@ describe('PipelineBuilder', () => {
         modelPricing: {
           source: 'config',
           models: {
-            'claude-sonnet-4-5-20250929': { inputPerMTok: 3, outputPerMTok: 15 },
+            'balanced': { inputPerMTok: 3, outputPerMTok: 15 },
           },
         },
       })
@@ -223,23 +223,23 @@ describe('AgentRoleBuilder', () => {
       .addTool('code_editor')
       .withModelSelection({
         rules: [
-          { complexity: [1, 3], model: 'claude-haiku-3-5', rationale: 'Simple tasks' },
+          { complexity: [1, 3], model: 'gpt-5-mini', rationale: 'Simple tasks' },
           {
             complexity: [4, 7],
-            model: 'claude-sonnet-4-5-20250929',
+            model: 'balanced',
             rationale: 'Medium complexity',
           },
-          { complexity: [8, 10], model: 'claude-opus-4-6', rationale: 'Complex tasks' },
+          { complexity: [8, 10], model: 'reasoning', rationale: 'Complex tasks' },
         ],
         budgetPressure: [{ above: 0.8, downshift: 1, notify: ['#cost-alerts'] }],
-        fallbackChain: ['claude-sonnet-4-5-20250929', 'claude-haiku-3-5'],
+        fallbackChain: ['balanced', 'gpt-5-mini'],
       })
       .build();
     expect(role.spec.modelSelection?.rules).toHaveLength(3);
     expect(role.spec.modelSelection?.budgetPressure?.[0].above).toBe(0.8);
     expect(role.spec.modelSelection?.fallbackChain).toEqual([
-      'claude-sonnet-4-5-20250929',
-      'claude-haiku-3-5',
+      'balanced',
+      'gpt-5-mini',
     ]);
   });
 });

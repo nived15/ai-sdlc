@@ -23,21 +23,17 @@ export {
   type UpstreamRun,
 } from './independence.js';
 
-export { ClaudeCodeAdapter, type ClaudeCodeAdapterDeps } from './adapters/claude-code.js';
-export { CodexAdapter, type CodexAdapterDeps } from './adapters/codex.js';
+export { CopilotAdapter, type CopilotAdapterDeps } from './adapters/copilot.js';
 
 import { HarnessRegistry } from './registry.js';
-import { ClaudeCodeAdapter } from './adapters/claude-code.js';
-import { CodexAdapter } from './adapters/codex.js';
+import { CopilotAdapter } from './adapters/copilot.js';
 
 /**
- * Create a registry pre-populated with the v1 adapters (claude-code, codex).
- * Future adapters (gemini-cli, opencode, aider, generic-api) register themselves
- * the same way once their adapter implementations land.
+ * Create a registry pre-populated with the GitHub Copilot adapter — the
+ * framework's only supported coding-agent harness.
  */
 export function createDefaultHarnessRegistry(): HarnessRegistry {
   const reg = new HarnessRegistry();
-  reg.register(new ClaudeCodeAdapter());
-  reg.register(new CodexAdapter());
+  reg.register(new CopilotAdapter());
   return reg;
 }

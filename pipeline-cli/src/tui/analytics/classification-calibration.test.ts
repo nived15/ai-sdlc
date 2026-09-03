@@ -71,13 +71,13 @@ describe('classification-calibration', () => {
   describe('recordClassification', () => {
     it('writes a pending entry for an auto-classify bucket result', () => {
       const cls = classifyFailure(
-        signal('Anthropic API: rate-limited', 1) as FailureSignal,
+        signal('GitHub API: rate-limited', 1) as FailureSignal,
         HERMETIC_CTX,
       );
       const res = recordClassification({
         repoRoot,
         classification: cls,
-        signal: signal('Anthropic API: rate-limited', 1) as FailureSignal,
+        signal: signal('GitHub API: rate-limited', 1) as FailureSignal,
         taskId: 'AISDLC-999',
       });
 
@@ -160,13 +160,13 @@ describe('classification-calibration', () => {
   describe('recordClassificationOverride (AC-4 negative exemplar)', () => {
     it('flips a pending entry to negative within the override window', () => {
       const cls = classifyFailure(
-        signal('Anthropic API: rate-limited', 1) as FailureSignal,
+        signal('GitHub API: rate-limited', 1) as FailureSignal,
         HERMETIC_CTX,
       );
       const recorded = recordClassification({
         repoRoot,
         classification: cls,
-        signal: signal('Anthropic API: rate-limited', 1) as FailureSignal,
+        signal: signal('GitHub API: rate-limited', 1) as FailureSignal,
       });
 
       const result = recordClassificationOverride({
@@ -210,13 +210,13 @@ describe('classification-calibration', () => {
 
     it('no-op when the entry is already resolved', () => {
       const cls = classifyFailure(
-        signal('Anthropic API: rate-limited', 1) as FailureSignal,
+        signal('GitHub API: rate-limited', 1) as FailureSignal,
         HERMETIC_CTX,
       );
       const recorded = recordClassification({
         repoRoot,
         classification: cls,
-        signal: signal('Anthropic API: rate-limited', 1) as FailureSignal,
+        signal: signal('GitHub API: rate-limited', 1) as FailureSignal,
       });
 
       // First override flips to negative.
@@ -354,7 +354,7 @@ describe('classification-calibration', () => {
 
   describe('end-to-end calibration loop (AC-3 + AC-4)', () => {
     it('classifies, records, operator overrides → negative exemplar', () => {
-      const sig = signal('Anthropic API: rate-limited', 1) as FailureSignal;
+      const sig = signal('GitHub API: rate-limited', 1) as FailureSignal;
       const cls = classifyFailure(sig, HERMETIC_CTX);
       const recorded = recordClassification({
         repoRoot,
@@ -382,7 +382,7 @@ describe('classification-calibration', () => {
     });
 
     it('classifies, records, no override + silence sweep → positive exemplar', () => {
-      const sig = signal('Anthropic API: rate-limited', 1) as FailureSignal;
+      const sig = signal('GitHub API: rate-limited', 1) as FailureSignal;
       const cls = classifyFailure(sig, HERMETIC_CTX);
       const recorded = recordClassification({
         repoRoot,

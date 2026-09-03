@@ -18,7 +18,7 @@ import { parseDuration } from '@ai-sdlc/reference';
  * Consumers should read `AI_SDLC_MODEL` env var at call time and fall back
  * to this constant, so tests that set env vars at runtime see the override.
  */
-export const DEFAULT_MODEL = 'claude-sonnet-4-5-20250929';
+export const DEFAULT_MODEL = 'balanced';
 
 // ── GitHub ───────────────────────────────────────────────────────────
 
@@ -93,14 +93,14 @@ export const DEFAULT_COMMIT_MESSAGE_TEMPLATE =
   'fix: resolve issue #{issueNumber}\n\n{issueTitle}';
 
 export const DEFAULT_COMMIT_CO_AUTHOR =
-  process.env.AI_SDLC_COMMIT_CO_AUTHOR ?? 'Claude <noreply@anthropic.com>';
+  process.env.AI_SDLC_COMMIT_CO_AUTHOR ?? 'GitHub Copilot <noreply@github-models.com>';
 
 // ── Runner registry API defaults ────────────────────────────────────
 
-export const DEFAULT_OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-export const DEFAULT_OPENAI_MODEL = 'gpt-4';
-export const DEFAULT_ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-5-20250929';
+export const DEFAULT_GITHUB_MODELS_API_URL = 'https://api.githubcopilot.com/chat/completions';
+export const DEFAULT_GITHUB_MODELS_MODEL = 'gpt-5';
+export const DEFAULT_GITHUB_MODELS_API_URL = 'https://models.github.ai/inference/chat/completions';
+export const DEFAULT_GITHUB_MODELS_MODEL = 'balanced';
 export const DEFAULT_GENERIC_LLM_MODEL = 'default';
 
 // ── CLI runner model overrides ────────────────────────────────────────
@@ -211,11 +211,11 @@ export const DEFAULT_MODEL_COSTS: Record<
   string,
   { inputPer1M: number; outputPer1M: number; cacheReadPer1M: number }
 > = {
-  'claude-opus-4-6': { inputPer1M: 15.0, outputPer1M: 75.0, cacheReadPer1M: 1.5 },
-  'claude-sonnet-4-5-20250929': { inputPer1M: 3.0, outputPer1M: 15.0, cacheReadPer1M: 0.3 },
-  'claude-haiku-4-5-20251001': { inputPer1M: 0.8, outputPer1M: 4.0, cacheReadPer1M: 0.08 },
-  'claude-sonnet-4-20250514': { inputPer1M: 3.0, outputPer1M: 15.0, cacheReadPer1M: 0.3 },
-  'claude-3-5-haiku-20241022': { inputPer1M: 1.0, outputPer1M: 5.0, cacheReadPer1M: 0.1 },
+  'reasoning': { inputPer1M: 15.0, outputPer1M: 75.0, cacheReadPer1M: 1.5 },
+  'balanced': { inputPer1M: 3.0, outputPer1M: 15.0, cacheReadPer1M: 0.3 },
+  'gpt-5-mini': { inputPer1M: 0.8, outputPer1M: 4.0, cacheReadPer1M: 0.08 },
+  'balanced': { inputPer1M: 3.0, outputPer1M: 15.0, cacheReadPer1M: 0.3 },
+  'gpt-5-5-haiku-20241022': { inputPer1M: 1.0, outputPer1M: 5.0, cacheReadPer1M: 0.1 },
 };
 
 /** Default monthly cost budget in USD. */

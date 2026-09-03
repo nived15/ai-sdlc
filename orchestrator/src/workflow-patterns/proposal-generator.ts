@@ -17,7 +17,7 @@ export function generateProposal(pattern: DetectedPattern): Omit<PatternProposal
       return {
         proposalType: pattern.patternType,
         artifactType: 'command',
-        artifactPath: `.claude/commands/${name}.md`,
+        artifactPath: `.github/commands/${name}.md`,
         draftContent: generateCommandTemplate(name, pattern),
         confidence: computeProposalConfidence(pattern),
         status: 'pending',
@@ -26,7 +26,7 @@ export function generateProposal(pattern: DetectedPattern): Omit<PatternProposal
       return {
         proposalType: pattern.patternType,
         artifactType: 'skill',
-        artifactPath: `.claude/skills/${name}/SKILL.md`,
+        artifactPath: `.github/skills/${name}/SKILL.md`,
         draftContent: generateSkillTemplate(name, pattern),
         confidence: computeProposalConfidence(pattern),
         status: 'pending',
@@ -44,7 +44,7 @@ export function generateProposal(pattern: DetectedPattern): Omit<PatternProposal
       return {
         proposalType: pattern.patternType,
         artifactType: 'hook',
-        artifactPath: `.claude/hooks/${name}.sh`,
+        artifactPath: `.github/hooks/${name}.sh`,
         draftContent: generateHookTemplate(name, pattern),
         confidence: computeProposalConfidence(pattern),
         status: 'pending',
@@ -53,7 +53,7 @@ export function generateProposal(pattern: DetectedPattern): Omit<PatternProposal
       return {
         proposalType: pattern.patternType,
         artifactType: 'command',
-        artifactPath: `.claude/commands/${name}.md`,
+        artifactPath: `.github/commands/${name}.md`,
         draftContent: generateCommandTemplate(name, pattern),
         confidence: computeProposalConfidence(pattern),
         status: 'pending',

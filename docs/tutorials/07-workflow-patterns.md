@@ -12,7 +12,7 @@ deterministic code -- no AI in the runtime loop.
 ## Prerequisites
 
 - A running AI-SDLC environment with `@ai-sdlc/orchestrator` installed
-- Claude Code with the PostToolUse telemetry hook configured
+- GitHub Copilot CLI with the PostToolUse telemetry hook configured
 - At least 3 coding sessions worth of telemetry data
 
 ---
@@ -24,7 +24,7 @@ Sessions → Telemetry → N-Gram Mining → Classification → Proposals → Ar
 ```
 
 1. **Telemetry Collection** -- A PostToolUse hook captures every tool call to
-   `~/.claude/usage-data/tool-sequences.jsonl` in real-time.
+   `~/.copilot/usage-data/tool-sequences.jsonl` in real-time.
 
 2. **N-Gram Mining** -- The detector generates contiguous n-grams (n=3 to 8)
    from session sequences, counts frequency across sessions, and removes
@@ -44,7 +44,7 @@ Sessions → Telemetry → N-Gram Mining → Classification → Proposals → Ar
 ## Step 1: Install the Telemetry Hook
 
 The PostToolUse hook captures tool calls as they happen. Add this to your
-`.claude/settings.json`:
+`.github/copilot-instructions.md`:
 
 ```json
 {
@@ -55,7 +55,7 @@ The PostToolUse hook captures tool calls as they happen. Add this to your
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/collect-tool-sequence.sh"
+            "command": "bash .copilot/hooks/collect-tool-sequence.sh"
           }
         ]
       }
@@ -92,11 +92,11 @@ After 3+ sessions, you'll have enough data for pattern detection.
 Check your telemetry file:
 
 ```bash
-wc -l ~/.claude/usage-data/tool-sequences.jsonl
+wc -l ~/.copilot/usage-data/tool-sequences.jsonl
 # 847 lines — plenty of data
 
 # Preview the last few entries
-tail -5 ~/.claude/usage-data/tool-sequences.jsonl | jq .
+tail -5 ~/.copilot/usage-data/tool-sequences.jsonl | jq .
 ```
 
 ---
@@ -109,7 +109,7 @@ Use the CLI or slash command to detect patterns:
 # CLI
 ai-sdlc detect-patterns --min-confidence 0.6
 
-# Or from Claude Code
+# Or from GitHub Copilot CLI
 /detect-patterns
 ```
 
@@ -142,8 +142,8 @@ pat-03   periodic-task     3      5/10      0.71        auto-weekly-deps-update
 
 | Type | Signature | Output Artifact |
 |---|---|---|
-| **Command Sequence** | 3+ step tool chain repeated across 3+ sessions | `.claude/commands/<name>.md` |
-| **Copy-Paste Cycle** | Read then Write/Edit on different files with similar extensions | `.claude/skills/<name>/SKILL.md` |
+| **Command Sequence** | 3+ step tool chain repeated across 3+ sessions | `.copilot/commands/<name>.md` |
+| **Copy-Paste Cycle** | Read then Write/Edit on different files with similar extensions | `.copilot/skills/<name>/SKILL.md` |
 | **Periodic Task** | Same sequence at regular time intervals (7+ day span) | `.github/workflows/<name>.yml` |
 
 ---
@@ -160,13 +160,13 @@ ai-sdlc approve-pattern pat-01 --dry-run
 ai-sdlc approve-pattern pat-01
 ```
 
-### Example: Command Sequence → Claude Code Command
+### Example: Command Sequence → GitHub Copilot CLI Command
 
 If the detector finds you repeatedly run `pnpm test → read failures → edit code
 → pnpm test → git commit`, it generates:
 
 ```markdown
-<!-- .claude/commands/auto-test-and-commit.md -->
+<!-- .copilot/commands/auto-test-and-commit.md -->
 Run the test suite, fix any failures, and commit when green.
 
 1. Run `pnpm test` and capture the output
@@ -176,13 +176,13 @@ Run the test suite, fix any failures, and commit when green.
 5. Commit with a descriptive message
 ```
 
-### Example: Copy-Paste Cycle → Claude Code Skill
+### Example: Copy-Paste Cycle → GitHub Copilot CLI Skill
 
 If you frequently read a component file, then create a test file with similar
 structure:
 
 ```markdown
-<!-- .claude/skills/auto-scaffold-component/SKILL.md -->
+<!-- .copilot/skills/auto-scaffold-component/SKILL.md -->
 ---
 name: auto-scaffold-component
 description: Scaffold a new component with co-located test file
@@ -234,7 +234,7 @@ import {
 
 // 1. Ingest telemetry
 const events = await readToolSequenceJSONL(
-  '~/.claude/usage-data/tool-sequences.jsonl'
+  '~/.copilot/usage-data/tool-sequences.jsonl'
 );
 
 // 2. Mine patterns

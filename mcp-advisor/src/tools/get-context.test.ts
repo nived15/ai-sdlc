@@ -89,7 +89,7 @@ describe('handleGetContext', () => {
   });
 
   it('uses session linked issue for history', () => {
-    const session = deps.sessions.create({ developer: 'alice', tool: 'claude-code' });
+    const session = deps.sessions.create({ developer: 'alice', tool: 'copilot' });
     deps.sessions.linkIssue(session.sessionId, 42, 'branch');
 
     deps.store.saveEpisodicRecord({

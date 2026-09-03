@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'node:events';
 import type { ChildProcess } from 'node:child_process';
-import { GitHubActionsRunner } from './github-actions.js';
+import { CopilotRunner } from './github-actions.js';
 import type { AgentContext } from './types.js';
 
 // Mock child_process at the module level
@@ -77,19 +77,19 @@ function makeContext(overrides: Partial<AgentContext> = {}): AgentContext {
   };
 }
 
-describe('GitHubActionsRunner', () => {
-  let runner: GitHubActionsRunner;
+describe('CopilotRunner', () => {
+  let runner: CopilotRunner;
   let spawnMock: ReturnType<typeof vi.fn>;
   let execFileMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    runner = new GitHubActionsRunner();
+    runner = new CopilotRunner();
 
     const childProcess = await import('node:child_process');
     spawnMock = vi.mocked(childProcess.spawn);
     execFileMock = vi.mocked(childProcess.execFile);
 
-    // Default: claude succeeds
+    // Default: copilot succeeds
     spawnMock.mockImplementation(() => createMockChild(0, 'Agent completed'));
 
     // Default: git commands return sensible results
@@ -147,13 +147,13 @@ describe('GitHubActionsRunner', () => {
     expect(result.filesChanged).toEqual([]);
   });
 
-  it('returns failure when claude CLI exits with non-zero code', async () => {
+  it('returns failure when the copilot CLI exits with non-zero code', async () => {
     spawnMock.mockImplementation(() => createMockChild(1, '', 'Model error'));
 
     const result = await runner.run(makeContext());
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('claude exited with code 1');
+    expect(result.error).toContain('copilot exited with code 1');
   });
 
   it('returns failure when spawn emits an error', async () => {
@@ -165,7 +165,7 @@ describe('GitHubActionsRunner', () => {
     expect(result.error).toContain('spawn ENOENT');
   });
 
-  it('passes allowedTools and timeoutMs to the claude process', async () => {
+  it('passes allowedTools and timeoutMs to the copilot process', async () => {
     await runner.run(
       makeContext({
         allowedTools: ['Read', 'Write'],
@@ -174,7 +174,7 @@ describe('GitHubActionsRunner', () => {
     );
 
     expect(spawnMock).toHaveBeenCalledWith(
-      'claude',
+      'copilot',
       expect.arrayContaining(['--allowedTools', 'Read,Write']),
       expect.objectContaining({ timeout: 60000 }),
     );
@@ -244,7 +244,7 @@ describe('GitHubActionsRunner', () => {
     await runner.run(makeContext());
 
     expect(spawnMock).toHaveBeenCalledWith(
-      'claude',
+      'copilot',
       expect.arrayContaining(['--model', 'custom-model']),
       expect.any(Object),
     );

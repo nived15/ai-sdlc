@@ -1,7 +1,7 @@
 /**
  * AI-SDLC Telemetry Collection Hook (PostToolUse)
  *
- * Appends a single JSONL line per tool call to ~/.claude/usage-data/tool-sequences.jsonl.
+ * Appends a single JSONL line per tool call to ~/.copilot/usage-data/tool-sequences.jsonl.
  * This data feeds the workflow pattern detection engine.
  *
  * Must be fast (single fs.appendFileSync) and never fail (all errors swallowed).
@@ -65,7 +65,7 @@ const action = canonicalize(toolName, toolInput);
 // ── Build JSONL line ─────────────────────────────────────────────────
 
 const projectDir =
-  process.env.CLAUDE_PROJECT_DIR ||
+  process.env.COPILOT_PROJECT_DIR ||
   (() => {
     try {
       return require('child_process')
@@ -87,7 +87,7 @@ const entry = {
 // ── Append to JSONL file ─────────────────────────────────────────────
 
 try {
-  const outputDir = join(homedir(), '.claude', 'usage-data');
+  const outputDir = join(homedir(), '.copilot', 'usage-data');
   if (!existsSync(outputDir)) {
     mkdirSync(outputDir, { recursive: true });
   }

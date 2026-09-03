@@ -21,7 +21,7 @@
  * ### Invoker contract
  *
  * Like the research subagent, the framework owns the gate + persistence
- * but injects the transport. Production wires Claude / Haiku / Codex /
+ * but injects the transport. Production wires GitHub Copilot / Haiku / GitHub Copilot /
  * etc.; tests inject a deterministic stub.
  *
  * @module decisions/notebook-summary

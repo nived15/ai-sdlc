@@ -59,7 +59,7 @@ Phase 5 DoR observability surface: added optional `author` field + `recordOverri
 - `pipeline-cli/src/cli/dor-stats.ts` + `bin/cli-dor-stats.mjs` (new) — `--by-author --by-gate --since --format --render-markdown`
 - `pipeline-cli/src/cli/dor-digest.ts` + `bin/cli-dor-digest.mjs` (new) — emits Block Kit JSON for `curl $SLACK_WEBHOOK_URL`
 - `pipeline-cli/src/dor/index.ts` + `package.json` — barrel + new bin entries
-- `pipeline-cli/src/dor/ingress-claude.ts` — plumbs author through if upstream payload provides it
+- `pipeline-cli/src/dor/ingress.ts` — plumbs author through if upstream payload provides it
 
 ## Design decisions
 - Shared aggregator path between Slack digest and markdown dashboard prevents drift

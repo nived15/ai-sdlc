@@ -537,7 +537,7 @@ describe('AC#11 — Stage 1 blocks protected-path mutations (zero LLM, zero sand
 
   it('Stage 1 block path does NOT invoke LLM or sandbox CLI (zero LLM, zero sandbox spend)', () => {
     // The block comment step (Post block comment + label) must not invoke
-    // sandbox-run or any ANTHROPIC_API_KEY-consuming step.
+    // sandbox-run or any GITHUB_MODELS_TOKEN-consuming step.
     const blockSteps = allSteps(wf).filter(
       ({ step }) => typeof step.name === 'string' && /block/i.test(step.name),
     );
@@ -545,8 +545,8 @@ describe('AC#11 — Stage 1 blocks protected-path mutations (zero LLM, zero sand
       const run = String(step.run ?? '');
       assert.doesNotMatch(
         run,
-        /sandbox-run|ANTHROPIC_API_KEY/,
-        `Stage 1 block step '${step.name}' must NOT invoke sandbox-run or use ANTHROPIC_API_KEY (zero LLM spend)`,
+        /sandbox-run|GITHUB_MODELS_TOKEN/,
+        `Stage 1 block step '${step.name}' must NOT invoke sandbox-run or use GITHUB_MODELS_TOKEN (zero LLM spend)`,
       );
     }
   });
@@ -1014,9 +1014,9 @@ describe('Bug E fix — Stage 2 sandbox-run step propagates real exit code (pipe
 
 // ── AQ2 (AISDLC-520): AI_SDLC_SANDBOX_INTEGRATION_TESTS gated on credential ───
 
-describe('AQ2 — AI_SDLC_SANDBOX_INTEGRATION_TESTS gated on the ANTHROPIC_API_KEY credential', () => {
+describe('AQ2 — AI_SDLC_SANDBOX_INTEGRATION_TESTS gated on the GITHUB_MODELS_TOKEN credential', () => {
   it('Stage 2 sandbox step sets AI_SDLC_SANDBOX_INTEGRATION_TESTS only when a credential is configured', () => {
-    // AISDLC-520 re-enables real in-sandbox reviewers. When ANTHROPIC_API_KEY is set,
+    // AISDLC-520 re-enables real in-sandbox reviewers. When GITHUB_MODELS_TOKEN is set,
     // sandbox-run starts the InferenceProxy + populates the proxy env, so integration
     // mode is safe (no hard-error — proxy vars present; and the proxy-start catch falls
     // back to FakeModelClient if start fails). When no credential is configured the flag
@@ -1035,8 +1035,8 @@ describe('AQ2 — AI_SDLC_SANDBOX_INTEGRATION_TESTS gated on the ANTHROPIC_API_K
     );
     assert.match(
       String(env['AI_SDLC_SANDBOX_INTEGRATION_TESTS']),
-      /ANTHROPIC_API_KEY/,
-      `AI_SDLC_SANDBOX_INTEGRATION_TESTS must be gated on secrets.ANTHROPIC_API_KEY — ` +
+      /GITHUB_MODELS_TOKEN/,
+      `AI_SDLC_SANDBOX_INTEGRATION_TESTS must be gated on secrets.GITHUB_MODELS_TOKEN — ` +
         `set only when a credential is configured (else empty → fail-closed FakeModelClient)`,
     );
   });

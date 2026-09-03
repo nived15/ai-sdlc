@@ -6,7 +6,7 @@ This runbook covers the lifecycle of reviewer subagent transcripts: what they ar
 
 ## What are transcripts?
 
-Each reviewer subagent (code-reviewer, test-reviewer, security-reviewer, and their Codex variants) captures its wrapper events to a JSONL file inside the worktree:
+Each reviewer subagent (code-reviewer, test-reviewer, security-reviewer, and their GitHub Copilot variants) captures its wrapper events to a JSONL file inside the worktree:
 
 ```
 .ai-sdlc/transcripts/<task-id>/<reviewer-name>.jsonl
@@ -30,7 +30,7 @@ Fields:
 | `timestamp` | ISO-8601 string | When the event was emitted |
 | `event` | string (optional) | Event type (`prompt-received`, `verdict-formed`, `tool-call`) |
 | `toolName` | string (optional) | For `tool` events: the tool that was invoked |
-| `harness` | string (optional) | Cross-harness events carry `"codex"` here |
+| `harness` | string (optional) | cross-session events carry `"copilot"` here |
 
 ## Why transcripts?
 

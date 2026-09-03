@@ -46,7 +46,7 @@ function seedEntry(
     timestamp: opts.timestamp ?? new Date().toISOString(),
     taskType,
     input: opts.input ?? { text: 'sample input' },
-    model: opts.model ?? 'claude-haiku-4-5',
+    model: opts.model ?? 'gpt-5-mini',
     classification: opts.classification ?? 'opt-a',
     confidence: opts.confidence ?? 0.8,
     reasoning: opts.reasoning ?? 'because',

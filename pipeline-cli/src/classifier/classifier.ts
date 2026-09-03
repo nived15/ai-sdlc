@@ -43,7 +43,7 @@ export interface ClassifierOutput {
   rationale: Record<string, string>;
   confident: boolean;
   confidence: number;
-  modelOverride?: Partial<Record<ReviewerName, 'haiku' | 'sonnet' | 'opus' | 'opus[1m]'>>;
+  modelOverride?: Partial<Record<ReviewerName, 'fast' | 'balanced' | 'reasoning' | 'reasoning[1m]'>>;
   harnessOverride?: Partial<Record<ReviewerName, string>>;
 }
 
@@ -230,7 +230,7 @@ export function defaultRulesetDecision(diff: DiffSummary): ClassifierOutput {
         critic: 'auth touched; verify approach',
         security: 'auth-touching diff; mandatory security review',
       },
-      modelOverride: { security: 'opus' },
+      modelOverride: { security: 'reasoning' },
       confident: true,
       confidence: 0.99,
     };

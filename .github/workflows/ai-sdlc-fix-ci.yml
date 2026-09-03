@@ -23,7 +23,7 @@ jobs:
       actions: read
     # SECURITY (issue #780, CodeQL actions/untrusted-checkout): this job runs in
     # the privileged workflow_run context with secrets (AI_SDLC_PAT write token +
-    # ANTHROPIC_API_KEY) and checks out + builds the PR-head code. It MUST only
+    # GITHUB_MODELS_TOKEN) and checks out + builds the PR-head code. It MUST only
     # ever act on SAME-REPO branches. The head_repository == repository guard
     # rejects fork-originated runs (the head_branch prefix check alone is NOT a
     # security boundary — a forker can name their branch `ai-sdlc/issue-*`).
@@ -65,9 +65,9 @@ jobs:
       - run: pnpm build
         if: steps.pr.outputs.number
 
-      - name: Install Claude Code CLI
+      - name: Install GitHub Copilot CLI
         if: steps.pr.outputs.number
-        run: npm install -g @anthropic-ai/claude-code
+        run: npm install -g @github-ai/copilot
 
       - name: Configure git
         if: steps.pr.outputs.number
@@ -78,7 +78,7 @@ jobs:
       - name: Run fix-CI pipeline
         if: steps.pr.outputs.number
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.AI_SDLC_PAT }}
           # gh CLI uses GH_TOKEN; default token has actions:read for log fetching
           GH_TOKEN: ${{ github.token }}

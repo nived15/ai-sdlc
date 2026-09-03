@@ -75,8 +75,8 @@ jobs:
 
       - run: pnpm build
 
-      - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
+      - name: Install GitHub Copilot CLI
+        run: npm install -g @github-ai/copilot
 
       - name: Install NVIDIA OpenShell
         run: |
@@ -91,7 +91,7 @@ jobs:
 
       - name: Run AI-SDLC pipeline
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.AI_SDLC_PAT }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
           GITHUB_REPOSITORY: ${{ github.repository }}

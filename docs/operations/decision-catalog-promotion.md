@@ -297,10 +297,10 @@ and the calibration sweep runs against the populated substrate.
 
 After the flip lands, update:
 
-- `CLAUDE.md` — change the "Off by default" line in the
+- `.github/copilot-instructions.md` — change the "Off by default" line in the
   `AI_SDLC_DECISION_CATALOG` bullet to "On by default; set
   `AI_SDLC_DECISION_CATALOG=off` to disable." (the dogfood
-  `CLAUDE.md` already reflects this since AISDLC-392).
+  `.github/copilot-instructions.md` already reflects this since AISDLC-392).
 - `pipeline-cli/docs/decisions.md` (if shipped) — flip the "Phase 1
   ships behind a feature flag" framing to "Phase 1+ are on by default;
   opt-out via `AI_SDLC_DECISION_CATALOG=off`".

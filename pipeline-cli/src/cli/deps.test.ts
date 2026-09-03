@@ -439,7 +439,7 @@ spec:
       const artifactsDir = join(workDir, 'artifacts');
       mkdirSync(join(artifactsDir, '_ledger'), { recursive: true });
       writeFileSync(
-        join(artifactsDir, '_ledger', 'claude-code-abcd1234-default.json'),
+        join(artifactsDir, '_ledger', 'copilot-abcd1234-default.json'),
         JSON.stringify({
           windowStart: '2026-01-01T00:00:00Z',
           consumedTokens,
@@ -458,7 +458,7 @@ spec:
       };
       expect(r.frontier).toHaveLength(1);
       expect(r.frontier[0].recommendedWorkerKind).toBeDefined();
-      expect(['in-session-agent', 'claude-p-shell', 'any']).toContain(
+      expect(['in-session-agent', 'copilot-p-shell', 'any']).toContain(
         r.frontier[0].recommendedWorkerKind,
       );
     });
@@ -490,14 +490,14 @@ spec:
       const r = stdoutJson() as {
         frontier: Array<{ id: string; recommendedWorkerKind: string }>;
       };
-      // No DispatchConfig + big task → in-session-agent (NOT claude-p-shell)
+      // No DispatchConfig + big task → in-session-agent (NOT copilot-p-shell)
       // per AC #4 — heuristic falls back to cost-preferred default.
       expect(r.frontier[0].recommendedWorkerKind).toBe('in-session-agent');
     });
 
     it('AC #4: when claudePShellMaxConcurrent is 0, every entry recommends in-session-agent', async () => {
       writeDispatchConfig(tmp, 0);
-      // High quota utilization + big task: would normally recommend claude-p-shell,
+      // High quota utilization + big task: would normally recommend copilot-p-shell,
       // but claudePShellMaxConcurrent=0 forces in-session-agent.
       writeLedger(tmp, MAX_20X_ROLLING_WINDOW_TOKENS * 0.95);
       writeTaskFile(tmp, {
@@ -531,7 +531,7 @@ spec:
       // Tight quota: 95% of the rolling window consumed.
       const artifactsDir = writeLedger(tmp, MAX_20X_ROLLING_WINDOW_TOKENS * 0.95);
 
-      // Task BIG: big tokens + tight quota + supervisor configured → claude-p-shell
+      // Task BIG: big tokens + tight quota + supervisor configured → copilot-p-shell
       writeTaskFile(tmp, {
         id: 'AISDLC-BIG',
         title: 'big',
@@ -552,7 +552,7 @@ spec:
         frontier: Array<{ id: string; recommendedWorkerKind: string }>;
       };
       const byId = new Map(r.frontier.map((e) => [e.id, e.recommendedWorkerKind]));
-      expect(byId.get('AISDLC-BIG')).toBe('claude-p-shell');
+      expect(byId.get('AISDLC-BIG')).toBe('copilot-p-shell');
       expect(byId.get('AISDLC-SMALL')).toBe('in-session-agent');
       expect(byId.get('AISDLC-NOEST')).toBe('any');
     });
@@ -570,7 +570,7 @@ spec:
       const text = stdoutText();
       const bigLine = text.split('\n').find((l) => l.includes('AISDLC-BIG'));
       expect(bigLine).toBeDefined();
-      expect(bigLine).toContain('claude-p-shell');
+      expect(bigLine).toContain('copilot-p-shell');
     });
 
     it('backward compatibility: existing JSON fields (id, title, dependencies, dispatchable) remain', async () => {
@@ -609,7 +609,7 @@ spec:
         const r = stdoutJson() as {
           frontier: Array<{ id: string; recommendedWorkerKind: string }>;
         };
-        expect(r.frontier[0].recommendedWorkerKind).toBe('claude-p-shell');
+        expect(r.frontier[0].recommendedWorkerKind).toBe('copilot-p-shell');
       } finally {
         if (priorEnv === undefined) delete process.env.ARTIFACTS_DIR;
         else process.env.ARTIFACTS_DIR = priorEnv;

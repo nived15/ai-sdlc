@@ -2,7 +2,7 @@
  * Cross-provider compatibility per RFC-0019 §9.3 + OQ-3 re-walkthrough split.
  *
  * The OQ-3 re-walkthrough resolution surfaces a critical distinction that
- * v0.2 missed: cross-PROVIDER comparisons (openai vs cohere) are NEVER valid
+ * v0.2 missed: cross-PROVIDER comparisons (github-copilot vs self-hosted) are NEVER valid
  * because the math is genuinely undefined — vectors in different embedding
  * spaces have no metrically-valid distance. cross-VERSION-within-provider
  * comparisons (3-small@2024-01-25 vs 3-small@2025-01-25) DELEGATE to the
@@ -64,7 +64,7 @@ export function checkProviderCompatibility(
 }
 
 /**
- * Thrown when a cross-PROVIDER comparison is attempted (e.g., openai vs cohere).
+ * Thrown when a cross-PROVIDER comparison is attempted (e.g., github-copilot vs self-hosted).
  * Always fatal — the math is undefined and there is no auto-migration path.
  * Operators must run cli-embedding-bump to re-embed the entire corpus on the
  * new provider.

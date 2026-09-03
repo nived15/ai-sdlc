@@ -29,7 +29,7 @@ requiresDocs: []
 
 ## 1. Summary
 
-Adopter projects accumulate domain-specific conventions (architectural primitives, doc taxonomies, failure-mode lexicons, investigation trails, linguistic norms) that the framework's dispatched developer + reviewer agents should inherit at task dispatch time. The framework currently has no clean mechanism for this. Adopters resort to either (a) inlining context in every ticket body (manual, doesn't scale), (b) forking the plugin (defeats the framework's value proposition), or (c) writing project-local `.claude/agents/*.md` overrides that may or may not be respected by the plugin's `Agent({subagent_type: "developer"})` lookup.
+Adopter projects accumulate domain-specific conventions (architectural primitives, doc taxonomies, failure-mode lexicons, investigation trails, linguistic norms) that the framework's dispatched developer + reviewer agents should inherit at task dispatch time. The framework currently has no clean mechanism for this. Adopters resort to either (a) inlining context in every ticket body (manual, doesn't scale), (b) forking the plugin (defeats the framework's value proposition), or (c) writing project-local `.copilot/agents/*.md` overrides that may or may not be respected by the plugin's `Agent({subagent_type: "developer"})` lookup.
 
 This RFC proposes a well-known adopter-context override path (e.g., `.ai-sdlc/project-context.md`) that the plugin auto-prepends to the developer and reviewer agent system prompts when dispatching `/ai-sdlc execute`. The framework defines the path + load semantics; the adopter decides the content.
 
@@ -76,7 +76,7 @@ The right level for adopter-project context is **the adopter project**, not the 
 
 - The framework prescribing WHAT adopter-context should contain
 - Multi-file context aggregation (single canonical file; adopter can reference others from it)
-- Replacing `.claude/agents/*.md` project-local overrides — this layer is additive
+- Replacing `.copilot/agents/*.md` project-local overrides — this layer is additive
 - Replacing per-ticket context — high-leverage tickets may still inline ticket-specific context
 
 ## 4. Proposed Mechanism
@@ -87,7 +87,7 @@ Plugin recognizes `<repo-root>/.ai-sdlc/project-context.md`. If present, its con
 
 Rationale for `.ai-sdlc/` path:
 - Mirrors existing `.ai-sdlc/pipeline.yaml` and `.ai-sdlc/agent-role.yaml` adopter-configuration files
-- Distinguishable from `.claude/agents/` which is Claude-Code-general agent definitions
+- Distinguishable from `.copilot/agents/` which is GitHub Copilot-Code-general agent definitions
 - Discoverable; co-located with other adopter governance configuration
 
 ### 4.2 Length cap + warning
@@ -101,10 +101,10 @@ Rationale: protects adopters from context-bloat anti-patterns. The point is to t
 Loading order at agent dispatch:
 1. Framework default agent system prompt (plugin-provided)
 2. Adopter `.ai-sdlc/project-context.md` (this RFC's contribution)
-3. Project-local `.claude/agents/<name>.md` override (if present, Claude Code convention)
+3. Project-local `.copilot/agents/<name>.md` override (if present, GitHub Copilot CLI convention)
 4. Task ticket body (per-dispatch context)
 
-Layers (2) and (3) are independent — adopters can use either, both, or neither. The proposed file is for cross-cutting context that should apply to ALL agents; `.claude/agents/<name>.md` is for per-agent customization.
+Layers (2) and (3) are independent — adopters can use either, both, or neither. The proposed file is for cross-cutting context that should apply to ALL agents; `.copilot/agents/<name>.md` is for per-agent customization.
 
 ## 5. Schema Changes
 
@@ -123,7 +123,7 @@ Fully backward-compatible. Existing adopters who don't ship `.ai-sdlc/project-co
 
 ## 8. Alternatives Considered
 
-### 8.1 Per-agent override via `.claude/agents/<name>.md`
+### 8.1 Per-agent override via `.copilot/agents/<name>.md`
 
 Already works for cases where one agent type needs full custom prompting. Doesn't address cross-cutting context that applies to ALL plugin-dispatched agents.
 

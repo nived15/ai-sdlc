@@ -63,9 +63,9 @@ describe('isCurrentVector', () => {
   it('returns true when provider AND modelVersion match', () => {
     expect(
       isCurrentVector(
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
       ),
     ).toBe(true);
@@ -74,9 +74,9 @@ describe('isCurrentVector', () => {
   it('returns false when provider differs', () => {
     expect(
       isCurrentVector(
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
-        'cohere-embed-v3',
+        'self-hosted-embed-v3',
         '2024-01-25',
       ),
     ).toBe(false);
@@ -85,9 +85,9 @@ describe('isCurrentVector', () => {
   it('returns false when modelVersion differs (within same provider)', () => {
     expect(
       isCurrentVector(
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2025-01-25',
       ),
     ).toBe(false);
@@ -96,9 +96,9 @@ describe('isCurrentVector', () => {
   it('returns false when both differ', () => {
     expect(
       isCurrentVector(
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
-        'cohere-embed-v3',
+        'self-hosted-embed-v3',
         '2025-01-25',
       ),
     ).toBe(false);
@@ -108,25 +108,25 @@ describe('isCurrentVector', () => {
 describe('StaleVectorEncountered', () => {
   it('AC#4: error message names stored + current provenance and the migration command', () => {
     const err = new StaleVectorEncountered({
-      storedProvider: 'openai-text-embedding-ada-002',
+      storedProvider: 'github-copilot-text-embedding-ada-002',
       storedModelVersion: '2022-12-15',
-      currentProvider: 'openai-text-embedding-3-small',
+      currentProvider: 'github-models-embedding-small',
       currentModelVersion: '2024-01-25',
       textHash: 'abc123',
     });
 
     expect(err.name).toBe('StaleVectorEncountered');
-    expect(err.message).toContain('openai-text-embedding-ada-002@2022-12-15');
-    expect(err.message).toContain('openai-text-embedding-3-small@2024-01-25');
-    expect(err.message).toContain('cli-embedding-bump --to openai-text-embedding-3-small');
+    expect(err.message).toContain('github-copilot-text-embedding-ada-002@2022-12-15');
+    expect(err.message).toContain('github-models-embedding-small@2024-01-25');
+    expect(err.message).toContain('cli-embedding-bump --to github-models-embedding-small');
     expect(err.context.textHash).toBe('abc123');
   });
 
   it('AC#4: context is preserved for catalog event construction', () => {
     const ctx = {
-      storedProvider: 'openai-text-embedding-3-small',
+      storedProvider: 'github-models-embedding-small',
       storedModelVersion: '2024-01-25',
-      currentProvider: 'openai-text-embedding-3-small',
+      currentProvider: 'github-models-embedding-small',
       currentModelVersion: '2025-01-25',
       textHash: 'def456',
       consumerLabel: 'rfc-0009-tessellation-drift',

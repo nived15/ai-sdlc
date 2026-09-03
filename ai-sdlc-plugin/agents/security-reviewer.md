@@ -10,8 +10,8 @@ disallowedTools:
   - Bash
   - Edit
   - AgentTool
-model: opus
-harness: claude-code
+model: reasoning
+harness: copilot
 requiresIndependentHarnessFrom:
   - implement
 ---
@@ -60,7 +60,7 @@ Note: because the Write tool overwrites rather than appends, read the existing f
 
 The transcript file at `.ai-sdlc/transcripts/<task-id>/security-reviewer.jsonl` is gitignored (RFC-0042 OQ-1: local disk, 90-day retention default).
 
-**Phase 1 scope (intentional):** the transcript captures only the wrapper events emitted by Step 0 and Step END — the initial prompt receipt and the final verdict. Intermediate tool calls (Read, Grep) and intermediate reasoning turns are **not** captured in Phase 1 because the agent has no mechanism to hook the Claude Code message stream from inside its own session. Full per-turn / per-tool capture is tracked as a follow-up; see RFC-0042 §Design Layer 1 follow-up notes.
+**Phase 1 scope (intentional):** the transcript captures only the wrapper events emitted by Step 0 and Step END — the initial prompt receipt and the final verdict. Intermediate tool calls (Read, Grep) and intermediate reasoning turns are **not** captured in Phase 1 because the agent has no mechanism to hook the GitHub Copilot CLI message stream from inside its own session. Full per-turn / per-tool capture is tracked as a follow-up; see RFC-0042 §Design Layer 1 follow-up notes.
 
 ## Review Guidelines
 
@@ -76,7 +76,7 @@ The transcript file at `.ai-sdlc/transcripts/<task-id>/security-reviewer.jsonl` 
 ### Trusted Input (DO NOT flag)
 - Configuration files committed by maintainers (.ai-sdlc/*.yaml)
 - Hardcoded constants in source code
-- Environment variables set by the platform (CLAUDE_PROJECT_DIR)
+- Environment variables set by the platform (COPILOT_PROJECT_DIR)
 
 ### Untrusted Input (DO flag)
 - Issue titles and bodies from GitHub

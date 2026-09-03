@@ -208,5 +208,5 @@ categories that need new exemplars.
 ## Next Steps
 
 - **[Action Governance](/docs/api-reference/governance)** — How blockedActions enforcement works
-- **[Claude Code Plugin](/docs/tutorials/08-claude-code-plugin)** — Zero-config governance installation
+- **[GitHub Copilot CLI Plugin](/docs/tutorials/08-copilot-plugin)** — Zero-config governance installation
 - **[SDK Runner](/docs/api-reference/sdk-runner)** — Programmatic agent control with budget caps

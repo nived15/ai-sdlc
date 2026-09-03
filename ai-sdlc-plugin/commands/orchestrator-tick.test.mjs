@@ -1,11 +1,11 @@
 /**
  * Tests for the /ai-sdlc orchestrator-tick slash command.
  *
- * Original purpose (AISDLC-225): guard the legacy claude-cli inline-manifest
+ * Original purpose (AISDLC-225): guard the legacy copilot-cli inline-manifest
  * consumer-bridge contract. Replaced by RFC-0041 Phase 1 (AISDLC-377.1):
  * the Conductor now emits Dispatch Board manifests + polls done/+failed/
  * verdicts in foreground; Worker sessions running /ai-sdlc dispatch-worker
- * own the actual `Agent` dispatch. The legacy `claude-cli` inline-manifest
+ * own the actual `Agent` dispatch. The legacy `copilot-cli` inline-manifest
  * path was removed in RFC-0041 Phase 3.3 (AISDLC-377.6).
  *
  * Body-contract assertions read from `orchestrator-tick.md` itself,
@@ -109,7 +109,7 @@ describe('/ai-sdlc orchestrator-tick frontmatter', () => {
     assert.ok(Array.isArray(tools) && tools.includes('Read'), 'Read must be in allowed-tools');
   });
 
-  it('uses inherit model (same session model as main Claude Code session)', () => {
+  it('uses inherit model (same session model as main Copilot CLI session)', () => {
     assert.equal(frontmatter.model, 'inherit');
   });
 });

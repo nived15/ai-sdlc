@@ -13,7 +13,7 @@ dependencies: []
 priority: critical
 references:
   - .github/workflows/dor-ingress.yml
-  - pipeline-cli/src/dor/ingress-claude.ts
+  - pipeline-cli/src/dor/ingress.ts
   - pipeline-cli/src/dor/pr-violations.ts
   - scripts/sync-dor-branch-protection.sh
   - docs/operations/dor-ingress-gate.md

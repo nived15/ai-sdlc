@@ -5,19 +5,7 @@
  */
 
 import type { AgentRunner } from './types.js';
-import { ClaudeCodeRunner } from './claude-code.js';
-import { ClaudeCodeSdkRunner } from './claude-code-sdk.js';
-import { GenericLLMRunner } from './generic-llm.js';
 import { CopilotRunner } from './copilot.js';
-import { CursorRunner } from './cursor.js';
-import { CodexRunner } from './codex.js';
-import {
-  DEFAULT_OPENAI_API_URL,
-  DEFAULT_OPENAI_MODEL,
-  DEFAULT_ANTHROPIC_API_URL,
-  DEFAULT_ANTHROPIC_MODEL,
-  DEFAULT_GENERIC_LLM_MODEL,
-} from '../defaults.js';
 
 export interface RegisteredRunner {
   name: string;
@@ -132,105 +120,19 @@ export class RunnerRegistry {
   }
 
   /**
-   * Auto-discover runners from environment variables and register them.
+   * Auto-discover runners and register them.
+   *
+   * The GitHub Copilot CLI runner is always registered as the built-in
+   * default. Adopters can supply additional runners through the
+   * `AI_SDLC_RUNNER_PLUGIN` seam (see `resolveRunner`) or `register()`.
    */
-  discoverFromEnv(env: Record<string, string | undefined> = process.env): void {
-    // Claude Code is always available as CLI runner
-    if (!this.runners.has('claude-code')) {
-      this.runners.set('claude-code', {
-        name: 'claude-code',
-        runner: new ClaudeCodeRunner(),
-        available: true,
-        source: 'built-in',
-      });
-    }
-
-    // Claude Code SDK runner — available when @anthropic-ai/claude-agent-sdk is installed
-    if (!this.runners.has('claude-code-sdk')) {
-      this.runners.set('claude-code-sdk', {
-        name: 'claude-code-sdk',
-        runner: new ClaudeCodeSdkRunner(),
-        available: true,
-        source: 'built-in',
-      });
-    }
-
-    // OpenAI-compatible runner from env
-    const openaiKey = env.OPENAI_API_KEY;
-    if (openaiKey && !this.runners.has('openai')) {
-      this.runners.set('openai', {
-        name: 'openai',
-        runner: new GenericLLMRunner({
-          apiUrl: env.OPENAI_API_URL ?? DEFAULT_OPENAI_API_URL,
-          apiKey: openaiKey,
-          model: env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL,
-        }),
-        available: true,
-        source: 'env',
-      });
-    }
-
-    // Anthropic API runner from env
-    const anthropicKey = env.ANTHROPIC_API_KEY;
-    if (anthropicKey && !this.runners.has('anthropic')) {
-      this.runners.set('anthropic', {
-        name: 'anthropic',
-        runner: new GenericLLMRunner({
-          apiUrl: env.ANTHROPIC_API_URL ?? DEFAULT_ANTHROPIC_API_URL,
-          apiKey: anthropicKey,
-          model: env.ANTHROPIC_MODEL ?? DEFAULT_ANTHROPIC_MODEL,
-        }),
-        available: true,
-        source: 'env',
-      });
-    }
-
-    // Generic LLM runner from env
-    const genericUrl = env.LLM_API_URL;
-    const genericKey = env.LLM_API_KEY;
-    if (genericUrl && genericKey && !this.runners.has('generic-llm')) {
-      this.runners.set('generic-llm', {
-        name: 'generic-llm',
-        runner: new GenericLLMRunner({
-          apiUrl: genericUrl,
-          apiKey: genericKey,
-          model: env.LLM_MODEL ?? DEFAULT_GENERIC_LLM_MODEL,
-        }),
-        available: true,
-        source: 'env',
-      });
-    }
-
-    // GitHub Copilot CLI runner — available when GH_TOKEN or GITHUB_TOKEN is set
-    const ghToken = env.GH_TOKEN ?? env.GITHUB_TOKEN;
-    if (ghToken && !this.runners.has('copilot')) {
+  discoverFromEnv(_env: Record<string, string | undefined> = process.env): void {
+    if (!this.runners.has('copilot')) {
       this.runners.set('copilot', {
         name: 'copilot',
         runner: new CopilotRunner(),
         available: true,
-        source: 'env',
-      });
-    }
-
-    // Cursor CLI runner — available when CURSOR_API_KEY is set
-    const cursorKey = env.CURSOR_API_KEY;
-    if (cursorKey && !this.runners.has('cursor')) {
-      this.runners.set('cursor', {
-        name: 'cursor',
-        runner: new CursorRunner(),
-        available: true,
-        source: 'env',
-      });
-    }
-
-    // Codex CLI runner — available when CODEX_API_KEY is set
-    const codexKey = env.CODEX_API_KEY;
-    if (codexKey && !this.runners.has('codex')) {
-      this.runners.set('codex', {
-        name: 'codex',
-        runner: new CodexRunner(),
-        available: true,
-        source: 'env',
+        source: 'built-in',
       });
     }
   }
@@ -251,14 +153,12 @@ export function createRunnerRegistry(env?: Record<string, string | undefined>): 
  *   1. `injectedRunner` — programmatic override (options.runner from caller / tests)
  *   2. `runnerName` — explicit `--runner <name>` flag (must already be registered after discoverFromEnv)
  *   3. `AI_SDLC_RUNNER_PLUGIN` env — path to a dynamic plugin module (loaded + registered)
- *   4. ClaudeCodeRunner (hard-coded default)
+ *   4. CopilotRunner (hard-coded default)
  *
- * IMPORTANT — env-discovered runners do NOT auto-win (AISDLC-529 code review). They are
- * registered by `discoverFromEnv()` so they are *selectable by name* via `--runner <name>`,
- * but the mere PRESENCE of an ambient env var (ANTHROPIC_API_KEY, OPENAI_API_KEY, GH_TOKEN,
- * etc. — commonly set for unrelated tools) must NOT silently switch the runner. Before this
- * seam existed the orchestrator always used ClaudeCodeRunner; preserving that as the default
- * (absent an explicit selector) avoids a breaking, surprising change for existing adopters.
+ * IMPORTANT — plugin-registered runners do NOT auto-win (AISDLC-529 code review).
+ * `AI_SDLC_RUNNER_PLUGIN` is an explicit opt-in seam; an adopter selects any other
+ * registered runner by name via `--runner <name>`. The default stays CopilotRunner
+ * so behaviour never changes because of ambient environment state.
  *
  * This function is async because step 3 may dynamically import a module.
  *
@@ -303,9 +203,8 @@ export async function resolveRunner(
     return pluginRunner!;
   }
 
-  // 4. ClaudeCodeRunner default (always in registry after discoverFromEnv).
-  // Env-discovered runners are intentionally NOT auto-selected here — the mere presence
-  // of an ambient API-key env var must not silently override the default (AISDLC-529 code
-  // review). An adopter selects an env-discovered runner explicitly via `--runner <name>`.
-  return registry.get('claude-code') ?? new (await import('./claude-code.js')).ClaudeCodeRunner();
+  // 4. CopilotRunner default (always in registry after discoverFromEnv).
+  // Plugin-registered runners are intentionally NOT auto-selected here — an
+  // adopter selects one explicitly via `--runner <name>` (AISDLC-529 review).
+  return registry.get('copilot') ?? new CopilotRunner();
 }

@@ -1,6 +1,6 @@
 ---
 name: execute
-description: Execute a backlog task OR GitHub issue end-to-end — worktree → developer subagent → 3 parallel reviewer subagents → PR. Runs inline in the main Claude Code session so the Agent tool is available without a subagent middleman.
+description: Execute a backlog task OR GitHub issue end-to-end — worktree → developer subagent → 3 parallel reviewer subagents → PR. Runs inline in the main Copilot CLI session so the Agent tool is available without a subagent middleman.
 argument-hint: <task-id | gh-issue-number | gh:N | #N>
 allowed-tools:
   - Read
@@ -14,7 +14,7 @@ allowed-tools:
 model: inherit
 ---
 
-Execute work item `$ARGUMENTS` end-to-end. `$ARGUMENTS` is either a backlog task ID (e.g. `AISDLC-393`, `INGEST-42`) or a GitHub issue (`612`, `#612`, or explicit `gh:612`) — see [Argument forms](#argument-forms-aisdlc-393) below. The Step 0-15 pipeline below runs inline in the main Claude Code session — worktree creation, developer subagent fan-out, 3 parallel reviewer subagents, attestation signing, PR open.
+Execute work item `$ARGUMENTS` end-to-end. `$ARGUMENTS` is either a backlog task ID (e.g. `AISDLC-393`, `INGEST-42`) or a GitHub issue (`612`, `#612`, or explicit `gh:612`) — see [Argument forms](#argument-forms-aisdlc-393) below. The Step 0-15 pipeline below runs inline in the main Copilot CLI session — worktree creation, developer subagent fan-out, 3 parallel reviewer subagents, attestation signing, PR open.
 
 ## Argument forms (AISDLC-393)
 
@@ -43,13 +43,13 @@ If `$ARGUMENTS` matches none of the three regexes, the command exits 1 with a cl
 
 The Step 0-13 pipeline used to live here, then briefly moved to an `execute-orchestrator` subagent (AISDLC-82) for a cleaner parallel-runs design, then moved back here (AISDLC-98) once it became clear the harness blocks the orchestrator pattern. Rationale:
 
-- **Plugin subagents cannot use the `Agent` tool.** Empirical proof: the parallel-execution test for AISDLC-69.2 returned `"No such tool available: Agent. Agent is not available inside subagents."` regardless of frontmatter declarations. Claude Code filters `Agent` out of every plugin subagent's tool grant one level deep — the allowlist form `Agent(developer, ...)` is silently dropped just the same.
-- **The slash command body runs in the main Claude Code session**, which DOES have the `Agent` tool. So the body can spawn `developer` and the three reviewers (`code-reviewer`, `test-reviewer`, `security-reviewer`) directly without an orchestrator middleman.
-- **Parallelism is per-Claude-Code-session**, not per-orchestrator-subagent. Run `/loop /ai-sdlc execute <task-id>` (or just invoke the slash command repeatedly) to fan out N pipelines — each invocation gets its own session-scoped pipeline run with its own worktree and per-worktree `.active-task` sentinel (AISDLC-81).
+- **Plugin subagents cannot use the `Agent` tool.** Empirical proof: the parallel-execution test for AISDLC-69.2 returned `"No such tool available: Agent. Agent is not available inside subagents."` regardless of frontmatter declarations. GitHub Copilot CLI filters `Agent` out of every plugin subagent's tool grant one level deep — the allowlist form `Agent(developer, ...)` is silently dropped just the same.
+- **The slash command body runs in the main Copilot CLI session**, which DOES have the `Agent` tool. So the body can spawn `developer` and the three reviewers (`code-reviewer`, `test-reviewer`, `security-reviewer`) directly without an orchestrator middleman.
+- **Parallelism is per-GitHub Copilot-Code-session**, not per-orchestrator-subagent. Run `/loop /ai-sdlc execute <task-id>` (or just invoke the slash command repeatedly) to fan out N pipelines — each invocation gets its own session-scoped pipeline run with its own worktree and per-worktree `.active-task` sentinel (AISDLC-81).
 
 ## Hard rules (NEVER violate)
 
-1. **Never merge any PR.** Do not run `gh pr merge` under any circumstance. Per CLAUDE.md, only humans merge.
+1. **Never merge any PR.** Do not run `gh pr merge` under any circumstance. Per .github/copilot-instructions.md, only humans merge.
 2. **Never force-push.** No `git push --force` / `-f`. If push fails (non-fast-forward), abort with a clear message and ask the operator.
 3. **Never close PRs or issues.** No `gh pr close`, `gh issue close`.
 4. **Never delete branches.** No `git branch -D` / `-d`.
@@ -59,7 +59,7 @@ The Step 0-13 pipeline used to live here, then briefly moved to an `execute-orch
 
 ## Hard dependency — per-worktree sentinel (AISDLC-81)
 
-Step 4 below writes the active-task sentinel at `<worktree>/.active-task` (per-worktree), NOT at the legacy project-level `.worktrees/.active-task` path. This is what makes parallel runs safe across multiple `/ai-sdlc execute` invocations (each in its own Claude Code session): each session gets its own sentinel, and the PreToolUse hook walks up from the developer subagent's cwd to find the right one. The legacy project-level sentinel is no longer written here (the hook still falls back to it for one release for backwards compatibility, deprecated for v0.9.0+).
+Step 4 below writes the active-task sentinel at `<worktree>/.active-task` (per-worktree), NOT at the legacy project-level `.worktrees/.active-task` path. This is what makes parallel runs safe across multiple `/ai-sdlc execute` invocations (each in its own Copilot CLI session): each session gets its own sentinel, and the PreToolUse hook walks up from the developer subagent's cwd to find the right one. The legacy project-level sentinel is no longer written here (the hook still falls back to it for one release for backwards compatibility, deprecated for v0.9.0+).
 
 If you find yourself trying to write `.worktrees/.active-task` at the project root, stop — that's the wrong path and would race with parallel runs.
 
@@ -71,9 +71,9 @@ If you find yourself trying to write `.worktrees/.active-task` at the project ro
 
 | Priority | Condition | Why it signals CCR |
 |---|---|---|
-| 1 | `CLAUDE_CODE_ENV=ccr` (exact, case-sensitive) | Canonical env var; Claude Code injects this in CCR sessions |
-| 2 | `CLAUDE_REMOTE_EXECUTION=1` | Alternative CCR injection used in some operator configurations |
-| 3 | `~/.ai-sdlc/signing-key.pem` absent AND `CLAUDE_CODE_ENV` is set (any value) | Signing-key absence + Claude Code env = likely managed sandbox |
+| 1 | `COPILOT_CLI_ENV=ccr` (exact, case-sensitive) | Canonical env var; GitHub Copilot CLI injects this in CCR sessions |
+| 2 | `COPILOT_REMOTE_EXECUTION=1` | Alternative CCR injection used in some operator configurations |
+| 3 | `~/.ai-sdlc/signing-key.pem` absent AND `COPILOT_CLI_ENV` is set (any value) | Signing-key absence + GitHub Copilot CLI env = likely managed sandbox |
 
 Heuristic 3 is intentionally conservative — it only fires when BOTH conditions hold. A local session without a signing key fails later at Step 10; the heuristic targets the case where an operator explicitly uses a managed environment. **Never refuse on missing signing key alone** (that is a setup error, not a sandbox context).
 
@@ -89,15 +89,15 @@ else
   _CCR_DETECTED=0
   _CCR_REASON=""
 
-  if [ "${CLAUDE_CODE_ENV:-}" = "ccr" ]; then
+  if [ "${COPILOT_CLI_ENV:-}" = "ccr" ]; then
     _CCR_DETECTED=1
-    _CCR_REASON="CLAUDE_CODE_ENV=ccr detected"
-  elif [ "${CLAUDE_REMOTE_EXECUTION:-}" = "1" ]; then
+    _CCR_REASON="COPILOT_CLI_ENV=ccr detected"
+  elif [ "${COPILOT_REMOTE_EXECUTION:-}" = "1" ]; then
     _CCR_DETECTED=1
-    _CCR_REASON="CLAUDE_REMOTE_EXECUTION=1 detected"
-  elif [ -n "${CLAUDE_CODE_ENV:-}" ] && [ ! -f "${HOME}/.ai-sdlc/signing-key.pem" ]; then
+    _CCR_REASON="COPILOT_REMOTE_EXECUTION=1 detected"
+  elif [ -n "${COPILOT_CLI_ENV:-}" ] && [ ! -f "${HOME}/.ai-sdlc/signing-key.pem" ]; then
     _CCR_DETECTED=1
-    _CCR_REASON="CLAUDE_CODE_ENV set + ~/.ai-sdlc/signing-key.pem absent (likely managed sandbox)"
+    _CCR_REASON="COPILOT_CLI_ENV set + ~/.ai-sdlc/signing-key.pem absent (likely managed sandbox)"
   fi
 
   if [ "$_CCR_DETECTED" = "1" ]; then
@@ -114,7 +114,7 @@ else
     echo "       Use mcp__backlog__task_create (works fine in CCR)" >&2
     echo "  2. File a GitHub issue for local pickup:" >&2
     echo "       Use mcp__github__create_issue (works fine in CCR)" >&2
-    echo "  Then run /ai-sdlc execute <task-id> from a LOCAL Claude Code session." >&2
+    echo "  Then run /ai-sdlc execute <task-id> from a LOCAL Copilot CLI session." >&2
     echo "" >&2
     echo "See: docs/operations/remote-agents-readonly.md" >&2
     exit 1
@@ -129,18 +129,18 @@ fi
   uses variables established here. This makes the command body work across all install
   topologies (AISDLC-272 added topology 2 + 3 to the original 2-case binary):
 
-  1. Marketplace install (set+correct): CLAUDE_PLUGIN_DIR is set by Claude Code and
+  1. Marketplace install (set+correct): CLAUDE_PLUGIN_DIR is set by GitHub Copilot CLI and
      $CLAUDE_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin exists → use it.
 
   2. Marketplace install (set+useless): CLAUDE_PLUGIN_DIR is set but the bundle is
      missing (local marketplace cache never runs npm install). Auto-detect and self-heal
      via scripts/install-runtime-deps.sh, then probe the cache.
 
-  3. CLAUDE_PLUGIN_DIR unset but CLAUDE_PLUGIN_ROOT set: Claude Code injects
-     CLAUDE_PLUGIN_ROOT in all main-session contexts even when CLAUDE_PLUGIN_DIR is
-     absent. Try $CLAUDE_PLUGIN_ROOT/node_modules/@ai-sdlc/pipeline-cli/bin first.
+  3. CLAUDE_PLUGIN_DIR unset but COPILOT_PLUGIN_ROOT set: GitHub Copilot CLI injects
+     COPILOT_PLUGIN_ROOT in all main-session contexts even when CLAUDE_PLUGIN_DIR is
+     absent. Try $COPILOT_PLUGIN_ROOT/node_modules/@ai-sdlc/pipeline-cli/bin first.
 
-  4. Plugin cache probe (env unset): Walk ~/.claude/plugins/cache/<marketplace>/ai-sdlc/
+  4. Plugin cache probe (env unset): Walk ~/.copilot/plugins/cache/<marketplace>/ai-sdlc/
      <version>/ to find the newest installed version that has pipeline-cli bundled.
      Read-only — never self-heals (PR #482 security fix).
 
@@ -149,16 +149,16 @@ fi
   6. Self-location fallback (AISDLC-557, last resort, all env vars unset): derive the
      plugin dir from resolve-pipeline-cli.sh's own on-disk location and self-heal
      against it. Reachable in the exact case topologies 1-3 never attempt self-heal:
-     neither CLAUDE_PLUGIN_DIR nor CLAUDE_PLUGIN_ROOT made it through.
+     neither CLAUDE_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT made it through.
 
   Resolution is delegated to scripts/resolve-pipeline-cli.sh which handles self-heal
   and all fallback steps. The script prints the resolved path to stdout; exit 1 on
   complete failure with an actionable error message naming the broken topology.
 
   For plugin-internal scripts (compute-slug.mjs, sign-attestation.mjs, etc.),
-  CLAUDE_PLUGIN_ROOT is already set by Claude Code to the plugin directory — use that
+  COPILOT_PLUGIN_ROOT is already set by GitHub Copilot CLI to the plugin directory — use that
   for scripts that ship with the plugin itself. PLUGIN_SCRIPTS_DIR is an alias for it
-  with a dogfood fallback, used only for scripts invoked early (before CLAUDE_PLUGIN_ROOT
+  with a dogfood fallback, used only for scripts invoked early (before COPILOT_PLUGIN_ROOT
   is guaranteed by the harness).
 
   These variables MUST be established before the first CLI invocation and MUST NOT be
@@ -170,11 +170,11 @@ PATH-RESOLUTION:END -->
 # AISDLC-245.4 / AISDLC-272: Resolve pipeline-cli binaries and plugin scripts portably.
 #
 # PLUGIN_SCRIPTS_DIR — plugin-internal scripts (compute-slug.mjs etc.):
-#   - Marketplace install: $CLAUDE_PLUGIN_DIR/scripts  (CLAUDE_PLUGIN_ROOT is the same)
+#   - Marketplace install: $CLAUDE_PLUGIN_DIR/scripts  (COPILOT_PLUGIN_ROOT is the same)
 #   - Dogfood monorepo:    $(pwd)/ai-sdlc-plugin/scripts
 #
 # Must be set FIRST because resolve-pipeline-cli.sh lives under PLUGIN_SCRIPTS_DIR.
-PLUGIN_SCRIPTS_DIR="${CLAUDE_PLUGIN_DIR:-${CLAUDE_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
+PLUGIN_SCRIPTS_DIR="${CLAUDE_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
 
 # PIPELINE_CLI_BIN — directory containing cli-*.mjs binaries.
 #
@@ -183,7 +183,7 @@ PLUGIN_SCRIPTS_DIR="${CLAUDE_PLUGIN_DIR:-${CLAUDE_PLUGIN_ROOT:-$(pwd)/ai-sdlc-pl
 #   - "CLAUDE_PLUGIN_DIR unset" → dogfood monorepo (wrong in adopter projects)
 #
 # Delegate resolution to resolve-pipeline-cli.sh which handles all five topologies
-# (set+correct, set+useless with self-heal, CLAUDE_PLUGIN_ROOT fallback, cache probe,
+# (set+correct, set+useless with self-heal, COPILOT_PLUGIN_ROOT fallback, cache probe,
 # dogfood) and exits 1 with an actionable error when nothing resolves.
 #
 # Override: export PIPELINE_CLI_BIN=/path/to/pipeline-cli/bin to skip resolution.
@@ -250,7 +250,7 @@ This runs SILENTLY when nothing matches. If anything was swept, print one line p
 
 For ad-hoc / manual cleanup of a specific task without waiting for the next `/ai-sdlc execute`, use the `/ai-sdlc cleanup [<task-id>]` companion command.
 
-> **Parallel-runs note.** Step 0 races benignly across concurrent `/ai-sdlc execute` invocations (each in its own Claude Code session): `git worktree remove --force` is idempotent and the second invocation simply prints nothing for the already-swept entry. There's no shared mutable state to protect.
+> **Parallel-runs note.** Step 0 races benignly across concurrent `/ai-sdlc execute` invocations (each in its own Copilot CLI session): `git worktree remove --force` is idempotent and the second invocation simply prints nothing for the already-swept entry. There's no shared mutable state to protect.
 
 ## Step 0.5 — Auto-sync untracked parent task files (AISDLC-217)
 
@@ -280,7 +280,7 @@ fi
 echo "[Step 0.5] $SYNC_RESULT"
 ```
 
-> **Implementation note.** The `sync-parent` subcommand is backed by `pipeline-cli/src/steps/00-5-sync-parent.ts` (`syncParentUntrackedFiles`). It follows the same `Runner` injection pattern as all other steps so it is fully hermetic under test. Invoke via `node "$PIPELINE_CLI_BIN/ai-sdlc-pipeline.mjs"` (never `pnpm exec` — see CLAUDE.md "CI behavior" / AISDLC-156).
+> **Implementation note.** The `sync-parent` subcommand is backed by `pipeline-cli/src/steps/00-5-sync-parent.ts` (`syncParentUntrackedFiles`). It follows the same `Runner` injection pattern as all other steps so it is fully hermetic under test. Invoke via `node "$PIPELINE_CLI_BIN/ai-sdlc-pipeline.mjs"` (never `pnpm exec` — see .github/copilot-instructions.md "CI behavior" / AISDLC-156).
 
 > **Non-blocking contract.** Even when the sync PR opens, Step 0.5 returns immediately and Step 1 proceeds. The parent's untracked files remain until the operator runs `git clean -f backlog/tasks/aisdlc-N*.md` (or until the next Step 0 self-heal after the sync PR merges — at that point the files are on `origin/main`, `git reset --hard origin/main` is safe, and the parent is fully clean again).
 
@@ -440,13 +440,13 @@ The slash command body's wiring is a single `node -e` invocation of the dogfood 
 
 ```bash
 if [ "$ARG_FORM" = "gh-issue" ]; then
-  # ── Pre-flight 1: `claude` CLI MUST be on PATH (AISDLC-393 round 2, FINDING 2 fix) ──
+  # ── Pre-flight 1: `copilot` CLI MUST be on PATH (AISDLC-393 round 2, FINDING 2 fix) ──
   #
-  # The gh-issue path's billing claim ("Subscription — Claude Code Max") in
-  # CLAUDE.md is only true when the dispatch uses the subscription spawner
-  # (`ShellClaudePSpawner`, shelling out to `claude -p`). If `claude` is NOT
-  # on PATH but `ANTHROPIC_API_KEY` is set, `defaultSpawner()` silently falls
-  # through to `ClaudeCodeSDKSpawner` and the dispatch burns API tokens
+  # The gh-issue path's billing claim ("Subscription — GitHub Copilot CLI Max") in
+  # .github/copilot-instructions.md is only true when the dispatch uses the subscription spawner
+  # (`CopilotHarnessAdapter`, shelling out to `copilot -p`). If `copilot` is NOT
+  # on PATH but `GITHUB_MODELS_TOKEN` is set, `defaultSpawner()` silently falls
+  # through to `CopilotHarnessAdapter` and the dispatch burns API tokens
   # instead — billing drift between what the operator was told and what
   # actually ran. Refuse early with a clear error rather than silently
   # switching billing rails.
@@ -454,12 +454,12 @@ if [ "$ARG_FORM" = "gh-issue" ]; then
   # The backlog-task path (Step 1.b below) doesn't hit this — it dispatches
   # the developer subagent via the main session's `Agent` tool, which
   # never enters defaultSpawner.
-  if ! command -v claude >/dev/null 2>&1; then
-    echo "ERROR: /ai-sdlc execute <gh-issue> requires the \`claude\` CLI on PATH" >&2
+  if ! command -v copilot >/dev/null 2>&1; then
+    echo "ERROR: /ai-sdlc execute <gh-issue> requires the \`copilot\` CLI on PATH" >&2
     echo "       (subscription billing path). Install it via:" >&2
-    echo "         https://docs.claude.com/claude-code/installation" >&2
+    echo "         https://docs.copilot.com/copilot/installation" >&2
     echo "" >&2
-    echo "       Refusing to fall back to ANTHROPIC_API_KEY-based dispatch" >&2
+    echo "       Refusing to fall back to GITHUB_MODELS_TOKEN-based dispatch" >&2
     echo "       (paid API tokens) without explicit operator opt-in. If you" >&2
     echo "       want the API-key path, use the watcher instead:" >&2
     echo "         pnpm --filter @ai-sdlc/dogfood watch --issue ${GH_ISSUE_NUMBER}" >&2
@@ -534,12 +534,12 @@ if [ "$ARG_FORM" = "gh-issue" ]; then
   # surface is needed). For now the watcher's `runOneIssue` + the new
   # `taskSpec`/`sourceKind` pipeline options give us the whole dispatch.
   #
-  # AISDLC-393 round 2 (FINDING 2 fix): we pre-validated `claude` is on PATH
-  # above, so `defaultSpawner()` will pick `ShellClaudePSpawner` (subscription).
+  # AISDLC-393 round 2 (FINDING 2 fix): we pre-validated `copilot` is on PATH
+  # above, so `defaultSpawner()` will pick `CopilotHarnessAdapter` (subscription).
   # We pass `which` explicitly with a forced-true probe AND set the env-reader
-  # to return undefined for `ANTHROPIC_API_KEY` to make the no-API-key-fallback
+  # to return undefined for `GITHUB_MODELS_TOKEN` to make the no-API-key-fallback
   # contract a hard guarantee inside this dispatch (defence-in-depth — if
-  # `claude` somehow disappears between pre-flight and spawn, defaultSpawner
+  # `copilot` somehow disappears between pre-flight and spawn, defaultSpawner
   # throws rather than silently switching billing rails).
   node -e "
     import('$DOGFOOD_DIST').then(async ({ fetchGhIssueAsTaskSpec }) => {
@@ -549,9 +549,9 @@ if [ "$ARG_FORM" = "gh-issue" ]; then
       const spec = cached.spec;
       const issueNumber = cached.issueNumber;
       // FINDING 2 fix: refuse API-key fallback. The shell-side pre-flight
-      // already verified \`claude\` is on PATH, so passing \`env: () => undefined\`
-      // (i.e. pretend ANTHROPIC_API_KEY is unset) keeps the resolution chain
-      // honest: ShellClaudePSpawner wins, or defaultSpawner throws.
+      // already verified \`copilot\` is on PATH, so passing \`env: () => undefined\`
+      // (i.e. pretend GITHUB_MODELS_TOKEN is unset) keeps the resolution chain
+      // honest: CopilotHarnessAdapter wins, or defaultSpawner throws.
       const spawner = await defaultSpawner({ env: () => undefined });
       const result = await executePipeline({
         taskId: spec.id,
@@ -620,7 +620,7 @@ if [ "$PREFLIGHT_EXIT" -ne 0 ]; then
 fi
 ```
 
-This step is fail-closed: if `cli-deps` itself errors (binary not built, broken JSON, etc.) the slash command still aborts rather than dispatching blindly. Run `pnpm --filter @ai-sdlc/pipeline-cli build` if the binary is missing. **Never** invoke pipeline-cli binaries via `pnpm --filter @ai-sdlc/pipeline-cli exec cli-X` — `pnpm exec` does not resolve workspace own-bins, the call silently fails with `Command not found`, and any `|| echo <fallback>` safety net fires unconditionally (CLAUDE.md "## CI behavior", AISDLC-156).
+This step is fail-closed: if `cli-deps` itself errors (binary not built, broken JSON, etc.) the slash command still aborts rather than dispatching blindly. Run `pnpm --filter @ai-sdlc/pipeline-cli build` if the binary is missing. **Never** invoke pipeline-cli binaries via `pnpm --filter @ai-sdlc/pipeline-cli exec cli-X` — `pnpm exec` does not resolve workspace own-bins, the call silently fails with `Command not found`, and any `|| echo <fallback>` safety net fires unconditionally (.github/copilot-instructions.md "## CI behavior", AISDLC-156).
 
 ### Step 1.6 — Frontier consultation (operator hint, AISDLC-117)
 
@@ -709,7 +709,7 @@ If `git worktree add` fails because the branch already exists, the operator's pr
 
 Use `mcp__plugin_ai-sdlc_ai-sdlc__task_edit` to set `status: 'In Progress'`. This makes the dashboard reflect that work has started.
 
-> **Why the plugin's `task_edit` (not upstream `mcp__backlog__task_edit`)?** Upstream re-serialises frontmatter from its known schema and silently strips unrecognised keys — including `permittedExternalPaths`, which this pipeline relies on for cross-repo writes. The plugin's drop-in (AISDLC-73) preserves unknown keys verbatim. Same goes for `mcp__plugin_ai-sdlc_ai-sdlc__task_complete` in Step 10. The `mcp__plugin_<plugin-name>_<server-name>__<tool>` namespace is how Claude Code exposes plugin-supplied MCP tools — globally-registered MCP servers (like `mcp__backlog__*`) use the simpler `mcp__<server>__<tool>` form.
+> **Why the plugin's `task_edit` (not upstream `mcp__backlog__task_edit`)?** Upstream re-serialises frontmatter from its known schema and silently strips unrecognised keys — including `permittedExternalPaths`, which this pipeline relies on for cross-repo writes. The plugin's drop-in (AISDLC-73) preserves unknown keys verbatim. Same goes for `mcp__plugin_ai-sdlc_ai-sdlc__task_complete` in Step 10. The `mcp__plugin_<plugin-name>_<server-name>__<tool>` namespace is how GitHub Copilot CLI exposes plugin-supplied MCP tools — globally-registered MCP servers (like `mcp__backlog__*`) use the simpler `mcp__<server>__<tool>` form.
 
 Then write the **per-worktree** active-task sentinel so the PreToolUse hook can resolve `permittedExternalPaths` for cross-repo writes:
 
@@ -717,11 +717,11 @@ Then write the **per-worktree** active-task sentinel so the PreToolUse hook can 
 echo "$TASK_ID" > "$WORKTREE_PATH/.active-task"
 ```
 
-The sentinel lives **inside the worktree** (at `.worktrees/<task-id-lower>/.active-task`), not at the project-level `.worktrees/.active-task` path used by older versions. This is the canonical source of truth for "which task is active for this worktree." The hook walks up from the developer subagent's cwd to find this file, so each parallel `/ai-sdlc execute` run (in its own Claude Code session) has its own sentinel without racing the others. Without it, cross-repo writes are denied.
+The sentinel lives **inside the worktree** (at `.worktrees/<task-id-lower>/.active-task`), not at the project-level `.worktrees/.active-task` path used by older versions. This is the canonical source of truth for "which task is active for this worktree." The hook walks up from the developer subagent's cwd to find this file, so each parallel `/ai-sdlc execute` run (in its own Copilot CLI session) has its own sentinel without racing the others. Without it, cross-repo writes are denied.
 
 CRITICAL: this file MUST be deleted at end of run (Step 15) regardless of success/failure, otherwise a future invocation reading the worktree (e.g. `/ai-sdlc cleanup` or another execute that re-uses the path) inherits the stale active task. Treat it as a try/finally — if anything fails between here and Step 15, still delete.
 
-> **Parallel runs are safe.** Multiple `/ai-sdlc execute` invocations can run concurrently against the same project root (each in its own Claude Code session), including with cross-repo writes — each invocation reads/writes its own per-worktree sentinel. The legacy project-level sentinel `.worktrees/.active-task` is no longer written by this pipeline, but the hook still falls back to it for one release for compatibility (deprecated, will be removed in v0.9.0+).
+> **Parallel runs are safe.** Multiple `/ai-sdlc execute` invocations can run concurrently against the same project root (each in its own Copilot CLI session), including with cross-repo writes — each invocation reads/writes its own per-worktree sentinel. The legacy project-level sentinel `.worktrees/.active-task` is no longer written by this pipeline, but the hook still falls back to it for one release for compatibility (deprecated, will be removed in v0.9.0+).
 
 ## Step 5 — Invoke the developer subagent
 
@@ -756,7 +756,7 @@ You are implementing backlog task $TASK_ID in worktree $WORKTREE_PATH.
 
 <body>
 
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+Co-Authored-By: the reasoning tier 4.6 (1M context) <noreply@github.com>
 
 ## Branch
 You are on branch `$BRANCH` checked out at `$WORKTREE_PATH`.
@@ -796,7 +796,7 @@ The developer returns a JSON object. Parse it and check:
 
 ### AISDLC-480 — dispatched-session AskUserQuestion routing (AC-2)
 
-When a developer subagent runs in a **non-interactive / detached session** (tmux pane, `claude -p` worker, background Agent) and encounters a question it cannot answer autonomously, it MUST NOT hang waiting for stdin. Instead it routes the question to the Decision Catalog and exits cleanly:
+When a developer subagent runs in a **non-interactive / detached session** (tmux pane, `copilot -p` worker, background Agent) and encounters a question it cannot answer autonomously, it MUST NOT hang waiting for stdin. Instead it routes the question to the Decision Catalog and exits cleanly:
 
 ```bash
 # Pattern for non-interactive AskUserQuestion routing in developer subagents:
@@ -996,59 +996,49 @@ Reviewers ALWAYS read from `/tmp/pr-delta-diff-${TASK_ID}.txt` when `INCR_DELTA_
 
 ### Step 7b — Spawn the selected subset
 
-**AISDLC-483 — default-Codex reviewer routing.** Before spawning, resolve the
-canonical agent name for each reviewer role using the harness-selection logic.
-By default, code-review and test-review route to the Codex variants
-(`code-reviewer-codex` / `test-reviewer-codex`), which run under Codex plan
-billing (zero Claude tokens). Security review always stays on the Claude-native
-`security-reviewer` at opus. Set `AI_SDLC_REVIEWER_HARNESS=claude` to force
-all three onto Claude-native agents (e.g. when Codex is not installed or
-the team has disabled Codex).
+**AISDLC-483 — reviewer routing.** Before spawning, resolve the canonical agent
+name for each reviewer role. Every role dispatches through the GitHub Copilot
+CLI in its own fresh session; what varies is the model tier. Code and test
+review run on the balanced tier; security review runs on the reasoning tier.
+Set `AI_SDLC_REVIEWER_MODEL_TIER` to pin every reviewer to one tier.
 
 ```bash
 # AISDLC-483: Resolve agent names for this fan-out.
-# Default: code/test → codex variants; security → claude-native.
-# Override: AI_SDLC_REVIEWER_HARNESS=claude → all three claude-native.
 _resolve_reviewer_agent() {
   local classifier_name="$1"
-  local force_claude="${AI_SDLC_REVIEWER_HARNESS:-}"
   case "$classifier_name" in
-    critic)
-      if [ "$(echo "$force_claude" | tr '[:upper:]' '[:lower:]')" = "claude" ]; then
-        echo "code-reviewer"
-      else
-        echo "code-reviewer-codex"
-      fi
-      ;;
-    testing)
-      if [ "$(echo "$force_claude" | tr '[:upper:]' '[:lower:]')" = "claude" ]; then
-        echo "test-reviewer"
-      else
-        echo "test-reviewer-codex"
-      fi
-      ;;
-    security)
-      # Always claude-native — Codex does not handle security review reliably.
-      echo "security-reviewer"
-      ;;
+    critic)   echo "code-reviewer" ;;
+    testing)  echo "test-reviewer" ;;
+    security) echo "security-reviewer" ;;
     *)
       # Unknown classifier name — pass through unchanged.
       echo "$classifier_name"
       ;;
   esac
 }
+
+# Model tier per role. AI_SDLC_REVIEWER_MODEL_TIER overrides all three.
+_resolve_reviewer_tier() {
+  local classifier_name="$1"
+  local override
+  override="$(echo "${AI_SDLC_REVIEWER_MODEL_TIER:-}" | tr '[:upper:]' '[:lower:]')"
+  case "$override" in
+    balanced|reasoning|inherit) echo "$override"; return ;;
+  esac
+  case "$classifier_name" in
+    security) echo "reasoning" ;;
+    *)        echo "balanced" ;;
+  esac
+}
 ```
 
-Detect Codex availability once (the reviewer agents declare `harness: codex`):
+Detect the GitHub Copilot CLI once (every reviewer agent declares `harness: copilot`):
 
 ```bash
-FORCE_CLAUDE_NATIVE="${AI_SDLC_REVIEWER_HARNESS:-}"
-if [ "$(echo "$FORCE_CLAUDE_NATIVE" | tr '[:upper:]' '[:lower:]')" = "claude" ]; then
-  HARNESS_NOTE="AI_SDLC_REVIEWER_HARNESS=claude — using Claude-native agents for all reviewers"
-elif which codex >/dev/null 2>&1; then
+if which copilot >/dev/null 2>&1; then
   HARNESS_NOTE=""
 else
-  HARNESS_NOTE="⚠ INDEPENDENCE NOT ENFORCED (codex unavailable, fell back to claude-code)"
+  HARNESS_NOTE="⚠ REVIEW HARNESS UNAVAILABLE (GitHub Copilot CLI not found on PATH)"
 fi
 ```
 
@@ -1085,15 +1075,14 @@ HEAD_SHA_FOR_NONCE=$(cd "$WORKTREE_PATH" && git rev-parse HEAD)
 # have no real transcript file to hash). Each invocation is sequential so the
 # leafIndex counter in transcript-leaves.jsonl increments correctly without races.
 #
-# Harness is determined per-reviewer below (security-reviewer always runs under
-# claude-code; code-reviewer/test-reviewer use the codex variant when available).
+# Every reviewer runs under the GitHub Copilot CLI in its own fresh session.
 #
-# Model is informational; use the known subagent model if set, otherwise a
-# descriptive placeholder that the operator can update from reviewer metadata.
-EMIT_MODEL="${AISDLC_REVIEWER_MODEL:-claude-sonnet-4-6}"
-CODEX_AVAILABLE="false"
-if which codex >/dev/null 2>&1; then
-  CODEX_AVAILABLE="true"
+# Model tier is informational in the leaf; use the known subagent tier if set,
+# otherwise derive it per-role via _resolve_reviewer_tier (defined in Step 7b).
+EMIT_MODEL="${AISDLC_REVIEWER_MODEL:-}"
+COPILOT_AVAILABLE="false"
+if which copilot >/dev/null 2>&1; then
+  COPILOT_AVAILABLE="true"
 fi
 
 for REVIEWER_NAME in $SELECTED; do
@@ -1103,46 +1092,13 @@ for REVIEWER_NAME in $SELECTED; do
     continue
   fi
 
-  # Map classifier name → subagent / transcript name AND choose per-reviewer
-  # harness using AISDLC-483 defaults: code/test → codex variants, security →
-  # claude-code. The agent name is obtained via _resolve_reviewer_agent (defined
-  # in Step 7b) so the harness metadata in the Merkle leaf stays consistent with
-  # the agent that actually ran (AISDLC-383.8 code review MAJOR finding).
+  # Map classifier name → subagent / transcript name. The agent name is obtained
+  # via _resolve_reviewer_agent (defined in Step 7b) so the harness metadata in
+  # the Merkle leaf stays consistent with the agent that actually ran
+  # (AISDLC-383.8 code review MAJOR finding).
   AGENT_NAME=$(_resolve_reviewer_agent "$REVIEWER_NAME")
-  case "$REVIEWER_NAME" in
-    testing)
-      REVIEWER_HARNESS="codex"
-      if [ "$(echo "${AI_SDLC_REVIEWER_HARNESS:-}" | tr '[:upper:]' '[:lower:]')" = "claude" ] || [ "$CODEX_AVAILABLE" = "false" ]; then
-        REVIEWER_HARNESS="claude-code"
-      fi
-      ;;
-    critic)
-      REVIEWER_HARNESS="codex"
-      if [ "$(echo "${AI_SDLC_REVIEWER_HARNESS:-}" | tr '[:upper:]' '[:lower:]')" = "claude" ] || [ "$CODEX_AVAILABLE" = "false" ]; then
-        REVIEWER_HARNESS="claude-code"
-      fi
-      ;;
-    security)
-      REVIEWER_HARNESS="claude-code"
-      ;;
-    code-reviewer-codex|test-reviewer-codex)
-      # Explicit codex-variant names (e.g. when REVIEWER_NAME itself is already
-      # resolved to a codex agent). AGENT_NAME was already set above.
-      REVIEWER_HARNESS="codex"
-      ;;
-    security-reviewer)
-      # Explicit security-reviewer name — always claude-code.
-      REVIEWER_HARNESS="claude-code"
-      ;;
-    code-reviewer|test-reviewer)
-      # Explicit claude-native reviewer names — harness is claude-code.
-      REVIEWER_HARNESS="claude-code"
-      ;;
-    *)
-      # Passthrough for unknown names.
-      REVIEWER_HARNESS="claude-code"
-      ;;
-  esac
+  REVIEWER_HARNESS="copilot"
+  EMIT_MODEL="${AISDLC_REVIEWER_MODEL:-$(_resolve_reviewer_tier "$REVIEWER_NAME")}"
 
   TRANSCRIPT_FILE="$WORKTREE_PATH/.ai-sdlc/transcripts/${TASK_ID_LOWER}/${AGENT_NAME}.jsonl"
   VERDICT_FILE="$WORKTREE_PATH/.ai-sdlc/verdicts/${AGENT_NAME}-${TASK_ID_LOWER}.json"
@@ -1229,7 +1185,7 @@ cd "$WORKTREE_PATH"
 # 1. Snapshot the pre-rebase contentHash. This is the AISDLC-94 oracle for
 #    "did file content actually change?" — same hash before/after rebase
 #    means the reviewers' approval still binds without re-spawning them.
-PRE_HASH=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/sign-attestation.mjs" \
+PRE_HASH=$(node "${COPILOT_PLUGIN_ROOT}/scripts/sign-attestation.mjs" \
   --print-content-hash 2>/dev/null || echo "")
 
 # 2. Fetch latest main with a bounded timeout. On fetch failure, skip the
@@ -1284,7 +1240,7 @@ else
     # 5. Rebase succeeded. Compare contentHash to decide whether reviewers'
     #    approval still binds (same content) or re-review is needed (different
     #    content because main now has sibling commits inside our changed files).
-    POST_HASH=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/sign-attestation.mjs" \
+    POST_HASH=$(node "${COPILOT_PLUGIN_ROOT}/scripts/sign-attestation.mjs" \
       --print-content-hash 2>/dev/null || echo "")
     cd -
 
@@ -1321,18 +1277,18 @@ After Step 10.5 completes successfully, proceed to Step 10. The signed attestati
 
 ## Step 10 — Mark task Done + write verdicts file + commit (BEFORE push)
 
-This step lands the entire task lifecycle inside a single PR — Done state, file move, the implementation work, and (after the pre-push hook fires in Step 11) the signed review attestation all merge atomically. Per CLAUDE.md (this command's authority): for tasks shipped via `/ai-sdlc execute`, **Done = "reviews-approved-and-PR-opened"**, not "merged."
+This step lands the entire task lifecycle inside a single PR — Done state, file move, the implementation work, and (after the pre-push hook fires in Step 11) the signed review attestation all merge atomically. Per .github/copilot-instructions.md (this command's authority): for tasks shipped via `/ai-sdlc execute`, **Done = "reviews-approved-and-PR-opened"**, not "merged."
 
 Skip this step entirely if the iteration cap was exceeded (the PR is `[needs-human-attention]` — let the human flip Done after they're satisfied via `/ai-sdlc complete <task-id>` or by hand).
 
-> **AISDLC-133 — signing has moved to the pre-push hook.** Prior versions of this command shelled out to `node ai-sdlc-plugin/scripts/sign-attestation.mjs` from this step and committed the resulting envelope alongside the task-Done chore commit. That coupled a deterministic mechanical operation (sign → commit envelope) to a successful main-session turn AND consumed model context for it. The pipeline now writes the aggregated reviewer verdicts to `<worktree>/.ai-sdlc/verdicts/<task-id-lower>.json` (per-worktree, survives session restart) and stops. The husky `pre-push` hook (`.husky/pre-push` → `scripts/check-attestation-sign.sh`) detects the verdict file at push time, signs the DSSE envelope against the actual HEAD SHA being pushed, commits the envelope as a follow-up chore, and exits 1 to prompt a re-`git push` (which is then a no-op because the idempotent check inside the hook sees the envelope at the new HEAD). See CLAUDE.md "## Hooks → Auto-signed attestations" for the full contract.
+> **AISDLC-133 — signing has moved to the pre-push hook.** Prior versions of this command shelled out to `node ai-sdlc-plugin/scripts/sign-attestation.mjs` from this step and committed the resulting envelope alongside the task-Done chore commit. That coupled a deterministic mechanical operation (sign → commit envelope) to a successful main-session turn AND consumed model context for it. The pipeline now writes the aggregated reviewer verdicts to `<worktree>/.ai-sdlc/verdicts/<task-id-lower>.json` (per-worktree, survives session restart) and stops. The husky `pre-push` hook (`.husky/pre-push` → `scripts/check-attestation-sign.sh`) detects the verdict file at push time, signs the DSSE envelope against the actual HEAD SHA being pushed, commits the envelope as a follow-up chore, and exits 1 to prompt a re-`git push` (which is then a no-op because the idempotent check inside the hook sees the envelope at the new HEAD). See .github/copilot-instructions.md "## Hooks → Auto-signed attestations" for the full contract.
 >
 > The slash command is now responsible for ONE durable artifact at sign time: the verdict file. Everything else is the hook's job.
 
 If reviews approved cleanly:
 
 1. **Build `acceptanceCriteriaCheck`** — list all AC indices `[1..N]` by default. If reviewers explicitly contested any AC ("AC #3 not actually met" wording), drop those indices.
-2. **Build `finalSummary`** — assemble per the CLAUDE.md template:
+2. **Build `finalSummary`** — assemble per the .github/copilot-instructions.md template:
    ```markdown
    ## Summary
    <developer's `summary` field>
@@ -1427,7 +1383,7 @@ If reviews approved cleanly:
    the husky pre-push hook (AISDLC-133) at .ai-sdlc/attestations/<head-sha>.dsse.json
    (AISDLC-74) so CI's verify-attestation workflow can skip the duplicate review run.
 
-   Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
+   Co-Authored-By: the reasoning tier 4.6 (1M context) <noreply@github.com>"
    CHORE_BODY=$(printf '%s' "$CHORE_BODY" | sed -E \
      -e 's/\[[Ss][Kk][Ii][Pp] [Cc][Ii]\]/(skip ci marker)/g' \
      -e 's/\[[Cc][Ii] [Ss][Kk][Ii][Pp]\]/(ci skip marker)/g' \
@@ -1642,7 +1598,7 @@ For each entry in `developer.filesChangedExternal`:
 
    Companion changes for $MAIN_PR_URL.
 
-   Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
+   Co-Authored-By: the reasoning tier 4.6 (1M context) <noreply@github.com>"
    git -C "$SIBLING" push -u origin "$SIBLING_BRANCH"
    ```
 5. **Open the sibling PR** with a body that links back to the main PR:
@@ -1736,7 +1692,7 @@ After Step 15, print a JSON object summarising the run so the operator (or a wra
     "iterations": 1,
     "harnessNote": "" ,
     "verdicts": [
-      { "agentId": "code-reviewer", "harness": "claude-code|codex", "approved": true,
+      { "agentId": "code-reviewer", "harness": "copilot|copilot", "approved": true,
         "findings": { "critical": 0, "major": 0, "minor": 0, "suggestion": 0 } },
       { "agentId": "test-reviewer", "harness": "...", "approved": true, "findings": { "...": 0 } },
       { "agentId": "security-reviewer", "harness": "...", "approved": true, "findings": { "...": 0 } }
@@ -1752,8 +1708,8 @@ If the pipeline stopped before opening a PR (developer failure, validation failu
 
 ## What this command DOES NOT do (intentional)
 
-- **Never runs `gh pr merge`.** Per CLAUDE.md, only humans merge.
+- **Never runs `gh pr merge`.** Per .github/copilot-instructions.md, only humans merge.
 - **Never runs `git push --force`.** If push fails, asks the operator.
 - **Never edits `.ai-sdlc/**` or `.github/workflows/**`.** PreToolUse hook blocks anyway, but the developer prompt makes this explicit.
 - **Never auto-resolves rebase conflicts.** Step 10.5 aborts with `outcome: aborted` on conflict; the operator owns conflict resolution.
-- **Never spawns more than one developer pipeline per `/ai-sdlc execute` invocation.** Parallel runs come from the operator (or `/loop`) firing the slash command multiple times — each invocation gets its own Claude Code session-scoped pipeline run.
+- **Never spawns more than one developer pipeline per `/ai-sdlc execute` invocation.** Parallel runs come from the operator (or `/loop`) firing the slash command multiple times — each invocation gets its own Copilot CLI session-scoped pipeline run.

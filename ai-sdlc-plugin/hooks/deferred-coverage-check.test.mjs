@@ -93,7 +93,7 @@ function runHook({ repo, home, shim }) {
     env: {
       ...process.env,
       HOME: home,
-      CLAUDE_PROJECT_DIR: repo,
+      COPILOT_PROJECT_DIR: repo,
       PATH: `${shim}:${process.env.PATH}`,
     },
     input: JSON.stringify({}), // hook reads stdin as JSON
@@ -103,7 +103,7 @@ function runHook({ repo, home, shim }) {
 
 function sentinelPath(home, repo) {
   const repoHash = createHash('sha256').update(repo).digest('hex').slice(0, 12);
-  return join(home, '.claude', 'ai-sdlc', `coverage-failure-${repoHash}.json`);
+  return join(home, '.copilot', 'ai-sdlc', `coverage-failure-${repoHash}.json`);
 }
 
 let ctx;

@@ -194,11 +194,11 @@ if (await isOpenShellAvailable(execAsync)) {
     workDir: '/home/runner/work/repo',
     blockedPaths: ['.github/workflows/**', '.ai-sdlc/**'],
     autoProviders: [
-      { name: 'claude', type: 'claude' },
+      { name: 'copilot', type: 'copilot' },
       { name: 'github', type: 'github' },
     ],
     networkEndpoints: {
-      anthropic: [{ host: 'api.anthropic.com', port: 443, access: 'full' }],
+      github-models: [{ host: 'models.github.ai', port: 443, access: 'full' }],
       github: [{ host: 'api.github.com', port: 443, access: 'read-write' }],
     },
   });
@@ -211,7 +211,7 @@ if (await isOpenShellAvailable(execAsync)) {
     allowedPaths: ['/home/runner/work/repo'],
   });
 
-  // Agent runs inside sandbox via: openshell sandbox connect <id> -- claude ...
+  // Agent runs inside sandbox via: openshell sandbox connect <id> -- copilot ...
   // ...
 
   await sandbox.destroy(id); // downloads results, deletes sandbox, purges credentials

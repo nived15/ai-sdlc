@@ -40,7 +40,7 @@ export function readToolSequenceJSONL(filePath: string): ToolSequenceEvent[] {
 }
 
 /**
- * Read session metadata from the Claude Code usage-data directory.
+ * Read session metadata from the GitHub Copilot CLI usage-data directory.
  * Returns metadata for all sessions found.
  */
 export function readSessionMetaFiles(usageDataDir: string): SessionMeta[] {

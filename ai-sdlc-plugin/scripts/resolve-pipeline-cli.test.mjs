@@ -7,8 +7,8 @@
  * Topologies under test:
  *   1. CLAUDE_PLUGIN_DIR set + node_modules present (happy path — marketplace)
  *   2. CLAUDE_PLUGIN_DIR set + node_modules missing (broken install → self-heal
- *      from CLAUDE_PLUGIN_ROOT only; no auto-exec from user-writable cache)
- *   3. CLAUDE_PLUGIN_DIR unset + CLAUDE_PLUGIN_ROOT set + node_modules present
+ *      from COPILOT_PLUGIN_ROOT only; no auto-exec from user-writable cache)
+ *   3. CLAUDE_PLUGIN_DIR unset + COPILOT_PLUGIN_ROOT set + node_modules present
  *   4. Plugin cache probe (read-only — refuses to auto-exec install scripts
  *      found there; PR #482 security fix)
  *   5. All env vars unset + $(pwd)/pipeline-cli/bin present (dogfood monorepo)
@@ -72,7 +72,7 @@ function createFakeMcpBundle(pluginDir) {
  * on-disk path of the script actually executing. Every test below must run
  * a COPY inside the test's isolated tmpDir rather than the real path in
  * this repo's checkout; otherwise any test that leaves both
- * CLAUDE_PLUGIN_DIR and CLAUDE_PLUGIN_ROOT unset would have the fallback
+ * CLAUDE_PLUGIN_DIR and COPILOT_PLUGIN_ROOT unset would have the fallback
  * resolve to the real ai-sdlc-plugin/ directory and attempt a REAL
  * `install-runtime-deps.sh` (network `npm install`) as a side effect of
  * running the unit test — breaking hermeticity.
@@ -190,7 +190,7 @@ describe('Topology 2: CLAUDE_PLUGIN_DIR set but node_modules missing (broken ins
     const { exitCode, stderr } = runScript(
       {
         CLAUDE_PLUGIN_DIR: pluginDir,
-        CLAUDE_PLUGIN_ROOT: '',
+        COPILOT_PLUGIN_ROOT: '',
         HOME: fakeHome,
       },
       fakeCwd,
@@ -201,8 +201,8 @@ describe('Topology 2: CLAUDE_PLUGIN_DIR set but node_modules missing (broken ins
   });
 });
 
-describe('Topology 3: CLAUDE_PLUGIN_DIR unset + CLAUDE_PLUGIN_ROOT set + deps present', () => {
-  it('resolves via CLAUDE_PLUGIN_ROOT when CLAUDE_PLUGIN_DIR is unset', () => {
+describe('Topology 3: CLAUDE_PLUGIN_DIR unset + COPILOT_PLUGIN_ROOT set + deps present', () => {
+  it('resolves via COPILOT_PLUGIN_ROOT when CLAUDE_PLUGIN_DIR is unset', () => {
     const pluginRoot = join(tmpDir, 'topology3-plugin-root');
     const expectedBin = join(pluginRoot, PIPELINE_CLI_REL);
     createFakePipelineBin(expectedBin);
@@ -211,15 +211,15 @@ describe('Topology 3: CLAUDE_PLUGIN_DIR unset + CLAUDE_PLUGIN_ROOT set + deps pr
 
     const { stdout, exitCode } = runScript({
       CLAUDE_PLUGIN_DIR: '',
-      CLAUDE_PLUGIN_ROOT: pluginRoot,
+      COPILOT_PLUGIN_ROOT: pluginRoot,
       HOME: join(tmpDir, 'topology3-home'), // isolate cache probe
     });
 
-    assert.equal(exitCode, 0, 'must exit 0 when CLAUDE_PLUGIN_ROOT has bundled deps');
+    assert.equal(exitCode, 0, 'must exit 0 when COPILOT_PLUGIN_ROOT has bundled deps');
     assert.equal(
       normPath(stdout),
       normPath(expectedBin),
-      'must return path under CLAUDE_PLUGIN_ROOT',
+      'must return path under COPILOT_PLUGIN_ROOT',
     );
   });
 });
@@ -235,7 +235,7 @@ describe('Topology 4: Dogfood monorepo — $(pwd)/pipeline-cli/bin present', () 
     const { stdout, exitCode } = runScript(
       {
         CLAUDE_PLUGIN_DIR: '',
-        CLAUDE_PLUGIN_ROOT: '',
+        COPILOT_PLUGIN_ROOT: '',
         HOME: fakeHome,
       },
       monorepoRoot,
@@ -257,7 +257,7 @@ describe('Topology 5: All paths broken — exits 1 with actionable error', () =>
     const { exitCode, stderr } = runScript(
       {
         CLAUDE_PLUGIN_DIR: '',
-        CLAUDE_PLUGIN_ROOT: '',
+        COPILOT_PLUGIN_ROOT: '',
         HOME: fakeHome,
       },
       fakeCwd,
@@ -272,11 +272,11 @@ describe('Topology 5: All paths broken — exits 1 with actionable error', () =>
 });
 
 describe('Plugin cache probe — topology 4 (read-only)', () => {
-  it('resolves from ~/.claude/plugins/cache/<mp>/ai-sdlc/<version> when present', () => {
+  it('resolves from ~/.copilot/plugins/cache/<mp>/ai-sdlc/<version> when present', () => {
     const fakeHome = join(tmpDir, 'topology3probe-home');
     const cacheDir = join(
       fakeHome,
-      '.claude',
+      '.copilot',
       'plugins',
       'cache',
       'test-marketplace',
@@ -291,7 +291,7 @@ describe('Plugin cache probe — topology 4 (read-only)', () => {
     const { stdout, exitCode } = runScript(
       {
         CLAUDE_PLUGIN_DIR: '',
-        CLAUDE_PLUGIN_ROOT: '',
+        COPILOT_PLUGIN_ROOT: '',
         HOME: fakeHome,
       },
       fakeCwd,
@@ -317,7 +317,7 @@ describe('Plugin cache probe — topology 4 (read-only)', () => {
     const fakeHome = join(tmpDir, 'security-fix-home');
     const cacheDir = join(
       fakeHome,
-      '.claude',
+      '.copilot',
       'plugins',
       'cache',
       'evil-marketplace',
@@ -340,7 +340,7 @@ describe('Plugin cache probe — topology 4 (read-only)', () => {
     const { exitCode } = runScript(
       {
         CLAUDE_PLUGIN_DIR: '',
-        CLAUDE_PLUGIN_ROOT: '',
+        COPILOT_PLUGIN_ROOT: '',
         HOME: fakeHome,
       },
       fakeCwd,
@@ -419,7 +419,7 @@ exit 1
     assert.match(result.stderr, /not retrying self-heal/);
   });
 
-  it('AC#3: attempts self-heal even when neither CLAUDE_PLUGIN_DIR nor CLAUDE_PLUGIN_ROOT is set, and resolves on success', () => {
+  it('AC#3: attempts self-heal even when neither CLAUDE_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT is set, and resolves on success', () => {
     const pluginDir = join(tmpDir, 'selflocation-success');
     const scriptCopy = setupSelfLocationPluginDir(pluginDir, {
       // Fake self-heal: stamps out the expected files instead of hitting npm
@@ -446,7 +446,7 @@ exit 0
         PATH: process.env.PATH,
         HOME: fakeHome,
         CLAUDE_PLUGIN_DIR: '',
-        CLAUDE_PLUGIN_ROOT: '',
+        COPILOT_PLUGIN_ROOT: '',
       },
       cwd: fakeCwd,
       encoding: 'utf-8',
@@ -488,7 +488,7 @@ exit 0
         PATH: process.env.PATH,
         HOME: fakeHome,
         CLAUDE_PLUGIN_DIR: '',
-        CLAUDE_PLUGIN_ROOT: '',
+        COPILOT_PLUGIN_ROOT: '',
       },
       cwd: fakeCwd,
       encoding: 'utf-8',
@@ -530,7 +530,7 @@ exit 0
         PATH: process.env.PATH,
         HOME: fakeHome,
         CLAUDE_PLUGIN_DIR: '',
-        CLAUDE_PLUGIN_ROOT: '',
+        COPILOT_PLUGIN_ROOT: '',
       },
       cwd: fakeCwd,
       encoding: 'utf-8',

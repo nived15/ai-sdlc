@@ -96,7 +96,7 @@ describe('validateClassifierOutput', () => {
         rationale: {},
         confident: true,
         confidence: 0.9,
-        modelOverride: { security: 'opus' },
+        modelOverride: { security: 'reasoning' },
       }).ok,
     ).toBe(true);
     expect(
@@ -105,7 +105,7 @@ describe('validateClassifierOutput', () => {
         rationale: {},
         confident: true,
         confidence: 0.9,
-        modelOverride: { unknown: 'opus' },
+        modelOverride: { unknown: 'reasoning' },
       }).ok,
     ).toBe(false);
     expect(
@@ -126,7 +126,7 @@ describe('validateClassifierOutput', () => {
         rationale: {},
         confident: true,
         confidence: 0.9,
-        harnessOverride: { security: 'codex' },
+        harnessOverride: { security: 'copilot' },
       }).ok,
     ).toBe(true);
     expect(
@@ -232,7 +232,7 @@ describe('defaultRulesetDecision', () => {
       linesRemoved: 20,
     });
     expect(d.reviewers.sort()).toEqual(['critic', 'security', 'testing'].sort());
-    expect(d.modelOverride?.security).toBe('opus');
+    expect(d.modelOverride?.security).toBe('reasoning');
   });
 
   it('lockfile change triggers security + critic', () => {
@@ -290,7 +290,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect(d.reviewers.sort()).toEqual(['critic', 'security', 'testing'].sort());
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
 
     it('docs/.env.local is auth-tier (.env-prefix glob)', () => {
@@ -301,7 +301,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect(d.reviewers.sort()).toEqual(['critic', 'security', 'testing'].sort());
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
 
     it('docs/private-key.pem is auth-tier (PEM denylist + secret detection)', () => {
@@ -312,7 +312,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect(d.reviewers.sort()).toEqual(['critic', 'security', 'testing'].sort());
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
 
     it('docs/signing.key is auth-tier (key denylist + secret detection)', () => {
@@ -323,7 +323,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect(d.reviewers.sort()).toEqual(['critic', 'security', 'testing'].sort());
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
 
     it('docs/Dockerfile is NOT docs-only — falls to default (all 3 reviewers)', () => {
@@ -379,7 +379,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect(d.reviewers.sort()).toEqual(['critic', 'security', 'testing'].sort());
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
   });
 

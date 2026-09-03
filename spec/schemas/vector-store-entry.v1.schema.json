@@ -24,7 +24,7 @@
     },
     "embeddingProvider": {
       "type": "string",
-      "description": "adapter.name at write time (e.g., 'openai-text-embedding-3-small'). Together with embeddingModelVersion, forms the provenance identity of this vector. Vectors from different providers are NOT interchangeable.",
+      "description": "adapter.name at write time (e.g., 'github-models-embedding-small'). Together with embeddingModelVersion, forms the provenance identity of this vector. Vectors from different providers are NOT interchangeable.",
       "minLength": 1
     },
     "embeddingModelVersion": {

@@ -50,9 +50,9 @@ function approvedVerdict(): AggregatedVerdict {
     decision: 'APPROVED',
     counts: { critical: 0, major: 0, minor: 0, suggestion: 0 },
     verdicts: [
-      { agentId: 'code-reviewer', harness: 'claude-code', approved: true, findings: [] },
-      { agentId: 'test-reviewer', harness: 'claude-code', approved: true, findings: [] },
-      { agentId: 'security-reviewer', harness: 'claude-code', approved: true, findings: [] },
+      { agentId: 'code-reviewer', harness: 'copilot', approved: true, findings: [] },
+      { agentId: 'test-reviewer', harness: 'copilot', approved: true, findings: [] },
+      { agentId: 'security-reviewer', harness: 'copilot', approved: true, findings: [] },
     ],
     harnessNote: '',
     summary: 'APPROVED',
@@ -67,12 +67,12 @@ function blockedVerdict(): AggregatedVerdict {
     verdicts: [
       {
         agentId: 'code-reviewer',
-        harness: 'claude-code',
+        harness: 'copilot',
         approved: false,
         findings: [{ severity: 'critical', message: 'bug' }],
       },
-      { agentId: 'test-reviewer', harness: 'claude-code', approved: true, findings: [] },
-      { agentId: 'security-reviewer', harness: 'claude-code', approved: true, findings: [] },
+      { agentId: 'test-reviewer', harness: 'copilot', approved: true, findings: [] },
+      { agentId: 'security-reviewer', harness: 'copilot', approved: true, findings: [] },
     ],
     harnessNote: '',
     summary: 'CHANGES_REQUESTED',
@@ -429,12 +429,12 @@ describe('Step 9 — coerceReviewerVerdict', () => {
     const r: SubagentResult = {
       type: 'code-reviewer',
       output: '',
-      parsed: { approved: true, findings: [], harness: 'codex' },
+      parsed: { approved: true, findings: [], harness: 'copilot' },
       status: 'success',
       durationMs: 0,
     };
     const v = coerceReviewerVerdict('code-reviewer', r);
-    expect(v.harness).toBe('codex');
+    expect(v.harness).toBe('copilot');
   });
 });
 
@@ -444,12 +444,12 @@ describe('Step 9 — re-uses Step 8 aggregator', () => {
       verdicts: [
         {
           agentId: 'code-reviewer',
-          harness: 'claude-code',
+          harness: 'copilot',
           approved: false,
           findings: [{ severity: 'critical', message: 'x' }],
         },
-        { agentId: 'test-reviewer', harness: 'claude-code', approved: true, findings: [] },
-        { agentId: 'security-reviewer', harness: 'claude-code', approved: true, findings: [] },
+        { agentId: 'test-reviewer', harness: 'copilot', approved: true, findings: [] },
+        { agentId: 'security-reviewer', harness: 'copilot', approved: true, findings: [] },
       ] as ReviewerVerdict[],
     });
     expect(r.decision).toBe('CHANGES_REQUESTED');
@@ -462,7 +462,7 @@ describe('AISDLC-355 — isDegenerateVerdict', () => {
   it('returns true for synthetic-critical "returned no parseable verdict" placeholder', () => {
     const v: ReviewerVerdict = {
       agentId: 'code-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: false,
       findings: [
         {
@@ -477,7 +477,7 @@ describe('AISDLC-355 — isDegenerateVerdict', () => {
   it('returns true for fully empty degenerate verdict (no approval, no findings, no summary)', () => {
     const v: ReviewerVerdict = {
       agentId: 'code-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: false,
       findings: [],
       summary: '',
@@ -488,7 +488,7 @@ describe('AISDLC-355 — isDegenerateVerdict', () => {
   it('returns false for a substantive rejection with real findings', () => {
     const v: ReviewerVerdict = {
       agentId: 'code-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: false,
       findings: [{ severity: 'major', message: 'function is not pure' }],
       summary: 'needs work',
@@ -499,7 +499,7 @@ describe('AISDLC-355 — isDegenerateVerdict', () => {
   it('returns false for an approval', () => {
     const v: ReviewerVerdict = {
       agentId: 'code-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: true,
       findings: [],
       summary: 'lgtm',

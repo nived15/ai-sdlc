@@ -2,7 +2,7 @@
 
 ## Mission
 
-Provide the open, vendor-neutral governance specification that enables enterprises to adopt AI coding agents with the same confidence, auditability, and predictability they expect from their existing SDLC tooling.
+Provide the open governance specification that enables enterprises to adopt GitHub Copilot with the same confidence, auditability, and predictability they expect from their existing SDLC tooling.
 
 ## Scope
 

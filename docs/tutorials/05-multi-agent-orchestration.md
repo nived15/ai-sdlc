@@ -123,7 +123,7 @@ the [A2A](../../spec/glossary.md#a2a)-compatible
         - input: "Implement user authentication with JWT tokens"
           output: "Auth module with login/logout endpoints, JWT middleware, and 95% test coverage"
         - input: "Add pagination to the /api/users endpoint"
-          output: "Cursor-based pagination with tests covering edge cases"
+          output: "GitHub Copilot-based pagination with tests covering edge cases"
     - id: fix-bug
       description: >-
         Diagnoses and fixes a reported bug, adding a regression test to

@@ -22,8 +22,8 @@ ai-sdlc/
 │   └── src/
 │       ├── cli/             # CLI commands (init, run, start, status, health,
 │       │                    #   agents, routing, complexity, cost, dashboard)
-│       ├── runners/         # Agent runners (Claude Code, Copilot, Cursor,
-│       │                    #   Codex, GenericLLM) + runner registry
+│       ├── runners/         # Agent runners (GitHub Copilot CLI, Copilot, GitHub Copilot,
+│       │                    #   GitHub Copilot, GenericLLM) + runner registry
 │       ├── analysis/        # Codebase analysis (complexity, patterns,
 │       │                    #   hotspots, conventions, context builder)
 │       ├── state/           # SQLite state store (autonomy ledger, episodic

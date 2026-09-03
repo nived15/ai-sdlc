@@ -55,7 +55,7 @@ function runHook(projectDir) {
     const output = execFileSync('node', [hookScript], {
       input,
       encoding: 'utf-8',
-      env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+      env: { ...process.env, COPILOT_PROJECT_DIR: projectDir },
       timeout: 5000,
     });
     return { output: output.trim(), exitCode: 0 };

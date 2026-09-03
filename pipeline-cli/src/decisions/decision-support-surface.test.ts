@@ -117,7 +117,7 @@ function makeStageC(overrides: Partial<StageCOutput> = {}): StageCOutput {
   return {
     corpusEntryId: 'corp-abc-123',
     effectiveThreshold: 0.7,
-    model: 'claude-haiku-4-5',
+    model: 'gpt-5-mini',
     metBehindThreshold: true,
     recommendation: {
       optionId: 'opt-a',

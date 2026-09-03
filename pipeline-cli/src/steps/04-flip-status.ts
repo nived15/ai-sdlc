@@ -16,7 +16,7 @@
  * to the per-task **worktree's** copy of the task file (the fresh checkout
  * Step 3 created from `origin/main`), not the operator's parent checkout
  * passed in via `workDir`. This keeps the parent's working tree clean per
- * the orchestrator-repo-layout contract documented in `CLAUDE.md` and the
+ * the orchestrator-repo-layout contract documented in `.github/copilot-instructions.md` and the
  * `project_orchestrator_repo_layout` user-memory note. Step 10 finalize
  * already prefers the worktree-local copy when patching to Done; Step 4
  * now matches so both lifecycle edits land in the same commit on the task

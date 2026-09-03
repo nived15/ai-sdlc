@@ -247,7 +247,7 @@ describe('Gate 7 declaredDependencyRefs — real reproductions', () => {
   });
 
   it('a reference declared in references: (not dependencies:) still satisfies the gate', () => {
-    // Simulates ingress-claude.ts merging both fields into declaredDependencyRefs.
+    // Simulates ingress.ts merging both fields into declaredDependencyRefs.
     const v = evaluateGate7(
       inputWithDeclared('Blocked by AISDLC-700 shipping first.', ['AISDLC-700']),
     );

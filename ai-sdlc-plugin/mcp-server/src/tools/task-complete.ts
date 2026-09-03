@@ -35,7 +35,7 @@ export function registerTaskComplete(server: McpServer, deps: ToolDeps): void {
       try {
         // Resolve the project root at call time (AISDLC-99). See the matching
         // comment in `task-edit.ts` for the why — short version: the plugin
-        // manifest sets `AI_SDLC_PROJECT_ROOT=${CLAUDE_PLUGIN_DATA}`, which is
+        // manifest sets `AI_SDLC_PROJECT_ROOT=${COPILOT_PLUGIN_DATA}`, which is
         // the wrong directory, so we fall back to walking up from cwd.
         const projectDir = pickProjectRoot(deps.projectDir);
         if (typeof projectDir !== 'string') return projectDir; // error result

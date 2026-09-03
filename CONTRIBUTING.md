@@ -225,7 +225,7 @@ When writing shell scripts (`.sh` files or shell blocks embedded in command `.md
 `rm -rf` or `rm -f` that uses a variable in the path **MUST** be preceded by a non-empty guard
 on the same variable immediately before the `rm` line. The variable being empty would cause the
 path to expand to a root-relative location (e.g. `rm -rf "/$x"`) and silently delete unintended
-directories. Claude Code's built-in safety prompt also blocks unguarded variable `rm` operations
+directories. The GitHub Copilot CLI's built-in safety prompt also blocks unguarded variable `rm` operations
 in unattended mode, stalling autonomous runs.
 
 **Required pattern:**

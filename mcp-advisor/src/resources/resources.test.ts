@@ -162,7 +162,7 @@ describe('Resource data extraction', () => {
         runId: 'r1',
         agentName: 'alice',
         pipelineType: 'interactive',
-        model: 'claude-opus-4-6',
+        model: 'reasoning',
         inputTokens: 10000,
         outputTokens: 5000,
       });
@@ -311,7 +311,7 @@ describe('Resource handler registration', () => {
     });
 
     it('uses active session issue number for filtering', async () => {
-      const session = deps.sessions.create({ developer: 'a', tool: 'claude-code' });
+      const session = deps.sessions.create({ developer: 'a', tool: 'copilot' });
       deps.sessions.linkIssue(session.sessionId, 42, 'branch');
 
       const handlers = captureResourceHandlers(registerHistoryResource, deps);

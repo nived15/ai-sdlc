@@ -142,7 +142,7 @@ An [AgentRole](#agent-role)-level configuration that routes tasks to different m
 
 ### MCP (Model Context Protocol) {#mcp}
 
-A protocol for connecting AI agents to external tools and data sources, originally developed by Anthropic and governed under the Linux Foundation's AAIF. AI-SDLC [adapters](#adapter) can wrap MCP servers. See [adapters.md](adapters.md).
+A protocol for connecting AI agents to external tools and data sources, originally developed by GitHub Models and governed under the Linux Foundation's AAIF. AI-SDLC [adapters](#adapter) can wrap MCP servers. See [adapters.md](adapters.md).
 
 ### MemoryStore {#memory-store}
 
@@ -246,7 +246,7 @@ The Stage 4 signing step in the [UCVG](#ucvg) pipeline where the RFC-0042 v6 Mer
 
 ### Credential withholding {#credential-withholding}
 
-The [OpenShell sandbox](#openShell-sandbox) security property where high-privilege tokens are injected at the proxy layer and never enter the sandbox process environment. Withheld credentials: `~/.ai-sdlc/signing-key.pem`, write-scoped `GITHUB_TOKEN`, `NPM_TOKEN`, `AI_SDLC_PAT`. The Anthropic provider API key is injected at `inference.local` by the proxy router — the agent process running inside the sandbox never receives it directly. Contrast with "token scrubbing" (removing tokens from an env that already had them), which is a weaker model. See [RFC-0043 §Stage 2](rfcs/RFC-0043-untrusted-contributor-pr-verification.md).
+The [OpenShell sandbox](#openShell-sandbox) security property where high-privilege tokens are injected at the proxy layer and never enter the sandbox process environment. Withheld credentials: `~/.ai-sdlc/signing-key.pem`, write-scoped `GITHUB_TOKEN`, `NPM_TOKEN`, `AI_SDLC_PAT`. The GitHub Models provider API key is injected at `inference.local` by the proxy router — the agent process running inside the sandbox never receives it directly. Contrast with "token scrubbing" (removing tokens from an env that already had them), which is a weaker model. See [RFC-0043 §Stage 2](rfcs/RFC-0043-untrusted-contributor-pr-verification.md).
 
 ### Differential testing {#differential-testing}
 
@@ -258,7 +258,7 @@ The design coherence drift detection mechanism extended to operate within a sing
 
 ### OpenShell sandbox {#openShell-sandbox}
 
-The NVIDIA OpenShell policy-enforced sandbox runtime used for Stage 2/3 of the [UCVG](#ucvg) pipeline. OpenShell wraps existing coding agents (Claude Code, Codex) without code changes and enforces isolation out-of-process via three mechanisms: (1) Landlock LSM for filesystem isolation (read-only `/usr`, `/lib`, `/etc`; read-write `/sandbox`, `/tmp`); (2) seccomp-BPF for process isolation (blocks `mount`, `pivot_root`, `ptrace`, `bpf`); (3) OPA/Rego deny-by-default egress proxy for network isolation. The proxy layer handles [credential withholding](#credential-withholding) — the agent process never receives high-privilege tokens. See [RFC-0043 §Stage 2](rfcs/RFC-0043-untrusted-contributor-pr-verification.md).
+The NVIDIA OpenShell policy-enforced sandbox runtime used for Stage 2/3 of the [UCVG](#ucvg) pipeline. OpenShell wraps existing coding agents (GitHub Copilot CLI, GitHub Copilot) without code changes and enforces isolation out-of-process via three mechanisms: (1) Landlock LSM for filesystem isolation (read-only `/usr`, `/lib`, `/etc`; read-write `/sandbox`, `/tmp`); (2) seccomp-BPF for process isolation (blocks `mount`, `pivot_root`, `ptrace`, `bpf`); (3) OPA/Rego deny-by-default egress proxy for network isolation. The proxy layer handles [credential withholding](#credential-withholding) — the agent process never receives high-privilege tokens. See [RFC-0043 §Stage 2](rfcs/RFC-0043-untrusted-contributor-pr-verification.md).
 
 ### Protected paths {#protected-paths}
 

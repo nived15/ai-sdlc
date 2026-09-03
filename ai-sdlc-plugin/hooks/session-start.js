@@ -2,7 +2,7 @@
  * AI-SDLC Session Start Hook
  *
  * Reads .ai-sdlc/agent-role.yaml from the project directory and returns
- * governance context as additionalContext, which Claude Code injects
+ * governance context as additionalContext, which GitHub Copilot CLI injects
  * into the model's session context.
  *
  * Fail-safe: exits silently on any error.
@@ -31,10 +31,10 @@ try {
 
 // ── AISDLC-441: Self-heal runtime dependencies on first load ─────────
 //
-// Claude Code's local marketplace installer copies the plugin cache layer
+// GitHub Copilot CLI's local marketplace installer copies the plugin cache layer
 // but does NOT invoke `npm install`, so runtimeDependencies declared in
 // plugin.json are missing on a fresh install. Detect this and run the
-// self-heal script BEFORE Claude Code tries to start the MCP server or
+// self-heal script BEFORE GitHub Copilot CLI tries to start the MCP server or
 // any pipeline-cli bin.
 //
 // Idempotency: the install script writes a sentinel at
@@ -45,9 +45,9 @@ try {
 //
 // Fail-safe: the install is best-effort; we never block session start.
 // Errors are surfaced as a warning in the governance context so the
-// operator sees them but Claude Code still launches.
+// operator sees them but GitHub Copilot CLI still launches.
 try {
-  const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+  const pluginRoot = process.env.COPILOT_PLUGIN_ROOT;
   if (pluginRoot && existsSync(join(pluginRoot, 'plugin.json'))) {
     const sentinel = join(pluginRoot, 'node_modules', '.ai-sdlc-installed');
     const pipelineCliBin = join(
@@ -72,7 +72,7 @@ try {
     if (needsInstall) {
       const installScript = join(pluginRoot, 'scripts', 'install-runtime-deps.sh');
       if (existsSync(installScript)) {
-        // Run synchronously so deps are present before Claude Code launches
+        // Run synchronously so deps are present before GitHub Copilot CLI launches
         // the MCP server. Allow up to 120s for a cold npm install.
         const result = spawnSync('bash', [installScript, pluginRoot], {
           encoding: 'utf-8',
@@ -106,7 +106,7 @@ try {
 // ── Find project root ────────────────────────────────────────────────
 
 const projectDir =
-  process.env.CLAUDE_PROJECT_DIR ||
+  process.env.COPILOT_PROJECT_DIR ||
   (() => {
     try {
       return execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();
@@ -312,7 +312,7 @@ process.exit(0);
  *     in .npmrc can embed `https://user:token@host/...`. That would put a
  *     live credential into session context.
  *   - This value is read from the ambient environment, not only from what
- *     this hook itself set, so anyone able to set env for the Claude Code
+ *     this hook itself set, so anyone able to set env for the GitHub Copilot CLI
  *     process could otherwise inject unbounded instruction-like text.
  */
 function sanitizeForContext(text, maxLen = 400) {
@@ -390,7 +390,7 @@ function buildRuntimeDepsWarning() {
   return (
     `⚠ Plugin runtime-dependency install failed — [untrusted tool output] ${sanitizeForContext(raw)}. ` +
     'MCP tools + /ai-sdlc commands may not work. Manual recovery: ' +
-    'bash "$CLAUDE_PLUGIN_ROOT/scripts/install-runtime-deps.sh" "$CLAUDE_PLUGIN_ROOT"'
+    'bash "$COPILOT_PLUGIN_ROOT/scripts/install-runtime-deps.sh" "$COPILOT_PLUGIN_ROOT"'
   );
 }
 

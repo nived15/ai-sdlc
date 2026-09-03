@@ -127,7 +127,7 @@ describe('reconcile — pure helpers', () => {
   });
 
   describe('encodeWorktreePathForClaudeTmp', () => {
-    it('matches real /private/tmp claude entries (double-dash before .worktrees)', () => {
+    it('matches real /private/tmp copilot entries (double-dash before .worktrees)', () => {
       const encoded = encodeWorktreePathForClaudeTmp(
         '/Users/dominique/Documents/dev/ai-sdlc/ai-sdlc/.worktrees/aisdlc-284',
       );
@@ -185,7 +185,7 @@ describe('salvageReviewerTranscript', () => {
     // rejection is the agentId validator, not just an absent file.
     const trickyDir = path.join(
       tmpRoot,
-      'claude-501',
+      'copilot-501',
       encodeWorktreePathForClaudeTmp(worktreePath),
     );
     mkdirSync(path.join(trickyDir, 'session-a', 'tasks'), { recursive: true });
@@ -216,9 +216,9 @@ describe('salvageReviewerTranscript', () => {
     }
   });
 
-  it('salvages a transcript from a matching claude-<uid>/<encoded>/<session>/tasks/ entry', () => {
+  it('salvages a transcript from a matching copilot-<uid>/<encoded>/<session>/tasks/ entry', () => {
     const encoded = encodeWorktreePathForClaudeTmp(worktreePath);
-    const sessionDir = path.join(tmpRoot, 'claude-501', encoded, 'session-uuid', 'tasks');
+    const sessionDir = path.join(tmpRoot, 'copilot-501', encoded, 'session-uuid', 'tasks');
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(path.join(sessionDir, 'agentxyz1.output'), 'salvaged content\n', 'utf8');
     const result = salvageReviewerTranscript(
@@ -477,7 +477,7 @@ describe('runReconcile — orchestration', () => {
     // Delete one reviewer's transcript so the salvage path runs.
     rmSync(path.join(worktreePath, '.ai-sdlc', 'transcripts', taskIdLower, 'code-reviewer.jsonl'));
     // Reconcile won't find it under /private/tmp (the test env doesn't have
-    // a real claude session there), so we expect salvage-transcript:code-reviewer = skipped
+    // a real copilot session there), so we expect salvage-transcript:code-reviewer = skipped
     // and emit-leaf:code-reviewer = skipped (no transcript). The other two reviewers
     // emit successfully. The overall outcome is still success because sign + push + ready
     // all succeed and salvage 'skipped' isn't 'failed'.
@@ -670,13 +670,13 @@ describe('runReconcile — orchestration', () => {
       taskId,
       boardDir,
       worktreePath,
-      reviewerModel: 'claude-opus-4-7',
+      reviewerModel: 'reasoning',
       harness: 'custom-harness',
       spawn: customSpawn,
     });
     expect(emitCalls.length).toBe(3);
     for (const call of emitCalls) {
-      expect(call).toEqual(expect.arrayContaining(['--model', 'claude-opus-4-7']));
+      expect(call).toEqual(expect.arrayContaining(['--model', 'reasoning']));
       expect(call).toEqual(expect.arrayContaining(['--harness', 'custom-harness']));
     }
   });
@@ -778,23 +778,23 @@ describe('salvageReviewerTranscript — edge paths', () => {
     }
   });
 
-  it('skips a claude-<uid> entry whose <encoded> dir is not readable / not a dir', () => {
+  it('skips a copilot-<uid> entry whose <encoded> dir is not readable / not a dir', () => {
     const tmpRoot = mkdtempSync(path.join(tmpdir(), 'salvage-edge-tmp-'));
     const wt = mkdtempSync(path.join(tmpdir(), 'salvage-edge-wt-'));
     try {
-      // Create a claude-501/ dir with no <encoded> subdir — the loop should
+      // Create a copilot-501/ dir with no <encoded> subdir — the loop should
       // skip it via the `if (!existsSync(cwdDir)) continue` branch.
-      mkdirSync(path.join(tmpRoot, 'claude-501'), { recursive: true });
-      // Add a second claude-uid where <encoded> exists but the session dir
+      mkdirSync(path.join(tmpRoot, 'copilot-501'), { recursive: true });
+      // Add a second copilot-uid where <encoded> exists but the session dir
       // listing would race away — emulate via a FILE at the encoded path
       // (readdirSync throws ENOTDIR → catch path triggers).
       const encoded = encodeWorktreePathForClaudeTmp(wt);
-      writeFileSync(path.join(tmpRoot, 'claude-502'), 'not-a-dir', 'utf8');
-      // Note: claude-502 starts with claude- so it matches; but it's a file
-      // → path.join(tmpRoot, 'claude-502', encoded) doesn't exist → continue.
-      // Add a third claude-uid where the encoded dir IS a dir but the session
+      writeFileSync(path.join(tmpRoot, 'copilot-502'), 'not-a-dir', 'utf8');
+      // Note: copilot-502 starts with copilot- so it matches; but it's a file
+      // → path.join(tmpRoot, 'copilot-502', encoded) doesn't exist → continue.
+      // Add a third copilot-uid where the encoded dir IS a dir but the session
       // dir scan throws because the session "dir" is a file under encoded.
-      const goodEncoded = path.join(tmpRoot, 'claude-503', encoded);
+      const goodEncoded = path.join(tmpRoot, 'copilot-503', encoded);
       mkdirSync(goodEncoded, { recursive: true });
       // Add a file as a "session" — readdirSync on encoded gives ['session-file'];
       // path.join(encoded, 'session-file', 'tasks', 'agent.output') existsSync = false.

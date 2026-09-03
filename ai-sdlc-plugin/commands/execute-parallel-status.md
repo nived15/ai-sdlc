@@ -124,7 +124,7 @@ fi
 
 | Status | Meaning |
 |--------|---------|
-| `starting` | tmux window spawned; `claude /ai-sdlc execute` not yet running |
+| `starting` | tmux window spawned; `copilot /ai-sdlc execute` not yet running |
 | `in-progress` | First heartbeat received; pipeline is running |
 | `done` | `/ai-sdlc execute` reported success; PR URL set |
 | `failed` | `/ai-sdlc execute` exited non-zero or tmux window was killed |

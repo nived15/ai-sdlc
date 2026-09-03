@@ -108,7 +108,7 @@ async function runInit(argv: string[], projectDir: string = tmpDir): Promise<voi
   const { initCommand } = await import('./init.js');
   initCommand.setOptionValue('dryRun', undefined);
   initCommand.setOptionValue('role', undefined);
-  initCommand.setOptionValue('cursor', undefined);
+  initCommand.setOptionValue('copilot', undefined);
   initCommand.setOptionValue('skipMcp', undefined);
   initCommand.setOptionValue('yes', undefined);
   initCommand.setOptionValue('withDor', undefined);

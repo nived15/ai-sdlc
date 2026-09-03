@@ -6,7 +6,7 @@
  * patches the frontmatter status to `Done`, and verifies post-move that the
  * task ID resolves to exactly ONE location.
  *
- * Problem solved: Codex workflows (and any other agent-driven path that doesn't
+ * Problem solved: GitHub Copilot workflows (and any other agent-driven path that doesn't
  * go through `/ai-sdlc execute`) were copying the completed file without
  * deleting the original. This caused the same task ID to appear in BOTH
  * `backlog/tasks/` and `backlog/completed/`, breaking backlog status queries

@@ -2,11 +2,10 @@
  * Tests for the AISDLC-182 umbrella `execute` subcommand.
  *
  * Coverage:
- *   1. Spawner resolution — `mock` succeeds, `api-key` errors when
- *      ANTHROPIC_API_KEY is unset, `claude` returns ShellClaudePSpawner,
- *      `codex` requires CODEX_SPAWN_AGENT_BIN. The removed `claude-cli`
- *      kind (RFC-0041 Phase 3.3 / AISDLC-377.6) is rejected with a
- *      pointed migration error.
+ *   1. Spawner resolution — `mock` succeeds, `copilot` requires
+ *      COPILOT_SPAWN_AGENT_BIN, and every retired third-party kind
+ *      (`api-key`, `claude`, `claude-cli`, `codex`, `cursor`) is rejected
+ *      with a pointed migration error.
  *   2. Verdict-file write — `writeVerdictFile()` lands the JSON at
  *      `<worktree>/.ai-sdlc/verdicts/<task-id-lower>.json` and the payload
  *      shape matches what `scripts/check-attestation-sign.sh` expects.
@@ -24,7 +23,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE,
+  RETIRED_SPAWNER_KINDS,
+  SPAWNER_KINDS,
+  UNSUPPORTED_SPAWNER_MESSAGE,
   buildApprovingMockSpawner,
   resolveSpawner,
   runExecuteCommand,
@@ -64,21 +65,21 @@ function approvedVerdict(): AggregatedVerdict {
   const verdicts: ReviewerVerdict[] = [
     {
       agentId: 'code-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: true,
       findings: [],
       summary: 'lgtm',
     },
     {
       agentId: 'test-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: true,
       findings: [],
       summary: 'lgtm',
     },
     {
       agentId: 'security-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: true,
       findings: [],
       summary: 'lgtm',
@@ -113,93 +114,28 @@ describe('resolveSpawner', () => {
     expect(spawner).toBeInstanceOf(MockSpawner);
   });
 
-  it('throws CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE when kind=claude-cli (RFC-0041 Phase 3.3 / AISDLC-377.6)', async () => {
-    // The legacy `--spawner claude-cli` (inline-manifest, AISDLC-198) was
-    // removed in RFC-0041 Phase 3.3 — the yargs `choices: SPAWNER_KINDS`
-    // constraint already rejects it at parse time, and this test exercises
-    // the programmatic-caller defense-in-depth path that still receives the
-    // string literal. The thrown message points the operator at the
-    // migration breadcrumb.
-    await expect(resolveSpawner('claude-cli' as unknown as SpawnerKind)).rejects.toThrow(
-      /removed in RFC-0041 Phase 3\.3 \(AISDLC-377\.6\)/,
+  it('rejects the retired `copilot-cli` kind with a pointed migration error', async () => {
+    // Legacy third-party spawner literals are rejected — the yargs
+    // `choices: SPAWNER_KINDS` constraint already blocks them at parse time,
+    // and this test exercises the programmatic-caller defense-in-depth path
+    // that still receives the string literal.
+    await expect(resolveSpawner('copilot-cli' as unknown as SpawnerKind)).rejects.toThrow(
+      /GitHub Copilot CLI/,
     );
-    expect(CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE).toContain('AISDLC-377.6');
-    expect(CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE).toContain(
-      'docs/operations/claude-cli-spawner-removed.md',
-    );
+    expect(UNSUPPORTED_SPAWNER_MESSAGE).toContain('--spawner copilot');
+    expect(UNSUPPORTED_SPAWNER_MESSAGE).toContain('docs/operations/copilot-spawner.md');
   });
 
-  it('errors when kind=api-key and ANTHROPIC_API_KEY is unset', async () => {
-    const saved = process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_API_KEY;
-    try {
-      await expect(resolveSpawner('api-key')).rejects.toThrow(/ANTHROPIC_API_KEY/);
-    } finally {
-      if (saved !== undefined) process.env.ANTHROPIC_API_KEY = saved;
+  it('rejects every retired third-party spawner kind', async () => {
+    for (const kind of RETIRED_SPAWNER_KINDS) {
+      await expect(resolveSpawner(kind as unknown as SpawnerKind)).rejects.toThrow(
+        /GitHub Copilot CLI/,
+      );
     }
   });
 
-  it('errors with a clear configuration message when kind=codex and CODEX_SPAWN_AGENT_BIN is unset (AISDLC-202.2)', async () => {
-    const saved = process.env.CODEX_SPAWN_AGENT_BIN;
-    delete process.env.CODEX_SPAWN_AGENT_BIN;
-    try {
-      await expect(resolveSpawner('codex')).rejects.toThrow(/CODEX_SPAWN_AGENT_BIN/);
-    } finally {
-      if (saved !== undefined) process.env.CODEX_SPAWN_AGENT_BIN = saved;
-    }
-  });
-
-  it('returns a ShellClaudePSpawner when kind=claude (AISDLC-349)', async () => {
-    // AISDLC-349: the `claude` spawner actually shells out to `claude -p`,
-    // unlike `claude-cli` which only emits a dispatch manifest. Use this
-    // from a shell-driven `cli-orchestrator tick` (cron/daemon/sidecar)
-    // where no slash command body is around to read the manifest.
-    const spawner = await resolveSpawner('claude');
-    expect(typeof spawner.spawn).toBe('function');
-    expect(typeof spawner.spawnParallel).toBe('function');
-    // Public-API check: buildArgv() returns the actual `claude -p` argv +
-    // resolves the per-role model. security-reviewer must pin to opus.
-    const argv = (
-      spawner as unknown as {
-        buildArgv: (opts: { type: string; prompt: string; cwd: string }) => string[];
-      }
-    ).buildArgv({ type: 'security-reviewer', prompt: 'noop', cwd: '/tmp' });
-    expect(argv).toContain('--print');
-    expect(argv).toContain('--output-format');
-    expect(argv).toContain('--agent');
-    expect(argv).toContain('security-reviewer');
-    // AISDLC-349 inline code-review MAJOR fix: per-role model split enforced
-    // at the spawner level via --model flag (agent files have model:inherit,
-    // so without --model the role would inherit session default).
-    expect(argv).toContain('--model');
-    expect(argv).toContain('claude-opus-4-6');
-  });
-
-  it('per-role model split: developer uses sonnet via --spawner claude (AISDLC-349)', async () => {
-    const spawner = await resolveSpawner('claude');
-    const argv = (
-      spawner as unknown as {
-        buildArgv: (opts: { type: string; prompt: string; cwd: string }) => string[];
-      }
-    ).buildArgv({ type: 'developer', prompt: 'noop', cwd: '/tmp' });
-    expect(argv).toContain('--model');
-    expect(argv).toContain('claude-sonnet-4-6');
-  });
-
-  it('returns a CodexHarnessAdapter when kind=codex and CODEX_SPAWN_AGENT_BIN is set (AISDLC-202.2)', async () => {
-    const saved = process.env.CODEX_SPAWN_AGENT_BIN;
-    process.env.CODEX_SPAWN_AGENT_BIN = '/tmp/fake-codex-bridge';
-    try {
-      const spawner = await resolveSpawner('codex');
-      expect(typeof spawner.spawn).toBe('function');
-      expect(typeof spawner.spawnParallel).toBe('function');
-    } finally {
-      if (saved === undefined) {
-        delete process.env.CODEX_SPAWN_AGENT_BIN;
-      } else {
-        process.env.CODEX_SPAWN_AGENT_BIN = saved;
-      }
-    }
+  it('exposes only mock and copilot as supported kinds', () => {
+    expect([...SPAWNER_KINDS]).toEqual(['mock', 'copilot']);
   });
 
   it('errors with a clear configuration message when kind=copilot and COPILOT_SPAWN_AGENT_BIN is unset (AISDLC-429.2)', async () => {
@@ -328,8 +264,8 @@ describe('runExecuteCommand — dry-run mode', () => {
   });
 
   it('explicit real spawner without --run still plans without resolving or executing', async () => {
-    writeTaskFile(tmp, { id: 'AISDLC-211', title: 'api key plan', status: 'To Do' });
-    const taskPath = join(tmp, 'backlog', 'tasks', 'aisdlc-211 - api-key-plan.md');
+    writeTaskFile(tmp, { id: 'AISDLC-211', title: 'copilot plan', status: 'To Do' });
+    const taskPath = join(tmp, 'backlog', 'tasks', 'aisdlc-211 - copilot-plan.md');
     const before = readFileSync(taskPath, 'utf8');
     let spawnerFactoryCalled = false;
     let executorCalled = false;
@@ -337,7 +273,7 @@ describe('runExecuteCommand — dry-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-211',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: false,
@@ -354,7 +290,7 @@ describe('runExecuteCommand — dry-run mode', () => {
 
     expect(result.ok).toBe(true);
     expect(result.planned?.taskId).toBe('AISDLC-211');
-    expect(result.planned?.spawnerKind).toBe('api-key');
+    expect(result.planned?.spawnerKind).toBe('copilot');
     expect(spawnerFactoryCalled).toBe(false);
     expect(executorCalled).toBe(false);
     expect(existsSync(join(tmp, '.worktrees', 'aisdlc-211'))).toBe(false);
@@ -465,7 +401,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-200',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -500,7 +436,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-201',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -513,26 +449,26 @@ describe('runExecuteCommand — real-run mode', () => {
     expect(existsSync(result.verdictFilePath as string)).toBe(true);
   });
 
-  it('returns ok=false when the spawner factory throws (api-key missing ANTHROPIC_API_KEY)', async () => {
-    // Use api-key without ANTHROPIC_API_KEY set to exercise the "spawner throws" path.
-    // (Pre-AISDLC-377.6 this used to assert against the claude-cli throw path.)
+  it('returns ok=false when the spawner factory throws (copilot missing COPILOT_SPAWN_AGENT_BIN)', async () => {
+    // Use copilot without COPILOT_SPAWN_AGENT_BIN set to exercise the
+    // "spawner throws" path.
     writeTaskFile(tmp, { id: 'AISDLC-202', title: 'spawner gate', status: 'To Do' });
-    const saved = process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_API_KEY;
+    const saved = process.env.COPILOT_SPAWN_AGENT_BIN;
+    delete process.env.COPILOT_SPAWN_AGENT_BIN;
     try {
       const result = await runExecuteCommand({
         taskId: 'AISDLC-202',
         workDir: tmp,
-        spawnerKind: 'api-key', // fails when ANTHROPIC_API_KEY is unset
+        spawnerKind: 'copilot', // fails when COPILOT_SPAWN_AGENT_BIN is unset
         maxIterations: 2,
         dryRun: false,
         run: true,
         logger: silentLogger(),
       });
       expect(result.ok).toBe(false);
-      expect(result.reason).toContain('ANTHROPIC_API_KEY');
+      expect(result.reason).toContain('COPILOT_SPAWN_AGENT_BIN');
     } finally {
-      if (saved !== undefined) process.env.ANTHROPIC_API_KEY = saved;
+      if (saved !== undefined) process.env.COPILOT_SPAWN_AGENT_BIN = saved;
     }
   });
 
@@ -544,7 +480,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-203',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -576,7 +512,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-204',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -596,7 +532,7 @@ describe('runExecuteCommand — real-run mode', () => {
       }),
     });
     expect(result.ok).toBe(true);
-    expect(spawnerKindSeen).toBe('api-key');
+    expect(spawnerKindSeen).toBe('copilot');
   });
 
   it('invokes AISDLC-177 rollback on developer-failed outcome and surfaces the result', async () => {
@@ -642,7 +578,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-205',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -699,7 +635,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-206',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -774,7 +710,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-209',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -833,7 +769,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-210',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -886,7 +822,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-207',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -922,7 +858,7 @@ describe('runExecuteCommand — real-run mode', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-208',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,

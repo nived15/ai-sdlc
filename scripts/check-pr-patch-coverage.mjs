@@ -117,14 +117,14 @@ const NON_INSTRUMENTED_PATTERNS = [
   /(^|\/)src\/cli-[^/]+\.ts$/,
   // Index re-export shims — excluded by pipeline-cli's vitest config.
   /(^|\/)src\/.*\/index\.ts$/,
-  // Generated schemas — sanctioned exclusion per CLAUDE.md.
+  // Generated schemas — sanctioned exclusion per .github/copilot-instructions.md.
   /(^|\/)generated-schemas\.ts$/,
   // bin/*.mjs CLI entrypoint shims — these are thin argv-parse thunks that
   // delegate to library code; the libraries are unit-tested directly, and the
   // shims themselves are exercised via subprocess invocation which istanbul
   // can't instrument. Same rationale as `src/cli-*.ts` above.
   /(^|\/)bin\/.+\.mjs$/,
-  // ai-sdlc-plugin/hooks/*.js — Node hook scripts spawned by Claude Code
+  // ai-sdlc-plugin/hooks/*.js — Node hook scripts spawned by GitHub Copilot CLI
   // (PreToolUse, etc.). Exercised end-to-end via subprocess invocation in
   // hermetic + integration tests (e.g. AC-2 real-hook test). Vitest can't
   // instrument them. Same rationale as bin/*.mjs above.

@@ -178,7 +178,7 @@ describe('enforceAction', () => {
 
 describe('hook equivalence — checkAction matches hook enforcement patterns', () => {
   // These tests verify that the orchestrator's checkAction() produces the same
-  // results as the Claude Code hook (.claude/hooks/enforce-blocked-actions.js)
+  // results as the GitHub Copilot CLI hook (.github/hooks/enforce-blocked-actions.js)
   // for the default blockedActions from .ai-sdlc/agent-role.yaml.
   // This ensures both enforcement points are consistent.
 

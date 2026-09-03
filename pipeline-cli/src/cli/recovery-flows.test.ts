@@ -91,21 +91,21 @@ function approvedVerdict(): AggregatedVerdict {
   const verdicts: ReviewerVerdict[] = [
     {
       agentId: 'code-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: true,
       findings: [],
       summary: 'lgtm',
     },
     {
       agentId: 'test-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: true,
       findings: [],
       summary: 'lgtm',
     },
     {
       agentId: 'security-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: true,
       findings: [],
       summary: 'lgtm',
@@ -1267,7 +1267,7 @@ describe('runExecuteCommand --resume-from-draft', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-273',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -1311,7 +1311,7 @@ describe('runExecuteCommand --rework-pr', () => {
     const result = await runExecuteCommand({
       taskId: 'AISDLC-273',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -1360,7 +1360,7 @@ describe('runExecuteCommand recoverable-abort detection (AISDLC-242 extension)',
     const result = await runExecuteCommand({
       taskId: 'AISDLC-273',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -1410,7 +1410,7 @@ describe('runExecuteCommand recoverable-abort detection (AISDLC-242 extension)',
     const result = await runExecuteCommand({
       taskId: 'AISDLC-273',
       workDir: tmp,
-      spawnerKind: 'api-key',
+      spawnerKind: 'copilot',
       maxIterations: 2,
       dryRun: false,
       run: true,
@@ -1439,7 +1439,7 @@ describe('runResumeFromDraft — AISDLC-355 Bug 1: stale synthetic-critical verd
     const stalePlaceholder = [
       {
         agentId: 'code-reviewer',
-        harness: 'claude-code',
+        harness: 'copilot',
         approved: false,
         findings: [
           {
@@ -1450,7 +1450,7 @@ describe('runResumeFromDraft — AISDLC-355 Bug 1: stale synthetic-critical verd
       },
       {
         agentId: 'test-reviewer',
-        harness: 'claude-code',
+        harness: 'copilot',
         approved: false,
         findings: [
           {
@@ -1461,7 +1461,7 @@ describe('runResumeFromDraft — AISDLC-355 Bug 1: stale synthetic-critical verd
       },
       {
         agentId: 'security-reviewer',
-        harness: 'claude-code',
+        harness: 'copilot',
         approved: false,
         findings: [
           {
@@ -1527,7 +1527,7 @@ describe('runResumeFromDraft — AISDLC-355 Bug 1: stale synthetic-critical verd
       verdicts: [
         {
           agentId: 'code-reviewer',
-          harness: 'claude-code',
+          harness: 'copilot',
           approved: false,
           findings: [
             {
@@ -1580,21 +1580,21 @@ describe('runResumeFromDraft — AISDLC-355 Bug 1: stale synthetic-critical verd
     const validVerdict = [
       {
         agentId: 'code-reviewer',
-        harness: 'claude-code',
+        harness: 'copilot',
         approved: true,
         findings: [],
         summary: 'lgtm',
       },
       {
         agentId: 'test-reviewer',
-        harness: 'claude-code',
+        harness: 'copilot',
         approved: true,
         findings: [],
         summary: 'lgtm',
       },
       {
         agentId: 'security-reviewer',
-        harness: 'claude-code',
+        harness: 'copilot',
         approved: true,
         findings: [],
         summary: 'lgtm',

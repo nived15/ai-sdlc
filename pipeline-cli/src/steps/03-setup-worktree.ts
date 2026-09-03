@@ -24,7 +24,7 @@ import { withWorktreeMutex, type WithWorktreeMutexOptions } from '../runtime/wor
 import type { SetupWorktreeResult } from '../types.js';
 import type { OrchestratorEvent } from '../orchestrator/events.js';
 
-/** Canonical truthy values for feature flags (per CLAUDE.md feature-flag conventions). */
+/** Canonical truthy values for feature flags (per .github/copilot-instructions.md feature-flag conventions). */
 function isFlagEnabled(value: string | undefined): boolean {
   if (!value) return false;
   return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
@@ -99,7 +99,7 @@ function isBranchExistsError(stderr: string): boolean {
 const SENTINEL_ACTIVE_THRESHOLD_MS = 6 * 60 * 60 * 1000;
 
 /**
- * Scan ps output for a claude --print/-p subprocess referencing the task ID.
+ * Scan ps output for a copilot -p/-p subprocess referencing the task ID.
  * Returns the PID if found, null otherwise. Mirrors the logic in already-in-flight.ts.
  */
 function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
@@ -114,7 +114,7 @@ function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
     const command = trimmed.slice(spaceIdx + 1).trim();
     const pid = parseInt(pidStr, 10);
     if (isNaN(pid)) continue;
-    if (!command.includes('claude')) continue;
+    if (!command.includes('copilot')) continue;
     if (!command.includes('--print') && !/ -p(\s|$)/.test(command)) continue;
     if (command.includes(taskIdLower) || command.includes(taskIdUpper)) {
       return pid;
@@ -133,7 +133,7 @@ function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
  * 3. Branch not checked out in any other registered worktree.
  * 4. No unpushed commits (commits ahead of origin/main that have no upstream).
  * 5. No active `.active-task` sentinel younger than 6 hours.
- * 6. No live `claude --print` subprocess for this task.
+ * 6. No live `copilot -p` subprocess for this task.
  *
  * When NOT safe, emits a `[step-3] <taskId>: keeping branch (<reason>)` trace
  * line for observability (AC #3 of AISDLC-228).
@@ -335,7 +335,7 @@ async function isSafeToAutoClean(
     const pid = findClaudeSubprocess(psOutput, taskId);
     if (pid !== null) {
       console.info(
-        `[step-3] ${taskIdLower}: keeping branch (live claude --print subprocess PID ${pid})`,
+        `[step-3] ${taskIdLower}: keeping branch (live copilot -p subprocess PID ${pid})`,
       );
       return { safe: false, hadOpenPR: false, hadUncommittedChanges: false };
     }

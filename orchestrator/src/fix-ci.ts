@@ -24,7 +24,7 @@ import { loadConfig, type AiSdlcConfig } from './config.js';
 import { createLogger, type Logger } from './logger.js';
 import { createStructuredConsoleLogger } from './structured-logger.js';
 import type { AgentRunner } from './runners/types.js';
-import { ClaudeCodeRunner } from './runners/claude-code.js';
+import { CopilotRunner } from './runners/copilot.js';
 import {
   execFileAsync,
   getGitHubConfig,
@@ -330,7 +330,7 @@ export async function executeFixCI(
   try {
     // 7. Invoke agent with CI error context (with sandbox + JIT credential lifecycle)
     log.stage('agent');
-    const runner = options.runner ?? new ClaudeCodeRunner();
+    const runner = options.runner ?? new CopilotRunner();
 
     // Sandbox isolation around agent execution
     let sandboxId: string | undefined;

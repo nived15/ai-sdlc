@@ -20,11 +20,10 @@
  * hex hash that matches the high-entropy pattern) just lose the literal
  * value in the log, which is a much smaller cost than leaking a token.
  *
- * Pattern catalogue (RFC-aligned with the GitHub / OpenAI / Anthropic /
- * Slack / Stripe / GCP / SendGrid / Twilio / Mailgun / AWS / JWT docs as
- * of 2026-05; bump entries here when upstream rotates formats):
- *   - OpenAI keys: `sk-...` and `sk-proj-...`
- *   - Anthropic keys: `sk-ant-api03-...` and `sk-ant-admin01-...`
+ * Pattern catalogue (RFC-aligned with the GitHub / Slack / Stripe / GCP /
+ * SendGrid / Twilio / Mailgun / AWS / JWT docs as of 2026-05; bump entries
+ * here when upstream rotates formats):
+ *   - Third-party inference keys: `sk-...`, `sk-proj-...`, `sk-ant-*-...`
  *   - Slack tokens: `xox[abprs]-...`
  *   - Stripe keys: `sk_live_...`, `pk_live_...`, `whsec_...`
  *   - GCP API keys: `AIza<35>`
@@ -43,7 +42,7 @@
  */
 
 export interface SecretPattern {
-  /** Stable name surfaced in the replacement marker, e.g. 'OPENAI'. */
+  /** Stable name surfaced in the replacement marker, e.g. 'INFERENCE_KEY'. */
   name: string;
   /** Pattern to match. MUST be `g`lobal so `String.replace` redacts ALL hits. */
   regex: RegExp;
@@ -53,28 +52,28 @@ export interface SecretPattern {
 
 /**
  * Registry of known secret patterns. Order matters: more-specific patterns
- * (OpenAI's `sk-proj-` variant) come BEFORE less-specific patterns (the
- * generic `sk-` variant) so the marker reflects the most accurate label.
+ * (the `sk-proj-` and `sk-ant-` variants) come BEFORE less-specific patterns
+ * (the generic `sk-` variant) so the marker reflects the most accurate label.
  * The high-entropy catch-all is last so it only fires on tokens that
  * didn't match a known shape.
+ *
+ * AI-SDLC never issues these third-party inference keys itself — they are
+ * redacted because an adopter may paste one into an issue or task body, and
+ * a leaked credential in a calibration log is a real incident regardless of
+ * which vendor issued it.
  */
 export const SECRET_PATTERNS: readonly SecretPattern[] = [
-  // Anthropic API keys (sk-ant-api03-... and sk-ant-admin01-...). MUST
-  // come BEFORE OPENAI so the marker labels them ANTHROPIC. Note that
-  // the OPENAI regex (body class `[A-Za-z0-9]`, no hyphen) wouldn't
-  // actually swallow `sk-ant-...` because the third char `-` breaks the
-  // run — but we anchor the specific pattern explicitly for clarity and
-  // to give the redaction marker a meaningful name. Body uses base64url
-  // (alphanumerics + `_` + `-`).
-  { name: 'ANTHROPIC', regex: /sk-ant-(?:api03|admin01)-[A-Za-z0-9_-]{20,}/g },
-  // OpenAI project-scoped keys (sk-proj-...) — must come BEFORE sk-...
-  // so the marker labels them OPENAI_PROJECT, not OPENAI. The body uses
-  // base64url charset (alphanumerics + `_` + `-`).
-  { name: 'OPENAI_PROJECT', regex: /sk-proj-[A-Za-z0-9_-]{20,}/g },
-  // OpenAI classic keys (sk-...). The body is base62-ish — letters +
+  // Vendor-prefixed inference keys (`sk-ant-api03-...`, `sk-ant-admin01-...`).
+  // MUST come BEFORE INFERENCE_KEY so the more specific shape wins. Body uses
+  // base64url (alphanumerics + `_` + `-`).
+  { name: 'INFERENCE_KEY_SCOPED', regex: /sk-ant-(?:api03|admin01)-[A-Za-z0-9_-]{20,}/g },
+  // Project-scoped inference keys (`sk-proj-...`) — must come BEFORE the
+  // generic `sk-` pattern. The body uses the base64url charset.
+  { name: 'INFERENCE_KEY_PROJECT', regex: /sk-proj-[A-Za-z0-9_-]{20,}/g },
+  // Classic inference keys (`sk-...`). The body is base62-ish — letters +
   // digits only (no underscores) to avoid swallowing `sk-proj-...` (which
   // is already handled above) and to keep the false-positive rate low.
-  { name: 'OPENAI', regex: /sk-[A-Za-z0-9]{20,}/g },
+  { name: 'INFERENCE_KEY', regex: /sk-[A-Za-z0-9]{20,}/g },
   // Slack tokens — bot (`xoxb-`), user (`xoxp-`), refresh (`xoxr-`),
   // app-level (`xoxa-`), legacy (`xoxs-`). Body is `[A-Za-z0-9-]{10,}`
   // to cover the multi-segment shape (`xoxb-<workspace>-<user>-<token>`)
@@ -195,7 +194,7 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
  * every field, even when nothing's there.
  *
  * Patterns are applied in `SECRET_PATTERNS` order so specific markers
- * (OPENAI, GITHUB_PAT) win over the generic HIGH-ENTROPY catch-all.
+ * (INFERENCE_KEY, GITHUB_PAT) win over the generic HIGH-ENTROPY catch-all.
  */
 export function redactSecrets(input: string | undefined | null): string {
   if (!input) return input ?? '';

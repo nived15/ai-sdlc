@@ -209,8 +209,8 @@ export async function pushAndPr(opts: PushAndPrStepOptions): Promise<PushAndPrRe
   if (rebase.resolvedFiles.length > 0) {
     const helperScript =
       opts.signAttestationScript ??
-      (process.env.CLAUDE_PLUGIN_ROOT
-        ? join(process.env.CLAUDE_PLUGIN_ROOT, 'scripts', 'sign-attestation.mjs')
+      (process.env.COPILOT_PLUGIN_ROOT
+        ? join(process.env.COPILOT_PLUGIN_ROOT, 'scripts', 'sign-attestation.mjs')
         : null);
 
     if (helperScript && existsSync(helperScript)) {
@@ -229,7 +229,7 @@ export async function pushAndPr(opts: PushAndPrStepOptions): Promise<PushAndPrRe
           `chore(spec): re-sign attestation after late-rebase auto-resolve (AISDLC-232)\n\n` +
           `Late-rebase resolved ${rebase.resolvedFiles.join(', ')} — HEAD blob SHAs shifted.\n` +
           `Refreshed DSSE envelope so verify-attestation.yml sees a valid contentHashV4.\n\n` +
-          `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>\n`;
+          `Co-Authored-By: the reasoning tier 4.6 (1M context) <noreply@github-models.com>\n`;
         await runner('git', ['commit', '-m', reSignMessage], {
           cwd: opts.worktreePath,
           allowFailure: true,

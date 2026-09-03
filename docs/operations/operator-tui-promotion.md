@@ -217,7 +217,7 @@ background; nothing on-disk needs to be undone.
 
 After the flip lands, update:
 
-- `CLAUDE.md` — change the `AI_SDLC_TUI` bullet description from
+- `.github/copilot-instructions.md` — change the `AI_SDLC_TUI` bullet description from
   "Off by default" to "On by default; set `AI_SDLC_TUI=off` to disable."
 - `pipeline-cli/src/tui/feature-flag.ts` — update `tuiDisabledMessage`
   as shown above to reflect the new default.

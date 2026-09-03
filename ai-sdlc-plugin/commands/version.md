@@ -53,7 +53,7 @@ ai-sdlc plugin
 Run the version-check hook in print mode and surface its output verbatim:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/hooks/check-plugin-version.js" --print
+node "${COPILOT_PLUGIN_ROOT}/hooks/check-plugin-version.js" --print
 ```
 
 The hook respects `AI_SDLC_DISABLE_VERSION_CHECK=1` — if the operator has

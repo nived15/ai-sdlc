@@ -137,7 +137,7 @@ async function getInitProgram() {
 function resetInitCommandOptions(cmd: Awaited<ReturnType<typeof getInitProgram>>): void {
   cmd.setOptionValue('dryRun', undefined);
   cmd.setOptionValue('role', undefined);
-  cmd.setOptionValue('cursor', undefined);
+  cmd.setOptionValue('copilot', undefined);
   cmd.setOptionValue('skipMcp', undefined);
   cmd.setOptionValue('yes', undefined);
   cmd.setOptionValue('withDor', undefined);
@@ -177,7 +177,7 @@ describe('init command', () => {
     // The legacy single-repo init writes 4 files (pipeline.yaml,
     // agent-role.yaml, quality-gate.yaml, autonomy-policy.yaml). The
     // AISDLC-143 wizard adds more (gate workflow, dor, attestation,
-    // classifier templates, husky, CLAUDE.md). With --yes the full
+    // classifier templates, husky, .github/copilot-instructions.md). With --yes the full
     // baseline + every feature is on, so we assert ≥ the legacy count.
     expect(mockWriteFileSync.mock.calls.length).toBeGreaterThanOrEqual(4);
   });
@@ -205,7 +205,7 @@ describe('init command', () => {
     await cmd.parseAsync(['--skip-mcp', '--yes'], { from: 'user' });
 
     // The legacy 4-file scaffold writes nothing (everything already exists).
-    // The wizard's appendOnce (husky + CLAUDE.md) writes if our sentinel
+    // The wizard's appendOnce (husky + .github/copilot-instructions.md) writes if our sentinel
     // is missing — and on this mock every file "exists" but has no content
     // tracked, so appendOnce DOES write. Assert that the LEGACY files were
     // skipped (the original behavior the test guards) and ignore wizard

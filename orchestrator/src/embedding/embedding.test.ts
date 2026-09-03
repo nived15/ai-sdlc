@@ -31,7 +31,7 @@ import {
   EmbeddingModelRemoved,
   EmbeddingModelDeprecated,
 } from './errors.js';
-import { OpenAITextEmbedding3Small } from './adapters/openai-text-embedding-3-small.js';
+import { GitHubModelsEmbeddingSmall } from './adapters/github-models-embedding-small.js';
 
 // ── Stub adapter for registry tests ──────────────────────────────────────────
 
@@ -74,10 +74,10 @@ class StubEmbeddingAdapter implements EmbeddingAdapter {
 // ── Registry tests ────────────────────────────────────────────────────────────
 
 describe('embedding registry', () => {
-  it('resolves the built-in openai-text-embedding-3-small adapter', () => {
-    const adapter = getEmbeddingAdapter('openai-text-embedding-3-small');
+  it('resolves the built-in github-models-embedding-small adapter', () => {
+    const adapter = getEmbeddingAdapter('github-models-embedding-small');
     expect(adapter).toBeDefined();
-    expect(adapter.name).toBe('openai-text-embedding-3-small');
+    expect(adapter.name).toBe('github-models-embedding-small');
   });
 
   it('throws UnknownEmbeddingProvider for an unregistered name', () => {
@@ -92,7 +92,7 @@ describe('embedding registry', () => {
       expect(err).toBeInstanceOf(UnknownEmbeddingProvider);
       const e = err as UnknownEmbeddingProvider;
       expect(e.requestedName).toBe('no-such-provider');
-      expect(e.availableNames).toContain('openai-text-embedding-3-small');
+      expect(e.availableNames).toContain('github-models-embedding-small');
     }
   });
 
@@ -106,7 +106,7 @@ describe('embedding registry', () => {
   });
 
   it('hasEmbeddingAdapter returns true for registered adapter', () => {
-    expect(hasEmbeddingAdapter('openai-text-embedding-3-small')).toBe(true);
+    expect(hasEmbeddingAdapter('github-models-embedding-small')).toBe(true);
   });
 
   it('hasEmbeddingAdapter returns false for unregistered adapter', () => {
@@ -115,7 +115,7 @@ describe('embedding registry', () => {
 
   it('listEmbeddingAdapters includes built-in adapter', () => {
     const names = listEmbeddingAdapters();
-    expect(names).toContain('openai-text-embedding-3-small');
+    expect(names).toContain('github-models-embedding-small');
   });
 
   it('registry round-trip: register → resolve → verify identity', () => {
@@ -129,162 +129,162 @@ describe('embedding registry', () => {
   });
 });
 
-// ── OpenAI adapter: identity & capability matrix ─────────────────────────────
+// ── GitHub Copilot adapter: identity & capability matrix ─────────────────────────────
 
-describe('OpenAITextEmbedding3Small — identity', () => {
+describe('GitHubModelsEmbeddingSmall — identity', () => {
   it('has correct name', () => {
-    const adapter = new OpenAITextEmbedding3Small();
-    expect(adapter.name).toBe('openai-text-embedding-3-small');
+    const adapter = new GitHubModelsEmbeddingSmall();
+    expect(adapter.name).toBe('github-models-embedding-small');
   });
 
   it('has correct modelId', () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     expect(adapter.modelId).toBe('text-embedding-3-small');
   });
 
   it('has correct modelVersion snapshot date', () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     expect(adapter.modelVersion).toBe('2024-01-25');
   });
 
   it('has correct dimensions', () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     expect(adapter.dimensions).toBe(1536);
   });
 
   it('declares pay-per-token billing model (OQ-7 re-walkthrough)', () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     expect(adapter.capabilities.billingModel).toBe('pay-per-token');
   });
 
   it('capability matrix dimensions match top-level dimensions', () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     expect(adapter.capabilities.dimensions).toBe(adapter.dimensions);
   });
 
   it('declares supportsBatching = true', () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     expect(adapter.capabilities.supportsBatching).toBe(true);
   });
 
   it('declares selfHosted = false', () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     expect(adapter.capabilities.selfHosted).toBe(false);
   });
 
-  it('declares OPENAI_API_KEY as required env var', () => {
-    const adapter = new OpenAITextEmbedding3Small();
-    expect(adapter.requires.envVar).toBe('OPENAI_API_KEY');
+  it('declares GITHUB_MODELS_TOKEN as required env var', () => {
+    const adapter = new GitHubModelsEmbeddingSmall();
+    expect(adapter.requires.envVar).toBe('GITHUB_MODELS_TOKEN');
   });
 });
 
-// ── OpenAI adapter: isAvailable() probe ──────────────────────────────────────
+// ── GitHub Copilot adapter: isAvailable() probe ──────────────────────────────────────
 
-describe('OpenAITextEmbedding3Small — isAvailable()', () => {
-  const originalEnv = process.env.OPENAI_API_KEY;
+describe('GitHubModelsEmbeddingSmall — isAvailable()', () => {
+  const originalEnv = process.env.GITHUB_MODELS_TOKEN;
 
   afterEach(() => {
     if (originalEnv === undefined) {
-      delete process.env.OPENAI_API_KEY;
+      delete process.env.GITHUB_MODELS_TOKEN;
     } else {
-      process.env.OPENAI_API_KEY = originalEnv;
+      process.env.GITHUB_MODELS_TOKEN = originalEnv;
     }
   });
 
-  it('returns available=false when OPENAI_API_KEY is not set', async () => {
-    delete process.env.OPENAI_API_KEY;
-    const adapter = new OpenAITextEmbedding3Small();
+  it('returns available=false when GITHUB_MODELS_TOKEN is not set', async () => {
+    delete process.env.GITHUB_MODELS_TOKEN;
+    const adapter = new GitHubModelsEmbeddingSmall();
     const result = await adapter.isAvailable();
     expect(result.available).toBe(false);
     expect(result.reason).toBe('env-var-missing');
-    expect(result.detail).toMatch(/OPENAI_API_KEY/);
+    expect(result.detail).toMatch(/GITHUB_MODELS_TOKEN/);
   });
 
-  it('returns available=true when OPENAI_API_KEY is set', async () => {
-    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
-    const adapter = new OpenAITextEmbedding3Small();
+  it('returns available=true when GITHUB_MODELS_TOKEN is set', async () => {
+    process.env.GITHUB_MODELS_TOKEN = 'sk-test-key-for-unit-test';
+    const adapter = new GitHubModelsEmbeddingSmall();
     const result = await adapter.isAvailable();
     expect(result.available).toBe(true);
     expect(result.reason).toBeUndefined();
   });
 });
 
-// ── OpenAI adapter: getAccountId() ───────────────────────────────────────────
+// ── GitHub Copilot adapter: getAccountId() ───────────────────────────────────────────
 
-describe('OpenAITextEmbedding3Small — getAccountId()', () => {
-  const originalEnv = process.env.OPENAI_API_KEY;
+describe('GitHubModelsEmbeddingSmall — getAccountId()', () => {
+  const originalEnv = process.env.GITHUB_MODELS_TOKEN;
 
   afterEach(() => {
     if (originalEnv === undefined) {
-      delete process.env.OPENAI_API_KEY;
+      delete process.env.GITHUB_MODELS_TOKEN;
     } else {
-      process.env.OPENAI_API_KEY = originalEnv;
+      process.env.GITHUB_MODELS_TOKEN = originalEnv;
     }
   });
 
-  it('returns null when OPENAI_API_KEY is not set', async () => {
-    delete process.env.OPENAI_API_KEY;
-    const adapter = new OpenAITextEmbedding3Small();
+  it('returns null when GITHUB_MODELS_TOKEN is not set', async () => {
+    delete process.env.GITHUB_MODELS_TOKEN;
+    const adapter = new GitHubModelsEmbeddingSmall();
     const id = await adapter.getAccountId();
     expect(id).toBeNull();
   });
 
-  it('returns a 64-char hex string when OPENAI_API_KEY is set', async () => {
-    process.env.OPENAI_API_KEY = 'sk-test-deterministic-key';
-    const adapter = new OpenAITextEmbedding3Small();
+  it('returns a 64-char hex string when GITHUB_MODELS_TOKEN is set', async () => {
+    process.env.GITHUB_MODELS_TOKEN = 'sk-test-deterministic-key';
+    const adapter = new GitHubModelsEmbeddingSmall();
     const id = await adapter.getAccountId();
     expect(id).not.toBeNull();
     expect(id).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('is deterministic: same key produces same id', async () => {
-    process.env.OPENAI_API_KEY = 'sk-same-key-twice';
-    const adapter = new OpenAITextEmbedding3Small();
+    process.env.GITHUB_MODELS_TOKEN = 'sk-same-key-twice';
+    const adapter = new GitHubModelsEmbeddingSmall();
     const id1 = await adapter.getAccountId();
     const id2 = await adapter.getAccountId();
     expect(id1).toBe(id2);
   });
 
   it('is different for different keys (MUST NOT leak credential)', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
-    process.env.OPENAI_API_KEY = 'sk-key-alpha';
+    const adapter = new GitHubModelsEmbeddingSmall();
+    process.env.GITHUB_MODELS_TOKEN = 'sk-key-alpha';
     const id1 = await adapter.getAccountId();
-    process.env.OPENAI_API_KEY = 'sk-key-beta';
+    process.env.GITHUB_MODELS_TOKEN = 'sk-key-beta';
     const id2 = await adapter.getAccountId();
     expect(id1).not.toBe(id2);
   });
 });
 
-// ── OpenAI adapter: embed() — error paths (no real API calls) ────────────────
+// ── GitHub Copilot adapter: embed() — error paths (no real API calls) ────────────────
 
-describe('OpenAITextEmbedding3Small — embed() validation', () => {
-  const originalEnv = process.env.OPENAI_API_KEY;
+describe('GitHubModelsEmbeddingSmall — embed() validation', () => {
+  const originalEnv = process.env.GITHUB_MODELS_TOKEN;
 
   beforeEach(() => {
-    process.env.OPENAI_API_KEY = 'sk-test-key';
+    process.env.GITHUB_MODELS_TOKEN = 'sk-test-key';
   });
 
   afterEach(() => {
     if (originalEnv === undefined) {
-      delete process.env.OPENAI_API_KEY;
+      delete process.env.GITHUB_MODELS_TOKEN;
     } else {
-      process.env.OPENAI_API_KEY = originalEnv;
+      process.env.GITHUB_MODELS_TOKEN = originalEnv;
     }
     vi.restoreAllMocks();
   });
 
   it('throws on empty string input', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     await expect(adapter.embed('')).rejects.toThrow(/empty input rejected/);
   });
 
   it('throws on whitespace-only input', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     await expect(adapter.embed('   ')).rejects.toThrow(/empty input rejected/);
   });
 
   it('throws EmbeddingProviderError on API failure', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -297,7 +297,7 @@ describe('OpenAITextEmbedding3Small — embed() validation', () => {
   });
 
   it('throws EmbeddingDimensionMismatch when API returns wrong vector length', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -312,7 +312,7 @@ describe('OpenAITextEmbedding3Small — embed() validation', () => {
   });
 
   it('returns a vector of length 1536 on success', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     const fakeVector = new Array(1536).fill(0.1) as number[];
     vi.stubGlobal(
       'fetch',
@@ -332,24 +332,24 @@ describe('OpenAITextEmbedding3Small — embed() validation', () => {
 // ── consumerLabel propagation through to cost-tracker (AC#7, OQ-6) ────────────
 
 describe('consumerLabel propagation (OQ-6 re-walkthrough)', () => {
-  const originalEnv = process.env.OPENAI_API_KEY;
+  const originalEnv = process.env.GITHUB_MODELS_TOKEN;
 
   beforeEach(() => {
-    process.env.OPENAI_API_KEY = 'sk-test-key-for-consumer-label';
+    process.env.GITHUB_MODELS_TOKEN = 'sk-test-key-for-consumer-label';
   });
 
   afterEach(() => {
     if (originalEnv === undefined) {
-      delete process.env.OPENAI_API_KEY;
+      delete process.env.GITHUB_MODELS_TOKEN;
     } else {
-      process.env.OPENAI_API_KEY = originalEnv;
+      process.env.GITHUB_MODELS_TOKEN = originalEnv;
     }
     vi.restoreAllMocks();
   });
 
   it('defaults consumerLabel to "unspecified" when not provided', async () => {
     const capturedRecords: EmbeddingCostRecord[] = [];
-    const adapter = new OpenAITextEmbedding3Small((record) => capturedRecords.push(record));
+    const adapter = new GitHubModelsEmbeddingSmall((record) => capturedRecords.push(record));
 
     const fakeVector = new Array(1536).fill(0.2) as number[];
     vi.stubGlobal(
@@ -370,7 +370,7 @@ describe('consumerLabel propagation (OQ-6 re-walkthrough)', () => {
 
   it('propagates explicit consumerLabel to cost-tracker callback', async () => {
     const capturedRecords: EmbeddingCostRecord[] = [];
-    const adapter = new OpenAITextEmbedding3Small((record) => capturedRecords.push(record));
+    const adapter = new GitHubModelsEmbeddingSmall((record) => capturedRecords.push(record));
 
     const fakeVector = new Array(1536).fill(0.3) as number[];
     vi.stubGlobal(
@@ -391,7 +391,7 @@ describe('consumerLabel propagation (OQ-6 re-walkthrough)', () => {
 
   it('cost record includes provider, modelVersion, accountId, tokens, costUsd', async () => {
     const capturedRecords: EmbeddingCostRecord[] = [];
-    const adapter = new OpenAITextEmbedding3Small((record) => capturedRecords.push(record));
+    const adapter = new GitHubModelsEmbeddingSmall((record) => capturedRecords.push(record));
 
     const fakeVector = new Array(1536).fill(0.4) as number[];
     vi.stubGlobal(
@@ -408,7 +408,7 @@ describe('consumerLabel propagation (OQ-6 re-walkthrough)', () => {
     await adapter.embed('test for cost attribution', 'rfc-0008-ppa-similarity');
     const record = capturedRecords[0];
 
-    expect(record.provider).toBe('openai-text-embedding-3-small');
+    expect(record.provider).toBe('github-models-embedding-small');
     expect(record.modelVersion).toBe('2024-01-25');
     expect(record.accountId).toMatch(/^[0-9a-f]{64}$/); // one-way hash
     expect(record.tokens).toBe(100);
@@ -419,7 +419,7 @@ describe('consumerLabel propagation (OQ-6 re-walkthrough)', () => {
 
   it('no callback = no error even when embed() succeeds', async () => {
     // Adapter without a cost callback should not throw
-    const adapter = new OpenAITextEmbedding3Small(); // no callback
+    const adapter = new GitHubModelsEmbeddingSmall(); // no callback
 
     const fakeVector = new Array(1536).fill(0.5) as number[];
     vi.stubGlobal(
@@ -437,27 +437,27 @@ describe('consumerLabel propagation (OQ-6 re-walkthrough)', () => {
   });
 });
 
-// ── OpenAI adapter: embedBatch() ─────────────────────────────────────────────
+// ── GitHub Copilot adapter: embedBatch() ─────────────────────────────────────────────
 
-describe('OpenAITextEmbedding3Small — embedBatch()', () => {
-  const originalEnv = process.env.OPENAI_API_KEY;
+describe('GitHubModelsEmbeddingSmall — embedBatch()', () => {
+  const originalEnv = process.env.GITHUB_MODELS_TOKEN;
 
   beforeEach(() => {
-    process.env.OPENAI_API_KEY = 'sk-test-key';
+    process.env.GITHUB_MODELS_TOKEN = 'sk-test-key';
   });
 
   afterEach(() => {
     if (originalEnv === undefined) {
-      delete process.env.OPENAI_API_KEY;
+      delete process.env.GITHUB_MODELS_TOKEN;
     } else {
-      process.env.OPENAI_API_KEY = originalEnv;
+      process.env.GITHUB_MODELS_TOKEN = originalEnv;
     }
     vi.restoreAllMocks();
   });
 
   // AC-1: empty-array fast-path
   it('returns [] immediately for empty input array', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
     const result = await adapter.embedBatch([]);
@@ -467,22 +467,22 @@ describe('OpenAITextEmbedding3Small — embedBatch()', () => {
 
   // AC-2: empty-string-in-batch rejection
   it('throws EmbeddingProviderError for empty string in batch', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     await expect(adapter.embedBatch(['valid', ''])).rejects.toThrow(
       /empty string in input array rejected/,
     );
   });
 
-  // AC-3: no OPENAI_API_KEY guard
-  it('throws EmbeddingProviderError when OPENAI_API_KEY is not set', async () => {
-    delete process.env.OPENAI_API_KEY;
-    const adapter = new OpenAITextEmbedding3Small();
-    await expect(adapter.embedBatch(['x'])).rejects.toThrow(/OPENAI_API_KEY is not set/);
+  // AC-3: no GITHUB_MODELS_TOKEN guard
+  it('throws EmbeddingProviderError when GITHUB_MODELS_TOKEN is not set', async () => {
+    delete process.env.GITHUB_MODELS_TOKEN;
+    const adapter = new GitHubModelsEmbeddingSmall();
+    await expect(adapter.embedBatch(['x'])).rejects.toThrow(/GITHUB_MODELS_TOKEN is not set/);
   });
 
   // AC-4: successful multi-text batch — correct request body + parsed response
   it('sends correct request body and returns parsed vectors', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     const vec1 = new Array(1536).fill(0.1) as number[];
     const vec2 = new Array(1536).fill(0.2) as number[];
     let capturedBody: unknown;
@@ -517,7 +517,7 @@ describe('OpenAITextEmbedding3Small — embedBatch()', () => {
 
   // AC-5: batch HTTP error throws EmbeddingProviderError
   it('throws EmbeddingProviderError on 4xx/5xx response', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -531,7 +531,7 @@ describe('OpenAITextEmbedding3Small — embedBatch()', () => {
 
   // AC-6: batch dimension-mismatch throws EmbeddingDimensionMismatch
   it('throws EmbeddingDimensionMismatch when a batch item has wrong vector length', async () => {
-    const adapter = new OpenAITextEmbedding3Small();
+    const adapter = new GitHubModelsEmbeddingSmall();
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -548,7 +548,7 @@ describe('OpenAITextEmbedding3Small — embedBatch()', () => {
   // AC-7: consumerLabel propagation via embedBatch()
   it('propagates consumerLabel to cost-tracker callback', async () => {
     const capturedRecords: EmbeddingCostRecord[] = [];
-    const adapter = new OpenAITextEmbedding3Small((record) => capturedRecords.push(record));
+    const adapter = new GitHubModelsEmbeddingSmall((record) => capturedRecords.push(record));
     const fakeVec = new Array(1536).fill(0.5) as number[];
     vi.stubGlobal(
       'fetch',
@@ -568,27 +568,27 @@ describe('OpenAITextEmbedding3Small — embedBatch()', () => {
   });
 });
 
-// ── OpenAI adapter: setCostCallback() ────────────────────────────────────────
+// ── GitHub Copilot adapter: setCostCallback() ────────────────────────────────────────
 
-describe('OpenAITextEmbedding3Small — setCostCallback()', () => {
-  const originalEnv = process.env.OPENAI_API_KEY;
+describe('GitHubModelsEmbeddingSmall — setCostCallback()', () => {
+  const originalEnv = process.env.GITHUB_MODELS_TOKEN;
 
   beforeEach(() => {
-    process.env.OPENAI_API_KEY = 'sk-test-key';
+    process.env.GITHUB_MODELS_TOKEN = 'sk-test-key';
   });
 
   afterEach(() => {
     if (originalEnv === undefined) {
-      delete process.env.OPENAI_API_KEY;
+      delete process.env.GITHUB_MODELS_TOKEN;
     } else {
-      process.env.OPENAI_API_KEY = originalEnv;
+      process.env.GITHUB_MODELS_TOKEN = originalEnv;
     }
     vi.restoreAllMocks();
   });
 
   // AC-9: instantiate without callback, call setCostCallback, verify records flow
   it('records cost after setCostCallback is called post-construction', async () => {
-    const adapter = new OpenAITextEmbedding3Small(); // no callback at construction
+    const adapter = new GitHubModelsEmbeddingSmall(); // no callback at construction
 
     const capturedRecords: EmbeddingCostRecord[] = [];
     adapter.setCostCallback((record) => capturedRecords.push(record));
@@ -609,15 +609,15 @@ describe('OpenAITextEmbedding3Small — setCostCallback()', () => {
 
     expect(capturedRecords).toHaveLength(1);
     expect(capturedRecords[0].tokens).toBe(20);
-    expect(capturedRecords[0].provider).toBe('openai-text-embedding-3-small');
+    expect(capturedRecords[0].provider).toBe('github-models-embedding-small');
   });
 });
 
 // ── billingModel field is correctly read by framework (AC#8, OQ-7) ────────────
 
 describe('billingModel field (OQ-7 re-walkthrough)', () => {
-  it('OpenAI adapter declares pay-per-token billing model', () => {
-    const adapter = getEmbeddingAdapter('openai-text-embedding-3-small');
+  it('GitHub Copilot adapter declares pay-per-token billing model', () => {
+    const adapter = getEmbeddingAdapter('github-models-embedding-small');
     expect(adapter.capabilities.billingModel).toBe('pay-per-token');
   });
 
@@ -625,7 +625,7 @@ describe('billingModel field (OQ-7 re-walkthrough)', () => {
     // This test verifies the framework reads billingModel correctly.
     // The actual SubscriptionLedger routing is Phase 4 scope; here we
     // verify the field value that Phase 4 will read.
-    const adapter = getEmbeddingAdapter('openai-text-embedding-3-small');
+    const adapter = getEmbeddingAdapter('github-models-embedding-small');
     const consumesSubscription = adapter.capabilities.billingModel === 'subscription-quota';
     expect(consumesSubscription).toBe(false);
   });

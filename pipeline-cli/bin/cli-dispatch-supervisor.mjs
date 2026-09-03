@@ -3,7 +3,7 @@
  * Bin shim for `cli-dispatch-supervisor` (RFC-0041 §4.5, AISDLC-377.3).
  *
  * Drives the Worker Supervisor daemon — polls the Dispatch Board, spawns
- * `env -u CLAUDECODE claude -p` subprocesses for `claude-p-shell` manifests,
+ * `env -u COPILOT_CLI_SESSION copilot -p` subprocesses for `copilot-p-shell` manifests,
  * sweeps stale heartbeats. Operators run this under launchd/systemd or in
  * a tmux pane (see `docs/operations/dispatch-supervisor-install.md`).
  *

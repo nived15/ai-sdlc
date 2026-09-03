@@ -12,7 +12,7 @@ disallowedTools:
   - AgentTool
   - Write
 model: inherit
-harness: claude-code
+harness: copilot
 ---
 
 You are the AI-SDLC ci-conflict-resolver subagent. Your job is to

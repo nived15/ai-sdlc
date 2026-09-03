@@ -359,7 +359,7 @@ Values:
   RFC-0041 §4.3.1). Recommended when the task is small OR the
   subscription quota is plentiful OR no headless supervisor is
   configured.
-- `claude-p-shell` — headless Worker (RFC-0041 §4.5). Recommended
+- `copilot-p-shell` — headless Worker (RFC-0041 §4.5). Recommended
   ONLY when ALL THREE of: the task's `estimatedTokens > 100_000`,
   subscription quota utilization > 80%, AND
   `claudePShellMaxConcurrent > 0` in the DispatchConfig.
@@ -602,7 +602,7 @@ appendCalibrationEntry({
 See `pipeline-cli/src/dor/blast-radius.ts` for the full type reference.
 The renderers + library helpers are pure (no I/O); the consumer
 (typically `evaluateAndCommentBacklogTaskClaude` in
-`ingress-claude.ts`) is the integration point for stitching snapshot →
+`ingress.ts`) is the integration point for stitching snapshot →
 verdict → comment → log.
 
 ## Phase 5 — soak corpus + hybrid promotion (AISDLC-167.5, RFC-0014 §11)

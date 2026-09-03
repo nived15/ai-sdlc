@@ -37,7 +37,7 @@ import {
 } from './dor-at-import.js';
 import { resolveEventLogPath } from '../decisions/event-log.js';
 import type { RefinementVerdict } from '../dor/types.js';
-import type { RefineBacklogTaskResult } from '../dor/ingress-claude.js';
+import type { RefineBacklogTaskResult } from '../dor/ingress.js';
 import type { SpecKitTaskEntry } from './parser.js';
 
 let workDir: string;

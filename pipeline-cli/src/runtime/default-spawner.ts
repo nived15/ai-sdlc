@@ -1,41 +1,38 @@
 /**
  * `defaultSpawner()` — Tier 2 spawner-resolution helper (RFC-0012 §8.3).
  *
- * Picks the right `SubagentSpawner` for the current environment:
+ * The framework dispatches every subagent through the GitHub Copilot CLI, so
+ * resolution is a single branch:
  *
- *   1. **`claude` CLI on PATH?** → `ShellClaudePSpawner` (subscription billing,
- *      preferred by default per RFC §2.4).
- *   2. **`ANTHROPIC_API_KEY` in env?** → `ClaudeCodeSDKSpawner` (API-key billing,
- *      for environments without a logged-in Claude Code session — CI runners,
- *      Forge tenants on their own keys, etc.).
- *   3. **Neither?** → throw a clear error telling the operator how to fix it.
+ *   1. **`COPILOT_SPAWN_AGENT_BIN` set?** → `CopilotHarnessAdapter` over the
+ *      subprocess bridge at that path.
+ *   2. **Unset?** → throw a clear error telling the operator how to fix it.
  *
  * Tier 1 (the slash command body) NEVER calls this — it dispatches subagents
- * via the main session's `Agent` tool, which doesn't need a SubagentSpawner.
+ * via the host session's agent tool, which doesn't need a SubagentSpawner.
  *
  * ### Detection mechanics
  *
- * - **CLI detection** uses POSIX `which` / Windows `where`. Both are wired
- *   through the injectable `which` callback so tests can deterministically
- *   script "claude is on PATH" / "claude is not on PATH" without touching
- *   the real shell.
- * - **API key detection** is a literal `process.env.ANTHROPIC_API_KEY` truthy
- *   check. We DON'T pre-validate the key against the API (that would burn
- *   tokens just to construct a spawner) — invalid keys fail at first
- *   `spawn()` call with a clear SDK error.
+ * Bridge detection is a literal `process.env.COPILOT_SPAWN_AGENT_BIN` truthy
+ * check. We DON'T pre-validate the bridge by executing it (that would burn a
+ * Copilot request just to construct a spawner) — a broken bridge fails at the
+ * first `spawn()` call with a clear error.
+ *
+ * `bin/copilot-spawn-agent-bridge.mjs` ships in this repo as the canonical
+ * bridge; see `docs/operations/copilot-spawner.md`.
  *
  * @see RFC-0012 §8.3
- * @see ./shell-claude-p-spawner.ts
- * @see ./claude-code-sdk-spawner.ts
+ * @see ./spawners/copilot-harness.ts
  */
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import {
-  ClaudeCodeSDKSpawner,
-  type ClaudeCodeSDKSpawnerOptions,
-} from './claude-code-sdk-spawner.js';
-import { ShellClaudePSpawner, type ShellClaudePSpawnerOptions } from './shell-claude-p-spawner.js';
+  CopilotHarnessAdapter,
+  subprocessCopilotSpawnAgent,
+  type CopilotHarnessAdapterOptions,
+  type SubprocessCopilotSpawnAgentOptions,
+} from './spawners/copilot-harness.js';
 import type { SubagentSpawner } from '../types.js';
 
 const execFileP = promisify(execFile);
@@ -45,28 +42,20 @@ export type WhichFn = (bin: string) => Promise<boolean>;
 
 export interface DefaultSpawnerOptions {
   /**
-   * Override the binary-on-PATH check. Defaults to `which claude` on POSIX,
-   * `where claude` on Windows. Tests inject a stub.
-   */
-  which?: WhichFn;
-  /**
-   * Override the env-var read. Defaults to reading `process.env.ANTHROPIC_API_KEY`.
-   * Tests inject a stub to avoid mutating the real `process.env`.
+   * Override the env read for the bridge path. Defaults to reading
+   * `process.env.COPILOT_SPAWN_AGENT_BIN`. Tests inject a stub to avoid
+   * mutating the real `process.env`.
    */
   env?: () => string | undefined;
-  /**
-   * Forwarded to the constructed `ShellClaudePSpawner` when CLI detection wins.
-   */
-  shell?: ShellClaudePSpawnerOptions;
-  /**
-   * Forwarded to the constructed `ClaudeCodeSDKSpawner` when env detection wins.
-   */
-  sdk?: ClaudeCodeSDKSpawnerOptions;
+  /** Forwarded to `subprocessCopilotSpawnAgent()` (tests inject a fake spawn). */
+  bridge?: Omit<SubprocessCopilotSpawnAgentOptions, 'bridgeBin'>;
+  /** Forwarded to the constructed `CopilotHarnessAdapter`. */
+  copilot?: Omit<CopilotHarnessAdapterOptions, 'spawnAgent'>;
 }
 
 /**
- * Real `which`-style probe used by `defaultSpawner` when no override is supplied.
- * Exported so callers can re-use the same detection logic if they want.
+ * Real `which`-style probe. Exported so callers can re-use the same detection
+ * logic when they need to check for the `copilot` CLI on PATH.
  */
 export const defaultWhich: WhichFn = async (bin) => {
   const command = process.platform === 'win32' ? 'where' : 'which';
@@ -78,32 +67,28 @@ export const defaultWhich: WhichFn = async (bin) => {
   }
 };
 
+/** Operator-facing message when no Copilot bridge is configured. */
+export const NO_COPILOT_RUNTIME_MESSAGE =
+  'No GitHub Copilot runtime available — install the GitHub Copilot CLI and set ' +
+  'COPILOT_SPAWN_AGENT_BIN to the path of your bridge script ' +
+  '(the repo ships one at scripts/copilot-spawn-agent-bridge.mjs). ' +
+  'See docs/operations/copilot-spawner.md.';
+
 /**
- * Resolve the right `SubagentSpawner` for the current environment.
+ * Resolve the `SubagentSpawner` for the current environment.
  *
- * @throws when neither `claude` CLI nor `ANTHROPIC_API_KEY` is available.
+ * @throws when `COPILOT_SPAWN_AGENT_BIN` is not configured.
  */
 export async function defaultSpawner(
   options: DefaultSpawnerOptions = {},
 ): Promise<SubagentSpawner> {
-  const which = options.which ?? defaultWhich;
-  const readEnv = options.env ?? (() => process.env.ANTHROPIC_API_KEY);
+  const readEnv = options.env ?? (() => process.env.COPILOT_SPAWN_AGENT_BIN);
 
-  if (await which(options.shell?.binary ?? 'claude')) {
-    return new ShellClaudePSpawner(options.shell);
+  const bridgeBin = readEnv();
+  if (!bridgeBin) {
+    throw new Error(NO_COPILOT_RUNTIME_MESSAGE);
   }
 
-  const apiKey = readEnv();
-  if (apiKey) {
-    return new ClaudeCodeSDKSpawner({
-      apiKey,
-      ...options.sdk,
-    });
-  }
-
-  throw new Error(
-    'No Claude Code runtime available — install the `claude` CLI ' +
-      '(https://docs.claude.com/claude-code) for subscription billing, ' +
-      'or set ANTHROPIC_API_KEY for API-key billing via @anthropic-ai/claude-code SDK.',
-  );
+  const spawnAgent = subprocessCopilotSpawnAgent({ bridgeBin, ...options.bridge });
+  return new CopilotHarnessAdapter({ spawnAgent, ...options.copilot });
 }

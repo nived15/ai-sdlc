@@ -251,12 +251,12 @@ describe('dispatch-verdict.v1.schema.json (Phase 1.5 outcomes + iteration fields
     expect(validateVerdict(v)).toBe(true);
   });
 
-  it('verdict with sessionId (claude-p-shell capture) validates', () => {
+  it('verdict with sessionId (copilot-p-shell capture) validates', () => {
     const v: DispatchVerdict = {
       ...verdictBase,
       outcome: 'success',
       sessionId: 'abc-def-123',
-      workerKind: 'claude-p-shell',
+      workerKind: 'copilot-p-shell',
     };
     expect(validateVerdict(v)).toBe(true);
   });

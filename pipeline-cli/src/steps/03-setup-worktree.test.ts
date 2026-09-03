@@ -681,10 +681,10 @@ describe('Step 3 — isSafeToAutoClean AISDLC-228 signals', () => {
   });
 
   /**
-   * Signal 6 — live claude --print subprocess: cleanup must refuse when the
-   * process table shows a claude subprocess for this task.
+   * Signal 6 — live copilot -p subprocess: cleanup must refuse when the
+   * process table shows a copilot subprocess for this task.
    */
-  it('refuses cleanup when a live claude --print subprocess is running for this task', async () => {
+  it('refuses cleanup when a live copilot -p subprocess is running for this task', async () => {
     const originalEnv = process.env.AI_SDLC_ORCHESTRATOR_AUTO_CLEANUP;
     process.env.AI_SDLC_ORCHESTRATOR_AUTO_CLEANUP = '1';
     try {
@@ -709,7 +709,7 @@ describe('Step 3 — isSafeToAutoClean AISDLC-228 signals', () => {
 
       const fakePs = [
         '    1 /sbin/launchd',
-        '55555 /usr/local/bin/claude --print AISDLC-99 some-developer-prompt',
+        '55555 /usr/local/bin/copilot -p AISDLC-99 some-developer-prompt',
       ].join('\n');
 
       await expect(

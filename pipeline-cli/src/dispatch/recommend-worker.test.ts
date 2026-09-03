@@ -179,7 +179,7 @@ describe('readQuotaUtilization', () => {
     const dir = join(tmp, 'artifacts', '_ledger');
     mkdirSync(dir, { recursive: true });
     writeFileSync(
-      join(dir, 'claude-code-abcd1234-tenant1.json'),
+      join(dir, 'copilot-abcd1234-tenant1.json'),
       JSON.stringify({ windowStart: '2026-01-01T00:00:00Z', consumedTokens: 500_000 }),
     );
     const util = readQuotaUtilization(join(tmp, 'artifacts'));
@@ -191,7 +191,7 @@ describe('readQuotaUtilization', () => {
     const dir = join(tmp, 'artifacts', '_ledger');
     mkdirSync(dir, { recursive: true });
     writeFileSync(
-      join(dir, 'claude-code-abcd1234-default.json'),
+      join(dir, 'copilot-abcd1234-default.json'),
       JSON.stringify({ consumedTokens: MAX_20X_ROLLING_WINDOW_TOKENS * 2 }),
     );
     expect(readQuotaUtilization(join(tmp, 'artifacts'))).toBe(1);
@@ -291,21 +291,21 @@ describe('extractEstimatedTokens', () => {
 
 describe('recommendWorkerKind', () => {
   // AC #3 — heuristic shape per §Scope:
-  //   big AND tight AND headless-available → claude-p-shell
+  //   big AND tight AND headless-available → copilot-p-shell
   //   no estimatedTokens → any
   //   otherwise → in-session-agent
   //
   // AC #4 — when claudePShellMaxConcurrent is 0, even big+tight returns in-session-agent.
   // AC #5 — when estimatedTokens is undefined, returns 'any'.
 
-  it('returns claude-p-shell when big AND tight AND supervisor configured', () => {
+  it('returns copilot-p-shell when big AND tight AND supervisor configured', () => {
     expect(
       recommendWorkerKind({
         estimatedTokens: BIG_TOKEN_THRESHOLD + 1,
         quotaUtilization: TIGHT_QUOTA_THRESHOLD + 0.05,
         claudePShellMaxConcurrent: 2,
       }),
-    ).toBe('claude-p-shell');
+    ).toBe('copilot-p-shell');
   });
 
   it('returns in-session-agent when small (under threshold) even with tight quota + supervisor', () => {

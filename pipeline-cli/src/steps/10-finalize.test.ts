@@ -57,7 +57,7 @@ function blocked(): AggregatedVerdict {
 }
 
 describe('Step 10 — buildFinalSummary', () => {
-  it('renders the canonical CLAUDE.md template', () => {
+  it('renders the canonical .github/copilot-instructions.md template', () => {
     const r = buildFinalSummary({
       taskId: 'AISDLC-1',
       workDir: tmp,
@@ -182,11 +182,11 @@ describe('Step 10 — finalizeTask', () => {
     ).rejects.toThrow(/cannot locate task file/);
   });
 
-  // ── AISDLC-202.3 AC #3 + #4: Codex path uses atomic completion ──────
+  // ── AISDLC-202.3 AC #3 + #4: GitHub Copilot path uses atomic completion ──────
 
   it('AC #3: useAtomicCompletion uses completeTaskAtomically (task in exactly one backlog location)', async () => {
     // Regression guard for the AISDLC-201 / AISDLC-203 duplicate-record bug:
-    // before AISDLC-203, the Codex workflow copied the completed file without
+    // before AISDLC-203, the GitHub Copilot workflow copied the completed file without
     // deleting the original, leaving the task in BOTH tasks/ and completed/.
     // This test asserts that useAtomicCompletion guarantees single-location.
     writeTaskFile(tmp, { id: 'AISDLC-5', title: 'five', status: 'In Progress' });
@@ -358,8 +358,8 @@ describe('Step 10 — finalizeTask', () => {
     expect(gitCalls.find((c) => c.args[0] === 'commit')).toBeUndefined();
   });
 
-  it('AC #4: regression — Codex workflow does not create duplicate backlog entries', async () => {
-    // AISDLC-201 root cause: the Codex workflow copied the file to
+  it('AC #4: regression — GitHub Copilot workflow does not create duplicate backlog entries', async () => {
+    // AISDLC-201 root cause: the GitHub Copilot workflow copied the file to
     // backlog/completed/ WITHOUT removing it from backlog/tasks/. This left
     // the task visible in both locations. completeTaskAtomically throws a
     // DuplicateTaskFileError when a duplicate already exists, ensuring the

@@ -225,9 +225,9 @@ const HERMETIC_CTX: ClassificationContext = {
 
 describe('classifyFailure', () => {
   // External dependency failures — strong signal → auto-classify
-  it('classifies Anthropic API rate-limit as external-dependency-failed', () => {
+  it('classifies GitHub API rate-limit as external-dependency-failed', () => {
     const result = classifyFailure(
-      signal('Anthropic Claude: rate-limited, please retry') as FailureSignal,
+      signal('GitHub GitHub Copilot: rate-limited, please retry') as FailureSignal,
       HERMETIC_CTX,
     );
     expect(result.class).toBe('external-dependency-failed');
@@ -343,7 +343,7 @@ describe('OQ-1 confidence bucket selection', () => {
   describe('bucket = auto-classify (≥ autoClassify threshold)', () => {
     it('strong external-dependency signal lands in auto-classify', () => {
       const result = classifyFailure(
-        signal('Anthropic API: rate-limited', 1) as FailureSignal,
+        signal('GitHub API: rate-limited', 1) as FailureSignal,
         HERMETIC_CTX,
       );
       expect(result.bucket).toBe('auto-classify');
@@ -365,7 +365,7 @@ describe('OQ-1 confidence bucket selection', () => {
 
     it('auto-classify result carries the effective thresholds in the audit', () => {
       const result = classifyFailure(
-        signal('Anthropic API: rate-limited', 1) as FailureSignal,
+        signal('GitHub API: rate-limited', 1) as FailureSignal,
         HERMETIC_CTX,
       );
       expect(result.effectiveThresholds).toEqual(DEFAULT_CLASSIFIER_CONFIDENCE_THRESHOLDS);
@@ -454,7 +454,7 @@ describe('threshold-boundary edge cases', () => {
   it('confidence == autoClassify is treated as auto-classify (inclusive lower bound)', () => {
     // Use a fixed-threshold call where we can target an exact boundary by
     // setting both thresholds to the same value and verifying the bucket.
-    const result = classifyFailure(signal('Anthropic API: rate-limited', 1) as FailureSignal, {
+    const result = classifyFailure(signal('GitHub API: rate-limited', 1) as FailureSignal, {
       ...HERMETIC_CTX,
       resolvedThresholds: { autoClassify: 0.75, ambiguous: 0.3 },
     });
@@ -514,7 +514,7 @@ describe('threshold-boundary edge cases', () => {
   });
 
   it('per-call threshold override can promote a normally-auto-classify result to ambiguous', () => {
-    const result = classifyFailure(signal('Anthropic API: rate-limited', 1) as FailureSignal, {
+    const result = classifyFailure(signal('GitHub API: rate-limited', 1) as FailureSignal, {
       ...HERMETIC_CTX,
       resolvedThresholds: { autoClassify: 0.95, ambiguous: 0.1 },
     });
@@ -550,7 +550,7 @@ describe('scoreSignal heuristic', () => {
   });
 
   it('produces a non-zero externalDependency score for an API outage signal', () => {
-    const breakdown = _scoreSignal('Anthropic API rate-limited', 1);
+    const breakdown = _scoreSignal('GitHub API rate-limited', 1);
     expect(breakdown.externalDependency).toBeGreaterThan(0);
     expect(breakdown.contractViolation).toBe(0);
   });

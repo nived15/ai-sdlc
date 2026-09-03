@@ -10,13 +10,13 @@
  * Phase 1.5 (AISDLC-377.2) layers on top:
  *   - Resume-signal write/read/remove + iteration-budget probe + iteration-
  *     exhausted diagnostic.
- *   - `claude-p-resume` argv builders + session-id capture (Phase 2 primitives).
+ *   - `copilot-p-resume` argv builders + session-id capture (Phase 2 primitives).
  *
  * Phase 2 (AISDLC-377.3) layers on top:
  *   - The Worker Supervisor — `runSupervisorTick` polling daemon body +
  *     PID-file lock helpers.
  *   - Cost-warning hook fired by the Conductor on the first
- *     `claude-p-shell` manifest emission per session.
+ *     `copilot-p-shell` manifest emission per session.
  */
 
 export {
@@ -45,7 +45,7 @@ export {
 
 export {
   acquirePidLock,
-  buildClaudeArgv,
+  buildCopilotArgv,
   buildManifestPrompt,
   createSupervisorState,
   isProcessAlive,
@@ -66,7 +66,7 @@ export {
   CALIBRATION_FLOOR,
   createCostWarningState,
   DEFAULT_PER_TASK_USD,
-  estimateClaudePShellCost,
+  estimateCopilotPShellCost,
   formatCostWarning,
   isSupervisorMissing,
   maybeEmitCostWarning,
@@ -94,13 +94,13 @@ export type { DispatchConfigSnapshot, RecommendWorkerInput } from './recommend-w
 export { BOARD_SUBDIRS, DEFAULT_ITERATION_BUDGET } from './types.js';
 
 export {
-  buildClaudePInitialArgv,
-  buildClaudePResumeArgv,
+  buildCopilotInitialArgv,
+  buildCopilotResumeArgv,
   DEFAULT_RESUME_AGENT,
-  extractSessionIdFromClaudeOutput,
-  type BuildClaudePInitialArgvOpts,
-  type BuildClaudePResumeArgvOpts,
-} from './claude-p-resume.js';
+  extractSessionIdFromCopilotOutput,
+  type BuildCopilotInitialArgvOpts,
+  type BuildCopilotResumeArgvOpts,
+} from './copilot-resume.js';
 
 export type {
   BoardSubdir,
@@ -151,13 +151,17 @@ export {
 
 export type { ReapedSession, ReaperOptions, SessionReaperResult } from './session-reaper.js';
 
-// AISDLC-483: Reviewer-harness selector — routes code/test review to Codex
-// by default, keeps security on claude-native opus, developer on sonnet.
+// AISDLC-483: Reviewer-harness selector — routes every role through the
+// GitHub Copilot CLI, defaulting security review to the reasoning tier.
 export {
-  CLAUDE_HARNESS_OVERRIDE,
+  COPILOT_HARNESS,
   resolveReviewer,
   resolveReviewerByClassifierName,
-  REVIEWER_HARNESS_ENV,
+  REVIEWER_MODEL_TIER_ENV,
 } from './reviewer-harness.js';
 
-export type { ResolvedReviewer, ReviewerRole } from './reviewer-harness.js';
+export type {
+  ResolvedReviewer,
+  ReviewerModelTier,
+  ReviewerRole,
+} from './reviewer-harness.js';

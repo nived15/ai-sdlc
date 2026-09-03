@@ -37,7 +37,7 @@ import {
   nextDecisionId,
   withEventLogLock,
 } from '../decisions/index.js';
-import { refineBacklogTask, type RefineBacklogTaskResult } from '../dor/ingress-claude.js';
+import { refineBacklogTask, type RefineBacklogTaskResult } from '../dor/ingress.js';
 import type { GateEvaluation, GateId, RefinementVerdict } from '../dor/types.js';
 
 import type { DorStrictness } from './config.js';

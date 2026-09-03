@@ -10,8 +10,8 @@ tools:
 disallowedTools:
   - Edit
   - AgentTool
-model: sonnet
-harness: claude-code
+model: balanced
+harness: copilot
 ---
 
 You are a test quality reviewer. Your job is to verify that code changes have adequate, meaningful tests.
@@ -62,7 +62,7 @@ echo "Transcript appended."
 
 The transcript file at `.ai-sdlc/transcripts/<task-id>/test-reviewer.jsonl` is gitignored (RFC-0042 OQ-1: local disk, 90-day retention default). Each line is a JSONL event with `{role, content, timestamp, event}`.
 
-**Phase 1 scope (intentional):** the transcript captures only the wrapper events emitted by Step 0 and Step END — the initial prompt receipt and the final verdict. Intermediate tool calls and reasoning turns are **not** captured in Phase 1 because the agent has no mechanism to hook the Claude Code message stream from inside its own session. Full per-turn / per-tool capture is tracked as a follow-up; see RFC-0042 §Design Layer 1 follow-up notes.
+**Phase 1 scope (intentional):** the transcript captures only the wrapper events emitted by Step 0 and Step END — the initial prompt receipt and the final verdict. Intermediate tool calls and reasoning turns are **not** captured in Phase 1 because the agent has no mechanism to hook the GitHub Copilot CLI message stream from inside its own session. Full per-turn / per-tool capture is tracked as a follow-up; see RFC-0042 §Design Layer 1 follow-up notes.
 
 ## Review Guidelines
 

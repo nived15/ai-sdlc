@@ -13,10 +13,10 @@
 #      → Broken/incomplete install. Try to self-heal via install-runtime-deps.sh,
 #        then retry. If self-heal fails, fall through.
 #
-#   3. CLAUDE_PLUGIN_ROOT set (always injected by Claude Code) + node_modules exists
-#      → Use CLAUDE_PLUGIN_ROOT as the install dir (same directory, different var).
+#   3. COPILOT_PLUGIN_ROOT set (always injected by GitHub Copilot CLI) + node_modules exists
+#      → Use COPILOT_PLUGIN_ROOT as the install dir (same directory, different var).
 #
-#   4. Plugin cache probe: ~/.claude/plugins/cache/<marketplace>/ai-sdlc/<version>/
+#   4. Plugin cache probe: ~/.copilot/plugins/cache/<marketplace>/ai-sdlc/<version>/
 #      → Walk all marketplace caches, find the highest installed version that has
 #        node_modules/@ai-sdlc/pipeline-cli/bin. Use it.
 #
@@ -30,8 +30,8 @@
 #   PIPELINE_CLI_BIN=$(bash "$PLUGIN_SCRIPTS_DIR/resolve-pipeline-cli.sh") || exit 1
 #
 # Environment variables read:
-#   CLAUDE_PLUGIN_DIR  — set by Claude Code harness for marketplace installs
-#   CLAUDE_PLUGIN_ROOT — always set by Claude Code harness (same dir as CLAUDE_PLUGIN_DIR
+#   CLAUDE_PLUGIN_DIR  — set by GitHub Copilot CLI harness for marketplace installs
+#   COPILOT_PLUGIN_ROOT — always set by GitHub Copilot CLI harness (same dir as CLAUDE_PLUGIN_DIR
 #                         in most contexts, but guaranteed to exist)
 #
 # The script is idempotent and safe to call multiple times.
@@ -42,7 +42,7 @@ PIPELINE_CLI_REL="node_modules/@ai-sdlc/pipeline-cli/bin"
 
 # AISDLC-557: derive the plugin dir from THIS script's own on-disk location,
 # for use as a last-resort self-heal fallback (topology 4.5 below) when
-# neither CLAUDE_PLUGIN_DIR nor CLAUDE_PLUGIN_ROOT is set. Only meaningful
+# neither CLAUDE_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT is set. Only meaningful
 # when this script lives at "<plugin-dir>/scripts/resolve-pipeline-cli.sh"
 # (the layout every install topology uses); leaves SELF_PLUGIN_DIR empty
 # otherwise so the fallback is a clean no-op.
@@ -62,7 +62,7 @@ _is_usable() {
 # trigger if EITHER dep is missing (not just pipeline-cli). Otherwise an
 # upgrade where pipeline-cli is already installed but mcp-server is not
 # (e.g. operator ran `pnpm clean` then resumed without `npm install`)
-# leaves the MCP server silently unreachable at Claude Code startup.
+# leaves the MCP server silently unreachable at GitHub Copilot CLI startup.
 _mcp_usable() {
   local plugin_dir="$1"
   [ -f "$plugin_dir/node_modules/@ai-sdlc/plugin-mcp-server/dist/bin.js" ]
@@ -103,25 +103,25 @@ if [ -n "${CLAUDE_PLUGIN_DIR:-}" ]; then
   fi
 fi
 
-# ── Topology 3: CLAUDE_PLUGIN_ROOT set (always injected by Claude Code) ─────
-if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
-  CANDIDATE="$CLAUDE_PLUGIN_ROOT/$PIPELINE_CLI_REL"
+# ── Topology 3: COPILOT_PLUGIN_ROOT set (always injected by GitHub Copilot CLI) ─────
+if [ -n "${COPILOT_PLUGIN_ROOT:-}" ]; then
+  CANDIDATE="$COPILOT_PLUGIN_ROOT/$PIPELINE_CLI_REL"
   # AISDLC-385: fast-path requires BOTH pipeline-cli AND mcp-server present.
-  if _deps_complete "$CLAUDE_PLUGIN_ROOT"; then
+  if _deps_complete "$COPILOT_PLUGIN_ROOT"; then
     printf '%s' "$CANDIDATE"
     exit 0
   fi
 
-  # CLAUDE_PLUGIN_ROOT is set but deps are missing — try self-heal here too.
+  # COPILOT_PLUGIN_ROOT is set but deps are missing — try self-heal here too.
   # AISDLC-385: triggers when EITHER pipeline-cli OR mcp-server is missing.
-  SELF_HEAL_SCRIPT="$CLAUDE_PLUGIN_ROOT/scripts/install-runtime-deps.sh"
+  SELF_HEAL_SCRIPT="$COPILOT_PLUGIN_ROOT/scripts/install-runtime-deps.sh"
   if [ -f "$SELF_HEAL_SCRIPT" ]; then
     MISSING="pipeline-cli"
     _is_usable "$CANDIDATE" && MISSING="plugin-mcp-server"
-    echo "resolve-pipeline-cli.sh: @ai-sdlc/$MISSING missing in $CLAUDE_PLUGIN_ROOT — attempting self-heal..." >&2
-    if bash "$SELF_HEAL_SCRIPT" "$CLAUDE_PLUGIN_ROOT" >&2; then
-      if _deps_complete "$CLAUDE_PLUGIN_ROOT"; then
-        echo "resolve-pipeline-cli.sh: self-heal (CLAUDE_PLUGIN_ROOT) succeeded" >&2
+    echo "resolve-pipeline-cli.sh: @ai-sdlc/$MISSING missing in $COPILOT_PLUGIN_ROOT — attempting self-heal..." >&2
+    if bash "$SELF_HEAL_SCRIPT" "$COPILOT_PLUGIN_ROOT" >&2; then
+      if _deps_complete "$COPILOT_PLUGIN_ROOT"; then
+        echo "resolve-pipeline-cli.sh: self-heal (COPILOT_PLUGIN_ROOT) succeeded" >&2
         printf '%s' "$CANDIDATE"
         exit 0
       fi
@@ -130,8 +130,8 @@ if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
 fi
 
 # ── Topology 4: Plugin cache probe ──────────────────────────────────────────
-# Walk ~/.claude/plugins/cache/<marketplace>/ai-sdlc/<version>/
-CACHE_ROOT="${HOME}/.claude/plugins/cache"
+# Walk ~/.copilot/plugins/cache/<marketplace>/ai-sdlc/<version>/
+CACHE_ROOT="${HOME}/.copilot/plugins/cache"
 if [ -d "$CACHE_ROOT" ]; then
   # Collect all candidates; sort by version (highest first via sort -rV).
   BEST_CANDIDATE=""
@@ -172,7 +172,7 @@ fi
 # ── Topology 6: Self-location fallback (AISDLC-557, last resort) ───────────
 #
 # AISDLC-557: the second adopter report found that when NEITHER
-# CLAUDE_PLUGIN_DIR NOR CLAUDE_PLUGIN_ROOT is set, self-heal was completely
+# CLAUDE_PLUGIN_DIR NOR COPILOT_PLUGIN_ROOT is set, self-heal was completely
 # unreachable — topologies 1-3 (the only ones that ever attempt self-heal)
 # are gated on one of those two vars being set, and topology 4 (cache probe)
 # deliberately stays read-only (see the security note below). The result:
@@ -187,7 +187,7 @@ fi
 #
 # Security note — this is NOT a reintroduction of the AISDLC-272 / PR #482
 # cache-walk vulnerability that removed self-heal from the old topology 4.
-# That vulnerability was a WALK across ~/.claude/plugins/cache/*/ai-sdlc/*/
+# That vulnerability was a WALK across ~/.copilot/plugins/cache/*/ai-sdlc/*/
 # that picked an arbitrary "highest semver" directory — a directory that
 # might have nothing to do with the one actually in use, so an attacker
 # with local write access to the user-writable cache could plant a crafted
@@ -212,14 +212,14 @@ if [ -n "$SELF_PLUGIN_DIR" ]; then
   # the same path topology 1 already tried. Re-running would double the
   # up-to-120s npm timeout before the final error is printed.
   SELF_HEAL_SCRIPT="$SELF_PLUGIN_DIR/scripts/install-runtime-deps.sh"
-  if [ "$SELF_PLUGIN_DIR" = "${CLAUDE_PLUGIN_DIR:-}" ] || [ "$SELF_PLUGIN_DIR" = "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+  if [ "$SELF_PLUGIN_DIR" = "${CLAUDE_PLUGIN_DIR:-}" ] || [ "$SELF_PLUGIN_DIR" = "${COPILOT_PLUGIN_ROOT:-}" ]; then
     SELF_HEAL_SCRIPT=""
     echo "resolve-pipeline-cli.sh: self-location fallback resolves to a directory already attempted above — not retrying self-heal." >&2
   fi
   if [ -n "$SELF_HEAL_SCRIPT" ] && [ -f "$SELF_HEAL_SCRIPT" ]; then
     MISSING="pipeline-cli"
     _is_usable "$CANDIDATE" && MISSING="plugin-mcp-server"
-    echo "resolve-pipeline-cli.sh: @ai-sdlc/$MISSING missing in $SELF_PLUGIN_DIR (self-location fallback — neither CLAUDE_PLUGIN_DIR nor CLAUDE_PLUGIN_ROOT is set) — attempting self-heal..." >&2
+    echo "resolve-pipeline-cli.sh: @ai-sdlc/$MISSING missing in $SELF_PLUGIN_DIR (self-location fallback — neither CLAUDE_PLUGIN_DIR nor COPILOT_PLUGIN_ROOT is set) — attempting self-heal..." >&2
     if bash "$SELF_HEAL_SCRIPT" "$SELF_PLUGIN_DIR" >&2; then
       if _deps_complete "$SELF_PLUGIN_DIR"; then
         echo "resolve-pipeline-cli.sh: self-heal (self-location) succeeded" >&2
@@ -235,7 +235,7 @@ fi
 #
 # AISDLC-441: surface ROOT CAUSE when we can detect it instead of just
 # listing topologies. Common pre-AISDLC-441 silent failure modes:
-#   (a) plugin.json missing — wrong CLAUDE_PLUGIN_ROOT
+#   (a) plugin.json missing — wrong COPILOT_PLUGIN_ROOT
 #   (b) plugin.json present but no runtimeDependencies object — broken plugin
 #       package (was the AISDLC-441 root cause)
 #   (c) plugin.json + runtimeDependencies present, network unreachable —
@@ -247,10 +247,10 @@ ROOT_CAUSE=""
 # AISDLC-557: fall back to SELF_PLUGIN_DIR for diagnostics too, so the
 # self-location fallback case (neither env var set) still gets a named root
 # cause instead of the generic topology list.
-DIAG_DIR="${CLAUDE_PLUGIN_DIR:-${CLAUDE_PLUGIN_ROOT:-$SELF_PLUGIN_DIR}}"
+DIAG_DIR="${CLAUDE_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$SELF_PLUGIN_DIR}}"
 if [ -n "$DIAG_DIR" ] && [ -d "$DIAG_DIR" ]; then
   if [ ! -f "$DIAG_DIR/plugin.json" ]; then
-    ROOT_CAUSE="Root cause: $DIAG_DIR/plugin.json is missing — \$CLAUDE_PLUGIN_DIR / \$CLAUDE_PLUGIN_ROOT does not point at a valid plugin install."
+    ROOT_CAUSE="Root cause: $DIAG_DIR/plugin.json is missing — \$CLAUDE_PLUGIN_DIR / \$COPILOT_PLUGIN_ROOT does not point at a valid plugin install."
   elif command -v node >/dev/null 2>&1; then
     DIAG=$(node -e '
       const fs = require("node:fs");
@@ -290,21 +290,21 @@ fi
   cat <<'EOF'
 Tried all install topologies:
   1. $CLAUDE_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin  (marketplace install)
-  2. $CLAUDE_PLUGIN_ROOT/node_modules/@ai-sdlc/pipeline-cli/bin (plugin root)
-  3. ~/.claude/plugins/cache/*/ai-sdlc/*/node_modules/@ai-sdlc/pipeline-cli/bin (cache probe, read-only)
+  2. $COPILOT_PLUGIN_ROOT/node_modules/@ai-sdlc/pipeline-cli/bin (plugin root)
+  3. ~/.copilot/plugins/cache/*/ai-sdlc/*/node_modules/@ai-sdlc/pipeline-cli/bin (cache probe, read-only)
   4. $(pwd)/pipeline-cli/bin  (dogfood monorepo)
   5. <dir this script lives in>/node_modules/@ai-sdlc/pipeline-cli/bin (self-location, self-heal attempted — AISDLC-557)
 
 Fix options (choose one):
   A. Re-install the plugin via your marketplace:
-       /claude plugin install ai-sdlc
-       Then restart Claude Code.
+       /copilot plugin install ai-sdlc
+       Then restart GitHub Copilot CLI.
 
   B. From your plugin install root, run:
-       bash "$CLAUDE_PLUGIN_ROOT/scripts/install-runtime-deps.sh" "$CLAUDE_PLUGIN_ROOT"
+       bash "$COPILOT_PLUGIN_ROOT/scripts/install-runtime-deps.sh" "$COPILOT_PLUGIN_ROOT"
      (Self-heal is operator-initiated only; the resolver no longer auto-execs
       install-runtime-deps.sh from the user-writable plugin cache, since that
-      would run any script an attacker could plant under ~/.claude/plugins/cache/.)
+      would run any script an attacker could plant under ~/.copilot/plugins/cache/.)
 
   C. If running from the ai-sdlc monorepo, cd to the repo root before invoking /ai-sdlc execute.
 

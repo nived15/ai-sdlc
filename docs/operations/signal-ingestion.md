@@ -166,7 +166,7 @@ the clustering-precision cost of including them.
 | Classification (tier, ICP, recency) | None — operates on structured metadata |
 | Language detection (`franc`) | Deterministic; same speed for any language |
 | BM25 clustering | ~15–30% precision drop without per-language stopwords |
-| Embedding clustering | None — multilingual embeddings (cohere, openai, e5) are native |
+| Embedding clustering | None — multilingual embeddings (self-hosted, github-copilot, e5) are native |
 | LLM ICP-resonance disambiguation | None — LLMs handle 50+ languages natively |
 | SA resonance filter | None — operates on cluster-level metadata |
 
@@ -856,9 +856,9 @@ The three pipeline stages have different multi-language costs:
 | Stage | Multi-language cost | Why |
 |---|---|---|
 | Tier classification (RFC-0030 §6.1) | None | Metadata-driven (customerTier, customerId), language-independent |
-| ICP resonance (LLM-based) | None | Modern LLMs (Claude, GPT-4) handle 50+ languages natively |
+| ICP resonance (LLM-based) | None | Modern LLMs (GitHub Copilot, GPT-4) handle 50+ languages natively |
 | Clustering (BM25 default) | **~15-30% precision drop** | No per-language stopwords / stemming in v1 |
-| Clustering (embedding option, RFC-0019) | Minimal | Multilingual embedding models (`cohere-embed-multilingual-v3`, `openai text-embedding-3-large`, `multilingual-e5-large`) are native multi-language |
+| Clustering (embedding option, RFC-0019) | Minimal | Multilingual embedding models (`self-hosted-embed-multilingual-v3`, `github-copilot text-embedding-3-large`, `multilingual-e5-large`) are native multi-language |
 
 **Practical implication:** if your customer base is predominantly
 non-English and clustering quality matters (long-tail demand themes that

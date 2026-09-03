@@ -399,7 +399,7 @@ export interface ReviewerFinding {
 
 export interface ReviewerVerdict {
   agentId: ReviewerType | string;
-  harness: 'claude-code' | 'codex' | string;
+  harness: 'copilot' | string;
   approved: boolean;
   findings: ReviewerFinding[];
   summary?: string;
@@ -594,11 +594,12 @@ export interface SpawnOpts {
 }
 
 /**
- * AISDLC-239 — structured subprocess diagnostics captured by ShellClaudePSpawner.
+ * AISDLC-239 — structured subprocess diagnostics captured by the Copilot
+ * subprocess bridge.
  *
- * Populated on every `ShellClaudePSpawner` invocation (success or failure).
- * Other spawner implementations (ClaudeCodeSDKSpawner, MockSpawner) leave
- * this field undefined — callers must treat it as optional.
+ * Populated on every bridge-backed spawn (success or failure). Other spawner
+ * implementations (e.g. `MockSpawner`, or an in-process `CopilotSpawnAgentFn`
+ * injection) leave this field undefined — callers must treat it as optional.
  *
  * Fields:
  *  - `exitCode`    — process exit code (null when killed by signal before exit).
@@ -611,17 +612,17 @@ export interface SpawnOpts {
  *                    are the arguments after the binary name, matching `child_process.spawn`
  *                    argv shape).
  *  - `failureType` — machine-readable tag classifying why the spawn failed:
- *                    - `'claude-cli-api-error'`: exit != 0 AND stderr matches Anthropic API error patterns.
- *                    - `'claude-cli-empty-output-fast'`: exit 0, stdout empty, wall-clock < 5 s
+ *                    - `'copilot-cli-api-error'`: exit != 0 AND stderr matches a Copilot API error pattern.
+ *                    - `'copilot-cli-empty-output-fast'`: exit 0, stdout empty, wall-clock < 5 s
  *                      (auth/config issue — subagent never ran).
- *                    - `'claude-cli-killed'`: process was killed by a signal (SIGTERM/SIGKILL).
- *                    - `'claude-cli-nonzero-exit'`: non-zero exit without a recognised API error pattern.
- *                    - `'claude-cli-spawn-error'`: the spawn() call itself threw (e.g. ENOENT).
- *                    - `'claude-cli-watch-error'`: the child emitted an 'error' event.
+ *                    - `'copilot-cli-killed'`: process was killed by a signal (SIGTERM/SIGKILL).
+ *                    - `'copilot-cli-nonzero-exit'`: non-zero exit without a recognised API error pattern.
+ *                    - `'copilot-cli-spawn-error'`: the spawn() call itself threw (e.g. ENOENT).
+ *                    - `'copilot-cli-watch-error'`: the child emitted an 'error' event.
  *                    - Absent (`undefined`) on success paths.
  *  - `watchdogFired` — true when the spawner's own timeout watchdog sent the kill signal;
  *                      false when the process was killed externally (only set when `failureType`
- *                      is `'claude-cli-killed'`).
+ *                      is `'copilot-cli-killed'`).
  */
 export interface SubprocessDiagnostics {
   exitCode: number | null;
@@ -630,22 +631,23 @@ export interface SubprocessDiagnostics {
   wallClockMs: number;
   argv: readonly string[];
   failureType?:
-    | 'claude-cli-api-error'
-    | 'claude-cli-empty-output-fast'
-    | 'claude-cli-killed'
-    | 'claude-cli-nonzero-exit'
-    | 'claude-cli-spawn-error'
-    | 'claude-cli-watch-error';
-  /** Only set when `failureType === 'claude-cli-killed'`. */
+    | 'copilot-cli-api-error'
+    | 'copilot-cli-empty-output-fast'
+    | 'copilot-cli-killed'
+    | 'copilot-cli-nonzero-exit'
+    | 'copilot-cli-spawn-error'
+    | 'copilot-cli-watch-error';
+  /** Only set when `failureType === 'copilot-cli-killed'`. */
   watchdogFired?: boolean;
 }
 
-/** Anthropic API error patterns used to classify non-zero exit failures. */
-export const ANTHROPIC_API_ERROR_PATTERNS: readonly RegExp[] = [
+/** Copilot API error patterns used to classify non-zero exit failures. */
+export const COPILOT_API_ERROR_PATTERNS: readonly RegExp[] = [
   /api_error_status/i,
   /invalid_request_error/i,
   /rate_limit/i,
   /authentication_error/i,
+  /quota_exceeded/i,
   /overloaded_error/i,
 ];
 
@@ -668,26 +670,26 @@ export interface SubagentResult {
    *   - `'error'` — the subagent failed (subprocess error, non-zero exit, etc.).
    *
    * Pre-RFC-0041 Phase 3.3 (AISDLC-377.6) this union also accepted
-   * `'manifest-emitted'`, emitted only by `ClaudeCliInlineSpawner` (AISDLC-198).
-   * That spawner was removed; the status string is no longer in the union and
-   * no in-tree spawner returns it.
+   * `'manifest-emitted'`, emitted only by a since-removed inline-manifest
+   * spawner. The status string is no longer in the union and no in-tree
+   * spawner returns it.
    */
   status: 'success' | 'timeout' | 'error';
   error?: string;
   durationMs: number;
   /**
-   * AISDLC-239 — structured subprocess diagnostics. Only populated by
-   * `ShellClaudePSpawner`; other spawner implementations leave this undefined.
-   * Contains exitCode, signal, stderrTail (last 2 KB), wallClockMs, argv,
-   * and a `failureType` tag when the invocation failed.
+   * AISDLC-239 — structured subprocess diagnostics. Only populated by the
+   * Copilot subprocess bridge; other spawner implementations leave this
+   * undefined. Contains exitCode, signal, stderrTail (last 2 KB),
+   * wallClockMs, argv, and a `failureType` tag when the invocation failed.
    */
   subprocessDiagnostics?: SubprocessDiagnostics;
 }
 
 /**
  * Tier 2 abstraction over "how do I dispatch a subagent" — the only piece of
- * the pipeline that varies between subscription billing (`claude -p`), API-key
- * billing (Claude Code SDK), and tests (MockSpawner).
+ * the pipeline that varies between real dispatch (the GitHub Copilot CLI via
+ * `CopilotHarnessAdapter`) and tests (`MockSpawner`).
  *
  * The concrete implementations land in Phase 2 (AISDLC-100.2). Phase 1 ships
  * the interface and a `MockSpawner` for unit/integration tests.

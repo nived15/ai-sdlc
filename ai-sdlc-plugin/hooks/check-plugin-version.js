@@ -8,7 +8,7 @@
  * auto-update.
  *
  * Behavior contract:
- *  - Reads bundled version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`
+ *  - Reads bundled version from `${COPILOT_PLUGIN_ROOT}/.copilot-plugin/plugin.json`
  *    (falls back to the script's parent dir if the env var is unset, so the
  *    hook still works under `node check-plugin-version.js` for tests).
  *  - Fetches the marketplace.json from `main` on GitHub raw and parses
@@ -25,7 +25,7 @@
  *  - Supports two modes:
  *      * Default (no argv): SessionStart hook — read stdin if present, use
  *        cache, print banner only on staleness, output empty JSON on stdout
- *        so Claude Code's hook protocol stays happy.
+ *        so GitHub Copilot CLI's hook protocol stays happy.
  *      * `--print` (or argv[2] === 'print'): structured-status mode for
  *        `/ai-sdlc version` — bypasses cache, always fetches, prints a
  *        human-readable status block to stdout (not stderr).
@@ -59,7 +59,7 @@ const crypto = require('crypto');
 const childProcess = require('child_process');
 
 const MARKETPLACE_URL =
-  'https://raw.githubusercontent.com/ai-sdlc-framework/ai-sdlc/main/.claude-plugin/marketplace.json';
+  'https://raw.githubusercontent.com/ai-sdlc-framework/ai-sdlc/main/.copilot-plugin/marketplace.json';
 const CACHE_DIR = path.join(os.homedir(), '.cache', 'ai-sdlc-plugin');
 const CACHE_FILE = path.join(CACHE_DIR, 'version-check.json');
 const ERROR_LOG = path.join(CACHE_DIR, 'last-error.log');
@@ -92,7 +92,7 @@ let _ran = false;
 
 // Drain stdin if SessionStart fed us JSON, then run.
 //
-// Claude Code SessionStart hooks receive a JSON payload on stdin. We don't
+// GitHub Copilot CLI SessionStart hooks receive a JSON payload on stdin. We don't
 // USE it (the version check is independent of the session payload) but we
 // still need to drain so the parent doesn't block on an unread pipe. In
 // PRINT_MODE we skip stdin entirely — slash-command bash invocations don't
@@ -191,11 +191,11 @@ function verifyMcpServerTarball(installedVersion) {
   }
 
   try {
-    const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || path.resolve(__dirname, '..');
+    const pluginRoot = process.env.COPILOT_PLUGIN_ROOT || path.resolve(__dirname, '..');
     if (!installedVersion) return;
 
     // Resolve the installed MCP server binary to compute its tarball SHA.
-    // The MCP server is installed under CLAUDE_PLUGIN_ROOT/node_modules/.
+    // The MCP server is installed under COPILOT_PLUGIN_ROOT/node_modules/.
     const mcpServerPkgPath = path.join(
       pluginRoot,
       'node_modules',
@@ -239,7 +239,7 @@ function verifyMcpServerTarball(installedVersion) {
       process.stderr.write(
         `${RED}⚠ ai-sdlc: MCP server tarball attestation missing for v${mcpVersion}.\n` +
           `  Expected: ${envelopePath}\n` +
-          `  Run: git -C "$CLAUDE_PLUGIN_ROOT" pull --ff-only  to refresh.\n` +
+          `  Run: git -C "$COPILOT_PLUGIN_ROOT" pull --ff-only  to refresh.\n` +
           `  See: docs/operations/mcp-server-signing.md${RESET}\n`,
       );
       if (process.env.AI_SDLC_TARBALL_VERIFY_HARD_FAIL === '1') {
@@ -414,7 +414,7 @@ function verifyMcpServerTarball(installedVersion) {
         `  Envelope:          ${envelopePath}\n` +
         `  Trusted reviewers: ${trustedReviewersPath}\n` +
         `  No trusted key matched the DSSE signature.\n` +
-        `  Recovery: git -C "$CLAUDE_PLUGIN_ROOT" log -- .ai-sdlc/trusted-reviewers.yaml\n` +
+        `  Recovery: git -C "$COPILOT_PLUGIN_ROOT" log -- .ai-sdlc/trusted-reviewers.yaml\n` +
         `  See: docs/operations/mcp-server-signing.md${RESET}\n`;
       process.stderr.write(msg);
       if (process.env.AI_SDLC_TARBALL_VERIFY_HARD_FAIL === '1') {
@@ -525,8 +525,8 @@ function parseTrustedReviewersYamlSync(raw) {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 function readInstalledVersion() {
-  const root = process.env.CLAUDE_PLUGIN_ROOT || path.resolve(__dirname, '..');
-  const pluginJsonPath = path.join(root, '.claude-plugin', 'plugin.json');
+  const root = process.env.COPILOT_PLUGIN_ROOT || path.resolve(__dirname, '..');
+  const pluginJsonPath = path.join(root, '.copilot-plugin', 'plugin.json');
   try {
     const raw = fs.readFileSync(pluginJsonPath, 'utf-8');
     const parsed = JSON.parse(raw);
@@ -672,7 +672,7 @@ function compareSemver(a, b) {
 }
 
 function emitEmptyHookResponse() {
-  // Claude Code SessionStart hooks accept an empty stdout. We write nothing
+  // GitHub Copilot CLI SessionStart hooks accept an empty stdout. We write nothing
   // so we don't inject any additionalContext (that's session-start.sh's job).
   process.exit(0);
 }

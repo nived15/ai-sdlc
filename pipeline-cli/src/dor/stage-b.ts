@@ -15,7 +15,7 @@
  *   2. Builds a single composite prompt asking the agent to score each
  *      gate as a binary yes/no with confidence + finding.
  *   3. Dispatches via the injected `SubagentSpawner` (subscription via
- *      `claude --print`, API key via SDK, or `MockSpawner` for tests).
+ *      `copilot -p`, API key via SDK, or `MockSpawner` for tests).
  *   4. Parses the structured JSON response into a `Map<GateId,
  *      GateEvaluation>` carrying `stage: 'B'`.
  *
@@ -152,7 +152,7 @@ export function pickStageBGates(stageA: StageAVerdict): GateId[] {
  * (AISDLC-121, defense-in-depth on top of `parseStageBResponse` schema
  * validation).
  *
- * The OWASP / Anthropic-recommended pattern for prompt-injection defense.
+ * The OWASP / GitHub-recommended pattern for prompt-injection defense.
  * Sentinels are namespaced + uppercase so they're unlikely to collide
  * with real markdown a human author would write.
  */

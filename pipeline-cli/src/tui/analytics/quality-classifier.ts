@@ -342,7 +342,7 @@ export interface ClassificationResult {
 /** Patterns that indicate an external dependency failed (not a framework bug). */
 const EXTERNAL_DEPENDENCY_PATTERNS: RegExp[] = [
   /github\s+api\s+(error|outage|unavailable)/i,
-  /anthropic\s+(api|claude)\s+(error|rate.?limit|overloaded)/i,
+  /github\s+(api|copilot)\s+(error|rate.?limit|overloaded)/i,
   /rate.?limit(ed)?/i,
   /npm\s+(registry|ERR)/i,
   /ECONNRESET|ECONNREFUSED|ENOTFOUND|ETIMEDOUT/i,

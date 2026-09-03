@@ -9,9 +9,9 @@
  *   2. **Per-task / per-call**: a function that receives the request +
  *      a per-task-type call index, returning a tailored response.
  *
- * Production callers wire the real Anthropic Haiku adapter (lives in a
+ * Production callers wire the real GitHub Haiku adapter (lives in a
  * downstream consumer module — not in this package — because pipeline-cli
- * doesn't depend on `@anthropic-ai/sdk`).
+ * doesn't depend on `@github/copilot`).
  *
  * @module classifier/substrate/fake-invoker
  */

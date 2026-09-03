@@ -44,7 +44,7 @@ function makeTessellation(overrides: Partial<Tessellation> = {}): Tessellation {
 
 function makeProv(partial: Partial<ProvenanceRecord> = {}): ProvenanceRecord {
   return {
-    model: 'claude-opus-4-7',
+    model: 'reasoning',
     tool: 'orchestrator',
     promptHash: 'a'.repeat(64),
     timestamp: '2026-05-25T12:00:00.000Z',

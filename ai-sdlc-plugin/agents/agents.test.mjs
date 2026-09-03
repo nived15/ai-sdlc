@@ -61,7 +61,7 @@ function parseFrontmatter(filePath) {
 
 // AISDLC-98: the execute-orchestrator subagent was deleted. The Step 0-13
 // pipeline now lives inline in `ai-sdlc-plugin/commands/execute.md` and
-// runs in the main Claude Code session (which has the `Agent` tool).
+// runs in the main Copilot CLI session (which has the `Agent` tool).
 // Plugin subagents cannot use `Agent` (the harness filters it out one
 // level deep regardless of frontmatter), so the orchestrator middleman
 // pattern from AISDLC-82 is unimplementable on this harness. See the
@@ -72,15 +72,10 @@ function parseFrontmatter(filePath) {
 // every plugin subagent uniformly, so this list is the source of truth for
 // "all plugin subagents". When a new agent ships, append it here.
 //
-// Model pinning (AISDLC cost control, 2026-05-30): model is now ROLE-SPECIFIC,
-// not universally inherit. developer/code-reviewer/test-reviewer pin to sonnet;
-// security-reviewer pins to opus; utility/codex agents inherit. See the
-// 'per-role model split' test below for the complete contract.
-//
-// AISDLC-247: code-reviewer-codex.md + test-reviewer-codex.md added as
-// cross-harness Codex reviewer variants. They share the core invariants
-// (Read, AgentTool disallowed, model: inherit) but differ from the Claude
-// variants in harness (codex) and tools (Bash instead of Grep/Glob).
+// Model pinning (AISDLC cost control): model is ROLE-SPECIFIC, not universally
+// inherit. developer/code-reviewer/test-reviewer pin to the balanced tier;
+// security-reviewer pins to the reasoning tier; utility agents inherit. See
+// the 'per-role model split' test below for the complete contract.
 const agentFiles = [
   'code-reviewer.md',
   'security-reviewer.md',
@@ -88,12 +83,9 @@ const agentFiles = [
   'developer.md',
   'rebase-resolver.md',
   'refinement-reviewer.md',
-  'code-reviewer-codex.md',
-  'test-reviewer-codex.md',
   'ci-conflict-resolver.md',
 ];
 const reviewerFiles = ['code-reviewer.md', 'security-reviewer.md', 'test-reviewer.md'];
-const codexReviewerFiles = ['code-reviewer-codex.md', 'test-reviewer-codex.md'];
 const agents = {};
 
 before(() => {
@@ -147,7 +139,7 @@ describe('agent definition tool restrictions', () => {
 
   it('all agents have AgentTool in disallowedTools (no nested subagents)', () => {
     // AISDLC-98: every plugin agent must disallow AgentTool because the
-    // Claude Code harness filters Agent out of plugin subagent grants
+    // GitHub Copilot CLI harness filters Agent out of plugin subagent grants
     // anyway — the explicit disallow keeps the intent visible and
     // prevents future regressions if/when the harness ever changes.
     // The /ai-sdlc execute pipeline that needs to spawn subagents lives
@@ -178,38 +170,46 @@ describe('agent definition tool restrictions', () => {
     }
   });
 
-  it('per-role model split: dev/code/test-reviewer → sonnet, security-reviewer → opus (AISDLC cost control)', () => {
-    // AISDLC cost control: pin models by role to prevent session-model bleed.
-    // Opus session-model inheritance was the root cause of a 26%-weekly-budget
-    // incident (2026-05-30). Security stays on Opus (reasoning-heavy); all
-    // other cost-sensitive roles use Sonnet. Utility agents (rebase, cleanup,
-    // conflict resolution) inherit from the spawning session.
-    const sonnetRoles = ['developer.md', 'code-reviewer.md', 'test-reviewer.md'];
-    for (const file of sonnetRoles) {
+  it('per-role model split: dev/code/test-reviewer → balanced, security-reviewer → reasoning (AISDLC cost control)', () => {
+    // AISDLC cost control: pin the reasoning tier by role to prevent
+    // session-model bleed. Security stays on the reasoning tier
+    // (reasoning-heavy); all other cost-sensitive roles use the balanced
+    // tier. Utility agents (rebase, cleanup, conflict resolution) inherit
+    // from the spawning session.
+    const balancedRoles = ['developer.md', 'code-reviewer.md', 'test-reviewer.md'];
+    for (const file of balancedRoles) {
       assert.equal(
         agents[file].model,
-        'sonnet',
-        `${file} must pin model to sonnet (prevents Opus session-model bleed)`,
+        'balanced',
+        `${file} must pin model to the balanced tier (prevents session-model bleed)`,
       );
     }
     assert.equal(
       agents['security-reviewer.md'].model,
-      'opus',
-      'security-reviewer must use opus (reasoning-heavy; earns its cost)',
+      'reasoning',
+      'security-reviewer must use the reasoning tier (reasoning-heavy; earns its cost)',
     );
-    // Utility and codex agents inherit from the spawning session (no pinning needed)
+    // Utility agents inherit from the spawning session (no pinning needed)
     const inheritRoles = [
       'rebase-resolver.md',
       'refinement-reviewer.md',
-      'code-reviewer-codex.md',
-      'test-reviewer-codex.md',
       'ci-conflict-resolver.md',
     ];
     for (const file of inheritRoles) {
       assert.equal(
         agents[file].model,
         'inherit',
-        `${file} should inherit model — utility/codex agent, no cost-split needed`,
+        `${file} should inherit model — utility agent, no cost-split needed`,
+      );
+    }
+  });
+
+  it('every agent declares harness: copilot', () => {
+    for (const file of agentFiles) {
+      assert.equal(
+        agents[file].harness,
+        'copilot',
+        `${file} must declare harness: copilot — the framework dispatches only the GitHub Copilot CLI`,
       );
     }
   });
@@ -227,10 +227,10 @@ describe('agent definition tool restrictions', () => {
     );
   });
 
-  it('developer.md uses claude-code as its harness', () => {
+  it('developer.md uses copilot as its harness', () => {
     assert.equal(
       agents['developer.md'].harness,
-      'claude-code',
+      'copilot',
       'developer is the implementer; reviewer independence is enforced via the reviewer agents',
     );
   });
@@ -253,111 +253,6 @@ describe('agent definition tool restrictions', () => {
   });
 });
 
-// AISDLC-98: the execute-orchestrator subagent has been deleted. Body-shape
-// assertions for the Step 0-13 pipeline now live in
-// `ai-sdlc-plugin/commands/execute.test.mjs` (against the slash command
-// body itself, which is where the recipe was moved). See that file for
-// the contract that used to live in the `describe('execute-orchestrator
-// agent ...')` block here.
-
-describe('AISDLC-247: Codex reviewer variants', () => {
-  it('code-reviewer-codex.md exists', () => {
-    assert.ok(
-      existsSync(join(__dirname, 'code-reviewer-codex.md')),
-      'code-reviewer-codex.md must exist',
-    );
-  });
-
-  it('test-reviewer-codex.md exists', () => {
-    assert.ok(
-      existsSync(join(__dirname, 'test-reviewer-codex.md')),
-      'test-reviewer-codex.md must exist',
-    );
-  });
-
-  it('codex reviewer variants declare harness: codex', () => {
-    for (const file of codexReviewerFiles) {
-      assert.equal(
-        agents[file].harness,
-        'codex',
-        `${file} must declare harness: codex for cross-harness routing`,
-      );
-    }
-  });
-
-  it('codex reviewer variants have Bash in tools (needed to shell out to codex CLI)', () => {
-    for (const file of codexReviewerFiles) {
-      assert.ok(
-        agents[file].tools.includes('Bash'),
-        `${file} must include Bash (to shell out to codex exec)`,
-      );
-    }
-  });
-
-  it('codex reviewer variants disallow Edit (no direct codebase writes)', () => {
-    // Codex reviewer agents need Write to create temp prompt files at /tmp/
-    // but must not Edit project files directly. Disallow Edit only.
-    // Write is intentionally allowed — see Step 3 in each agent body.
-    for (const file of codexReviewerFiles) {
-      assert.ok(
-        agents[file].disallowedTools.includes('Edit'),
-        `${file} must disallow Edit (no direct project file edits)`,
-      );
-    }
-  });
-
-  it('codex reviewer bodies document the JSON envelope shape', () => {
-    for (const file of codexReviewerFiles) {
-      const body = readFileSync(join(__dirname, file), 'utf-8');
-      assert.ok(
-        body.includes('"approved"'),
-        `${file} body must document the approved field in the JSON envelope`,
-      );
-      assert.ok(
-        body.includes('"findings"'),
-        `${file} body must document the findings field in the JSON envelope`,
-      );
-      assert.ok(
-        body.includes('"summary"'),
-        `${file} body must document the summary field in the JSON envelope`,
-      );
-    }
-  });
-
-  it('codex reviewer bodies instruct shelling out to codex exec', () => {
-    for (const file of codexReviewerFiles) {
-      const body = readFileSync(join(__dirname, file), 'utf-8');
-      assert.ok(
-        body.includes('codex exec'),
-        `${file} body must instruct the agent to invoke codex exec`,
-      );
-    }
-  });
-
-  it('codex reviewer variants have requiresIndependentHarnessFrom: implement', () => {
-    for (const file of codexReviewerFiles) {
-      assert.ok(
-        Array.isArray(agents[file].requiresIndependentHarnessFrom) &&
-          agents[file].requiresIndependentHarnessFrom.includes('implement'),
-        `${file} must declare requiresIndependentHarnessFrom: [implement] for harness independence`,
-      );
-    }
-  });
-
-  it('AISDLC-249: codex reviewer bodies include --skip-git-repo-check (Pattern C worktree regression guard)', () => {
-    // Without this flag, codex CLI exits when invoked from .worktrees/<id>/
-    // because codex 0.128.0 confuses the Pattern C parent layout (non-bare
-    // parent repo + .worktrees/ isolates) with a non-git directory and errors
-    // before running any review. AISDLC-202.4 pilot data captured this gap.
-    for (const file of codexReviewerFiles) {
-      const body = readFileSync(join(__dirname, file), 'utf-8');
-      assert.ok(
-        body.includes('--skip-git-repo-check'),
-        `${file} body must include --skip-git-repo-check so codex exec works from .worktrees/<id>/ (Pattern C parent layout)`,
-      );
-    }
-  });
-});
 
 describe('AISDLC-298: OQ-resolution prohibition reviewer gate', () => {
   // AISDLC-271 / RFC-0031 shipped with all 5 OQs resolved by the dev subagent

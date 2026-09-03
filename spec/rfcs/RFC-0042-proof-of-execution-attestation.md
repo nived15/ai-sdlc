@@ -59,7 +59,7 @@ The framework is governance-first but ergonomics-last. The operator has signaled
 2. **Eliminate rebase-fragility** of attestation envelopes. Rebase does not invalidate proof.
 3. **Eliminate per-machine signing-key onboarding** as a precondition for shipping a PR. New contributors / new machines do not have to provision keys before they can push.
 4. **Eliminate the 2026-05-20 forgery vector**. A dev subagent that fabricates reviewer JSON locally cannot produce a verifiable proof.
-5. **Preserve subscription-tier cost economics**. Reviewer LLM work runs on the operator's Claude Code Max subscription, not on CI Actions minutes / API tokens.
+5. **Preserve subscription-tier cost economics**. Reviewer LLM work runs on the operator's GitHub Copilot CLI Max subscription, not on CI Actions minutes / API tokens.
 6. **Preserve audit trail**. Every PR's reviewer runs remain cryptographically attested and verifiable retrospectively.
 7. **Avoid external service dependency**. No runtime dependency on third-party transparency logs (Rekor, OpenTimestamps) on the PR critical path.
 
@@ -132,7 +132,7 @@ Files are gitignored. Operator's choice for retention policy (local disk, S3, co
 For each reviewer transcript, the slash command body computes a leaf:
 
 ```jsonl
-{"leafIndex": 12453, "taskId": "AISDLC-380", "reviewerName": "code-reviewer", "transcriptHash": "<sha256>", "nonce": "<32-byte hex>", "harness": "claude-code", "model": "sonnet", "verdictApproved": true, "findings": {"critical":0,"major":0,"minor":1,"suggestion":0}, "signedAt": "2026-05-20T19:14:37.561Z"}
+{"leafIndex": 12453, "taskId": "AISDLC-380", "reviewerName": "code-reviewer", "transcriptHash": "<sha256>", "nonce": "<32-byte hex>", "harness": "copilot", "model": "balanced", "verdictApproved": true, "findings": {"critical":0,"major":0,"minor":1,"suggestion":0}, "signedAt": "2026-05-20T19:14:37.561Z"}
 ```
 
 Leaves are appended to `.ai-sdlc/transcript-leaves.jsonl`. At ~250 bytes per leaf × 3 reviewers × 10,000 PRs = ~7.5MB committed forever. Negligible.
@@ -256,7 +256,7 @@ For PRs without a CI nonce yet (first-push scenario), the slash command body gen
 
 To forge a passing attestation, an attacker needs:
 
-1. **Fake a structurally valid transcript** — a 5-10KB JSONL file with proper Claude API event sequence, references to the actual PR's files + line numbers, plausible reviewer-shaped analysis
+1. **Fake a structurally valid transcript** — a 5-10KB JSONL file with proper GitHub Copilot API event sequence, references to the actual PR's files + line numbers, plausible reviewer-shaped analysis
 2. **Match the nonce** — requires either compromising the slash command body process or forging the CI-issued nonce (impractical)
 3. **Get a committed leaf in `.ai-sdlc/transcript-leaves.jsonl`** — leaves are append-only; the operator's signature on the root must include this leaf. Operator must sign whatever the slash command body presents.
 
@@ -308,7 +308,7 @@ This is the "make forgery as expensive as compliance" property. Not absolute, bu
 - Delete sub-attestation gate code
 - Delete `init-reviewer-signing-key.mjs`
 - Delete `merge-queue-rebase-recovery.md`
-- Update CLAUDE.md attestation section
+- Update .github/copilot-instructions.md attestation section
 
 **Total effort: ~3 weeks for full migration with 30-day soak.**
 
@@ -426,7 +426,7 @@ When an operator triggers a spot-check on a PR whose transcript has been garbage
 
 The cryptographic claim (Merkle root signed by operator key) is what proves attestation existed. The transcript is convenience for spot-checks; absence past the retention window isn't a security failure — it's the operator's retention policy operating as designed. Hard-failing would conflate "retention expired" with "attestation invalid," which is wrong.
 
-If a forgery is suspected on an old PR with GC'd transcript, investigation continues via other channels (operator's reflog, Anthropic API logs if signed receipts ship, manual diff-vs-commit review). The framework shouldn't lock incident response into "transcript must exist."
+If a forgery is suspected on an old PR with GC'd transcript, investigation continues via other channels (operator's reflog, GitHub Models API logs if signed receipts ship, manual diff-vs-commit review). The framework shouldn't lock incident response into "transcript must exist."
 
 Selected over hard-fail (false-alarm noise), per-PR configurability (adds friction), and hard-fail-with-grace (confusing boundary).
 
@@ -490,7 +490,7 @@ The v6 verifier's head-binding check confirms `subject.digest.sha1` agrees with 
 
 The patch-id and attestation-path computations use exclusion lists that must agree across signer (`PATCH_ID_EXCLUSIONS` in `pipeline-cli/src/attestation/patch-id.ts`) and verifier (`ATTESTATION_PATH_EXCLUSIONS` in `scripts/verify-attestation.mjs`). Asymmetric lists produce divergent patch-ids → verifier rejects valid envelopes. AISDLC-422 was the production incident where this drifted.
 
-**Resolution (2026-05-28 retrospective, full rubric):** **Convention + hermetic test as enforcement.** Industry research: TUF metadata schemas use shared role definitions (compile-time enforced); Sigstore policy is version-controlled deployment-bug-not-runtime-bug; OpenAPI components / JSON Schema $defs as single source of truth; this codebase's `bin-invocation.test.ts` enforces CLI-invocation symmetry as established framework pattern. The bug class is real (AISDLC-422 production hotfix) AND recurred — convention-only is insufficient. The cross-package boundary (signer in `pipeline-cli/src/`, verifier in `scripts/.mjs` executed directly) makes shared-module refactor non-trivial (would need either building scripts/ into dist pipeline, duplicating the constant, or introducing a third shared module). **Counter-argument:** "Compile-time enforcement via shared module is strictly stronger — drift becomes impossible, not just caught at test time." Rebuttal: it IS strictly stronger, but the cross-package refactor cost is real, AND hermetic-test discipline plus the CLAUDE.md note already prevent the AISDLC-422 recurrence. The marginal value of compile-time enforcement is bounded by how often the list changes (rarely). **Selected over convention-only** because AISDLC-422 proved it insufficient. **Selected over compile-time enforcement** because cross-package refactor cost exceeds marginal drift-detection benefit at current list-change frequency. **Selected over runtime cross-check at sign time** because adds I/O to hot path AND creates signer→verifier dependency reversal. **Selected over eliminating exclusion lists** because defeats the rebase-stability property RFC-0042 exists to provide. Implementer: AISDLC-422 + hermetic test in `scripts/verify-attestation.test.mjs`.
+**Resolution (2026-05-28 retrospective, full rubric):** **Convention + hermetic test as enforcement.** Industry research: TUF metadata schemas use shared role definitions (compile-time enforced); Sigstore policy is version-controlled deployment-bug-not-runtime-bug; OpenAPI components / JSON Schema $defs as single source of truth; this codebase's `bin-invocation.test.ts` enforces CLI-invocation symmetry as established framework pattern. The bug class is real (AISDLC-422 production hotfix) AND recurred — convention-only is insufficient. The cross-package boundary (signer in `pipeline-cli/src/`, verifier in `scripts/.mjs` executed directly) makes shared-module refactor non-trivial (would need either building scripts/ into dist pipeline, duplicating the constant, or introducing a third shared module). **Counter-argument:** "Compile-time enforcement via shared module is strictly stronger — drift becomes impossible, not just caught at test time." Rebuttal: it IS strictly stronger, but the cross-package refactor cost is real, AND hermetic-test discipline plus the .github/copilot-instructions.md note already prevent the AISDLC-422 recurrence. The marginal value of compile-time enforcement is bounded by how often the list changes (rarely). **Selected over convention-only** because AISDLC-422 proved it insufficient. **Selected over compile-time enforcement** because cross-package refactor cost exceeds marginal drift-detection benefit at current list-change frequency. **Selected over runtime cross-check at sign time** because adds I/O to hot path AND creates signer→verifier dependency reversal. **Selected over eliminating exclusion lists** because defeats the rebase-stability property RFC-0042 exists to provide. Implementer: AISDLC-422 + hermetic test in `scripts/verify-attestation.test.mjs`.
 
 ### OQ-11: CI verifier staging of per-patch-id leaves under fork-PR security
 

@@ -90,7 +90,7 @@ PoE is designed to defend against a specific class of insider/agent attacks. Bei
 | **LLM hallucination of false-negatives** | PoE proves the reviewer ran; it does not prove the reviewer was *correct*. A reviewer that misses a real bug produces a valid attestation of a wrong verdict. This is a quality issue, not an attestation issue. |
 | **Anonymous public verification** | PoE produces evidence verifiable by anyone with access to the repository. It does not (by default) publish to a public transparency log; cross-organization audit is a future opt-in (see §7). |
 | **Adversary with operator-key + repo-write access** | A fully compromised operator can sign forged transcripts AND commit them to the leaf index in one atomic push. Defense lives in operator credential protection (hardware keys, attested key generation), not in PoE. |
-| **Provider-side malice** | If the LLM provider (Anthropic, OpenAI, etc.) emits maliciously crafted output, PoE attests the malicious output faithfully. Defense lives in provider selection and contractual liability. |
+| **Provider-side malice** | If the LLM provider (GitHub Models, GitHub Copilot, etc.) emits maliciously crafted output, PoE attests the malicious output faithfully. Defense lives in provider selection and contractual liability. |
 
 The threat model is *insider/agent forgery within the operator's own pipeline*. PoE significantly raises the cost of that attack class without claiming to be a universal solution.
 
@@ -102,7 +102,7 @@ PoE is built on four layers, each with a single responsibility. The construction
 
 ### 3.1 Layer 1 — Reviewer transcripts (raw evidence)
 
-Each reviewer agent (code reviewer, test reviewer, security reviewer, and any harness variants — Codex, etc.) writes its full conversation transcript to a JSONL file at a deterministic path:
+Each reviewer agent (code reviewer, test reviewer, security reviewer, and any harness variants — GitHub Copilot, etc.) writes its full conversation transcript to a JSONL file at a deterministic path:
 
 ```
 .ai-sdlc/transcripts/<task-id>/<reviewer-name>.jsonl
@@ -123,8 +123,8 @@ For each reviewer transcript, the framework computes a *leaf*:
   "reviewerName": "code-reviewer",
   "transcriptHash": "<SHA-256 of the JSONL file>",
   "nonce": "<32-byte hex bound to PR head SHA>",
-  "harness": "claude-code",
-  "model": "claude-sonnet-4-6",
+  "harness": "copilot",
+  "model": "the balanced tier",
   "verdictApproved": true,
   "findings": { "critical": 0, "major": 0, "minor": 1, "suggestion": 0 },
   "signedAt": "2026-05-21T17:14:37.561Z"
@@ -270,7 +270,7 @@ PoE composes with SLSA: an organization can wrap the PoE envelope inside a SLSA 
 
 ### 6.4 Vendor-side execution logs
 
-Some AI coding tools (Cursor, GitHub Copilot Workspace, Devin) maintain server-side execution logs that an organization could in principle subpoena to prove an agent ran. Properties: vendor lock-in, no operator-side cryptographic verification, retention controlled by vendor, no defense against vendor logs being modified or lost.
+Some AI coding tools (GitHub Copilot, GitHub Copilot Workspace, Devin) maintain server-side execution logs that an organization could in principle subpoena to prove an agent ran. Properties: vendor lock-in, no operator-side cryptographic verification, retention controlled by vendor, no defense against vendor logs being modified or lost.
 
 PoE puts the evidence in the customer's repository, signed by the customer's keys, with no dependency on vendor continuity. This is the standard "bring your own key, bring your own evidence" posture.
 
@@ -338,7 +338,7 @@ The current release (v6 envelope schema, RFC-0042 §Design Layer 4) addresses th
 
 - **LLM-as-judge content plausibility verification** — beyond hash verification, sample-check whether transcript content semantically corresponds to the PR diff. This is the layer-2 defense against an attacker who fabricates structurally valid but content-irrelevant transcripts.
 - **Public transparency log integration** (opt-in) — publish Merkle roots to Rekor or equivalent for organizations that want cross-organization audit.
-- **Signed-receipt LLM providers** — when LLM providers begin emitting signed receipts for completions (Anthropic and OpenAI have both announced exploratory work in this direction in 2026), incorporate provider receipts into the transcript leaves to eliminate the provider-malice gap from §2.2.
+- **Signed-receipt LLM providers** — when LLM providers begin emitting signed receipts for completions (GitHub Models and GitHub Copilot have both announced exploratory work in this direction in 2026), incorporate provider receipts into the transcript leaves to eliminate the provider-malice gap from §2.2.
 - **Hardware-attested operator keys** — TPM/HSM-backed ed25519 signing for organizations with key-storage compliance requirements.
 - **Reviewer prompt integrity** — extend the leaf shape to include a hash of the reviewer's system prompt at execution time, so prompt-injection attacks become visible in the audit trail.
 

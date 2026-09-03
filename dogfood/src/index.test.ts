@@ -252,12 +252,12 @@ describe('dogfood root barrel exports', () => {
   });
 
   // Runners
-  it('exports GitHubActionsRunner', () => {
-    expect(index.GitHubActionsRunner).toBeTypeOf('function');
+  it('exports CopilotRunner', () => {
+    expect(index.CopilotRunner).toBeTypeOf('function');
   });
 
-  it('exports ClaudeCodeRunner', () => {
-    expect(index.ClaudeCodeRunner).toBeTypeOf('function');
+  it('exports CopilotRunner', () => {
+    expect(index.CopilotRunner).toBeTypeOf('function');
   });
 
   // Agent orchestration

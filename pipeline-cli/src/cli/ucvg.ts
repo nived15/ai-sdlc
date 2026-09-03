@@ -223,7 +223,7 @@ async function runSandboxAndReview(args: {
   // In integration mode with a real credential, start the host-side inference
   // proxy BEFORE the sandbox so the container can reach `inference.local`.
   // The proxy holds the credential and injects it out-of-process; the sandbox
-  // container never receives ANTHROPIC_API_KEY directly.
+  // container never receives GITHUB_MODELS_TOKEN directly.
   //
   // In CI (no credential / no integration flag), proxy is skipped and the
   // FakeModelClient fail-closed path is used instead (existing behaviour).
@@ -232,7 +232,7 @@ async function runSandboxAndReview(args: {
   let proxyHostArgs: string[] | undefined;
 
   const isIntegrationMode = process.env['AI_SDLC_SANDBOX_INTEGRATION_TESTS'] === '1';
-  const credential = process.env['ANTHROPIC_API_KEY'];
+  const credential = process.env['GITHUB_MODELS_TOKEN'];
 
   if (isIntegrationMode && credential) {
     process.stderr.write('[stage-2] AQ2 wiring: starting InferenceProxy for PR...\n');

@@ -197,7 +197,7 @@ callout.
 
 After the flip lands, update:
 
-- `CLAUDE.md` — change the "Off by default" line in the
+- `.github/copilot-instructions.md` — change the "Off by default" line in the
   `AI_SDLC_DEPS_COMPOSITION` bullet to "On by default; set to `0` to
   disable."
 - `docs/operations/deps-composition.md` — flip the "TL;DR" and the

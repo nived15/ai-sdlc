@@ -103,10 +103,7 @@ function git(args, cwd) {
 const REVIEW_POLICY = '# review policy v1\nGolden rule: when in doubt, approve.\n';
 const AGENT_FILES = {
   'code-reviewer': '---\nname: code-reviewer\n---\nbody1\n',
-  // AISDLC-252: codex variants are also read by the verifier.
-  'code-reviewer-codex': '---\nname: code-reviewer-codex\n---\nbody1-codex\n',
   'test-reviewer': '---\nname: test-reviewer\n---\nbody2\n',
-  'test-reviewer-codex': '---\nname: test-reviewer-codex\n---\nbody2-codex\n',
   'security-reviewer': '---\nname: security-reviewer\n---\nbody3\n',
 };
 // Plugin manifest baseline. Tests can override by writing a different
@@ -208,7 +205,7 @@ function writeAttestation(root, subjectSha, baseSha, headSha, privateKeyPem, ove
   const reviewers = Object.entries(AGENT_FILES).map(([agentId, content]) => ({
     agentId,
     agentFileContent: content,
-    harness: 'codex',
+    harness: 'copilot',
     approved: true,
     findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
   }));
@@ -642,7 +639,7 @@ describe('runVerifier (AISDLC-84 — rebase / amend / force-push)', () => {
       const reviewers = Object.entries(AGENT_FILES).map(([agentId, content]) => ({
         agentId,
         agentFileContent: content,
-        harness: 'codex',
+        harness: 'copilot',
         approved: true,
         findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
       }));
@@ -1849,21 +1846,21 @@ describe('runVerifier (AISDLC-101 — triple-hash with per-file-delta contentHas
         {
           agentId: 'code-reviewer',
           agentFileHash: 'c'.repeat(64),
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'test-reviewer',
           agentFileHash: 'd'.repeat(64),
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'security-reviewer',
           agentFileHash: 'e'.repeat(64),
-          harness: 'codex',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -2188,7 +2185,7 @@ describe('runVerifier (AISDLC-207 — distinguish failure modes in reason)', () 
 // files, v4 correctly rejects because the file content at the merge_group
 // commit genuinely includes both PRs' changes — this is not a bug.
 //
-// The CLAUDE.md description "survives merge-queue rebases" was imprecise.
+// The .github/copilot-instructions.md description "survives merge-queue rebases" was imprecise.
 // It has been amended to "survives merge-queue rebases when the PR's files
 // don't overlap with sibling PRs; fails (correctly) when a sibling PR
 // modified the same files — the reviewed content genuinely changed."
@@ -2618,7 +2615,7 @@ describe('runVerifier (AISDLC-369 — contentHashV5 merge-queue rebase stability
     const reviewers = Object.entries(AGENT_FILES).map(([agentId, content]) => ({
       agentId,
       agentFileContent: content,
-      harness: 'codex',
+      harness: 'copilot',
       approved: true,
       findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
     }));
@@ -2893,7 +2890,7 @@ describe('detectQueueRebaseInvalidation (AISDLC-360)', () => {
     const reviewers = Object.entries(AGENT_FILES).map(([agentId, content]) => ({
       agentId,
       agentFileContent: content,
-      harness: 'codex',
+      harness: 'copilot',
       approved: true,
       findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
     }));
@@ -3110,7 +3107,7 @@ function makeLeaf(leafIndex, reviewerName, transcriptHash) {
     reviewerName,
     transcriptHash: transcriptHash ?? 'a'.repeat(64),
     nonce: 'b'.repeat(64),
-    harness: 'claude-code',
+    harness: 'copilot',
     model: 'sonnet',
     verdictApproved: true,
     findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
@@ -4514,7 +4511,7 @@ describe('runVerifier (AISDLC-398 fix #3 — v5 fast-path content-hash recompute
     const reviewers = Object.entries(AGENT_FILES).map(([agentId, content]) => ({
       agentId,
       agentFileContent: content,
-      harness: 'codex',
+      harness: 'copilot',
       approved: true,
       findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
     }));
@@ -4700,7 +4697,7 @@ describe('runVerifier (AISDLC-398 fix #3 — v5 fast-path content-hash recompute
     const reviewers = Object.entries(AGENT_FILES).map(([agentId, content]) => ({
       agentId,
       agentFileContent: content,
-      harness: 'codex',
+      harness: 'copilot',
       approved: true,
       findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
     }));

@@ -1040,7 +1040,7 @@ metadata:
   name: prototype-driven-frontend
   namespace: team-frontend
 spec:
-  model: claude-sonnet-4-20250514
+  model: the balanced tier
   contextStrategy: prototype-aware      # New strategy; see §10.1
   contextStrategyOverride: auto
 

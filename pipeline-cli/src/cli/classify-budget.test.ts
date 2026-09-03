@@ -21,7 +21,7 @@ import { runClassifyBudgetCli } from './classify-budget.js';
 
 const validVerdict = JSON.stringify({ approved: true, findings: [], summary: 'LGTM' });
 const budgetStderr =
-  'Error: 400 invalid_request_error: credit balance is too low to access the Anthropic API';
+  'Error: 400 invalid_request_error: credit balance is too low to access the GitHub Models API';
 
 let tmp: string;
 let originalArgv: string[];
@@ -168,7 +168,7 @@ describe('cli-classify-budget', () => {
   "findings": [
     {
       "severity": "critical",
-      "message": "Review agent failed: Anthropic API error 400: {\\"type\\":\\"error\\",\\"error\\":{\\"type\\":\\"invalid_request_error\\",\\"message\\":\\"Your credit balance is too low to access the Anthropic API.\\"}}"
+      "message": "Review agent failed: GitHub Models API error 400: {\\"type\\":\\"error\\",\\"error\\":{\\"type\\":\\"invalid_request_error\\",\\"message\\":\\"Your credit balance is too low to access the GitHub Models API.\\"}}"
     }
   ],
   "summary": "review could not be completed"

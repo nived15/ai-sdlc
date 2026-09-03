@@ -15,11 +15,11 @@
 # below) instead of `<worktree>/ai-sdlc-plugin/scripts/sign-attestation.mjs`
 # — the latter only exists inside the ai-sdlc monorepo. Since this script
 # always ships side-by-side with sign-attestation.mjs (same `scripts/`
-# directory in every install topology: plugin cache, CLAUDE_PLUGIN_ROOT,
+# directory in every install topology: plugin cache, COPILOT_PLUGIN_ROOT,
 # or this monorepo), self-location resolution works regardless of where
 # the plugin was installed and regardless of which env vars the invoking
-# shell happens to have (git hooks do not inherit CLAUDE_PLUGIN_ROOT /
-# CLAUDE_PLUGIN_DIR from a Claude Code session unless the `git push` itself
+# shell happens to have (git hooks do not inherit COPILOT_PLUGIN_ROOT /
+# CLAUDE_PLUGIN_DIR from a Copilot CLI session unless the `git push` itself
 # ran inside that session's Bash tool).
 #
 # Why this exists: `/ai-sdlc execute` Step 10 used to drive signing inline
@@ -341,31 +341,31 @@ fi
 #
 # AISDLC-555: resolve sign-attestation.mjs relative to THIS SCRIPT's own
 # on-disk location (not $WT_ROOT). The two files always ship side-by-side
-# in every install topology (plugin cache, CLAUDE_PLUGIN_ROOT checkout, or
+# in every install topology (plugin cache, COPILOT_PLUGIN_ROOT checkout, or
 # this monorepo's ai-sdlc-plugin/scripts/), so self-location resolution
-# works everywhere, including bare `git push` invocations outside a Claude
-# Code session that never had CLAUDE_PLUGIN_ROOT / CLAUDE_PLUGIN_DIR set.
+# works everywhere, including bare `git push` invocations outside a GitHub Copilot
+# Code session that never had COPILOT_PLUGIN_ROOT / CLAUDE_PLUGIN_DIR set.
 SELF_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIGN_ATTESTATION_MJS="$SELF_SCRIPT_DIR/sign-attestation.mjs"
 
 ITERATION_COUNT="${AI_SDLC_ITERATION_COUNT:-1}"
 HARNESS_NOTE="${AI_SDLC_HARNESS_NOTE:-}"
 
-# ── AISDLC-250: Codex harness identification ──────────────────────────
-# When `CODEX_VERSION` is set (operator pre-exports
-# `export CODEX_VERSION="codex@$(codex --version)"`), pass
-# `--harness-name codex --harness-version <version>` to the signer so
+# ── AISDLC-250: GitHub Copilot harness identification ──────────────────────────
+# When `COPILOT_VERSION` is set (operator pre-exports
+# `export COPILOT_VERSION="copilot@$(copilot --version)"`), pass
+# `--harness-name copilot --harness-version <version>` to the signer so
 # the attestation envelope carries the harness field automatically.
-# Format: "codex@X.Y.Z" → harness-name=codex, harness-version=X.Y.Z.
+# Format: "copilot@X.Y.Z" → harness-name=copilot, harness-version=X.Y.Z.
 # When unset, no extra args are passed (back-compat: harness field absent).
 # AISDLC-555: array, not a string. An unquoted $HARNESS_ARGS expansion is
 # word-split by the shell; an array preserves argument boundaries exactly.
 HARNESS_ARGS=()
-if [ -n "${CODEX_VERSION:-}" ]; then
-  # Strip the "codex@" prefix to extract the version number.
-  CODEX_VERSION_NUM="${CODEX_VERSION#codex@}"
-  HARNESS_ARGS=(--harness-name codex --harness-version "$CODEX_VERSION_NUM")
-  echo "[attestation-sign] Codex harness detected: name=codex version=$CODEX_VERSION_NUM" >&2
+if [ -n "${COPILOT_VERSION:-}" ]; then
+  # Strip the "copilot@" prefix to extract the version number.
+  COPILOT_VERSION_NUM="${COPILOT_VERSION#copilot@}"
+  HARNESS_ARGS=(--harness-name copilot --harness-version "$COPILOT_VERSION_NUM")
+  echo "[attestation-sign] GitHub Copilot harness detected: name=copilot version=$COPILOT_VERSION_NUM" >&2
 fi
 
 echo "[attestation-sign] Auto-signing attestation for $TASK_ID against HEAD $HEAD_SHA (schema: $SCHEMA_VERSION)" >&2
@@ -420,7 +420,7 @@ else
     echo "[attestation-sign] ERROR: $SIGN_ATTESTATION_MJS failed; aborting push" >&2
     echo "[attestation-sign]        (inside the monorepo: run \`pnpm --filter @ai-sdlc/orchestrator build\`;" >&2
     echo "[attestation-sign]        in an adopter repo: repair the plugin install via" >&2
-    echo "[attestation-sign]        \`bash \"\$CLAUDE_PLUGIN_ROOT/scripts/install-runtime-deps.sh\"\`)" >&2
+    echo "[attestation-sign]        \`bash \"\$COPILOT_PLUGIN_ROOT/scripts/install-runtime-deps.sh\"\`)" >&2
     exit 2
   fi
 fi
@@ -484,7 +484,7 @@ Reviewers' verdicts at .ai-sdlc/verdicts/$TASK_ID_LOWER.json.
 AISDLC-398: primary filename content-addressed via git patch-id.
 AISDLC-471: per-patch-id transcript-leaves committed alongside envelope.
 
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>" >&2
+Co-Authored-By: GitHub Copilot <copilot@github.com>" >&2
 ) || {
   echo "[attestation-sign] ERROR: git add/commit of attestation failed; aborting push" >&2
   exit 2

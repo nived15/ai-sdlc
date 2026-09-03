@@ -129,7 +129,7 @@ export function defaultReadProcessTable(): string {
 }
 
 /**
- * Scan the process table for a `claude --print` or `claude -p` subprocess
+ * Scan the process table for a `copilot -p` or `copilot -p` subprocess
  * whose argv contains the task ID. Returns the PID if found, null otherwise.
  *
  * Mirrors the logic in `filters/already-in-flight.ts` so both guards use
@@ -147,7 +147,7 @@ function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
     const command = trimmed.slice(spaceIdx + 1).trim();
     const pid = parseInt(pidStr, 10);
     if (isNaN(pid)) continue;
-    if (!command.includes('claude')) continue;
+    if (!command.includes('copilot')) continue;
     if (!command.includes('--print') && !/ -p(\s|$)/.test(command)) continue;
     if (command.includes(taskIdLower) || command.includes(taskIdUpper)) {
       return pid;
@@ -172,7 +172,7 @@ function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
  * 2. **Active `.active-task` sentinel** — `<worktree>/.active-task` modified
  *    within the last 6 hours. A fresh sentinel means a live session is using
  *    this worktree right now.
- * 3. **Live `claude --print` subprocess** — a `claude --print` (or `-p`)
+ * 3. **Live `copilot -p` subprocess** — a `copilot -p` (or `-p`)
  *    process whose argv contains the task ID is running in the OS process
  *    table. Best-effort; silently skipped on ps errors.
  * 4. **Open GitHub PR** — `gh pr list --head <branch> --state open` returns
@@ -258,14 +258,14 @@ export async function isReallyStale(
     }
   }
 
-  // Signal 3 — live claude subprocess.
+  // Signal 3 — live copilot subprocess.
   try {
     const psOutput = readProcessTable();
     const pid = findClaudeSubprocess(psOutput, taskId);
     if (pid !== null) {
       return {
         stale: false,
-        reason: `live claude --print subprocess for ${taskId} (PID ${pid})`,
+        reason: `live copilot -p subprocess for ${taskId} (PID ${pid})`,
       };
     }
   } catch {

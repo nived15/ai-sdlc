@@ -1,97 +1,109 @@
 # Reviewer dispatch defaults (AISDLC-483)
 
-> **TL;DR:** Code and test review default to Codex (zero Claude tokens). Security review stays on Claude-native opus. Developer dispatch stays on Claude-native sonnet. Override all reviewer roles with `AI_SDLC_REVIEWER_HARNESS=claude`.
+> **TL;DR:** Every role dispatches through the GitHub Copilot CLI. Code, test,
+> and developer roles run on the **balanced** model tier; security review runs
+> on the **reasoning** tier. Override the reviewer tier with
+> `AI_SDLC_REVIEWER_MODEL_TIER`.
 
 ## Default routing by role
 
-| Role | Default agent | Harness | Model | Cost |
+| Role | Agent | Harness | Model tier | Rationale |
 |---|---|---|---|---|
-| code-review | `code-reviewer-codex` | Codex | inherit (Codex plan) | Zero Claude tokens |
-| test-review | `test-reviewer-codex` | Codex | inherit (Codex plan) | Zero Claude tokens |
-| security | `security-reviewer` | Claude-native | opus | ~3x sonnet rate |
-| developer | `developer` | Claude-native | sonnet | ~1x rate |
+| code-review | `code-reviewer` | `copilot` | balanced | Mechanical correctness + conventions |
+| test-review | `test-reviewer` | `copilot` | balanced | Coverage, regression guards, assertions |
+| security | `security-reviewer` | `copilot` | reasoning | Adversarial OWASP-class analysis |
+| developer | `developer` | `copilot` | balanced | Highest-volume role (one per task) |
 
 ## Rationale
 
-A 2026-05-30 cost incident traced 26% of weekly Claude usage to a single session where all subagents inherited the operator's Opus 4.8 model. AISDLC-482 (companion task) pinned agent frontmatter defaults; AISDLC-483 hardens the dispatch paths so even ad-hoc `Agent(...)` calls or manual `/ai-sdlc execute` invocations route to the cheap path by default.
+A cost incident traced 26% of a week's usage to a single session where every
+subagent inherited the operator's top-tier model. AISDLC-482 pinned agent
+frontmatter defaults; AISDLC-483 hardens the dispatch paths so even ad-hoc
+agent calls or manual `/ai-sdlc execute` invocations route to the intended
+tier by default.
 
-**Why Codex for code/test review?** Codex CLI (`/opt/homebrew/bin/codex`) runs under Codex plan billing — zero Claude API tokens consumed. For the bulk of mechanical review work (checking conventions, test coverage, diff correctness), Codex quality is sufficient and the cost is the same regardless of PR size.
+**Why the reasoning tier for security only?** Security review is
+reasoning-heavy, adversarial-pattern recognition work where model quality
+directly affects a trust decision. Every other role is mechanical enough that
+the balanced tier matches quality at materially lower cost.
 
-**Why claude-native opus for security?** Security review is reasoning-heavy, adversarial-pattern recognition work that Codex does not handle as reliably as Claude (opus in particular). The higher cost is justified for the one role where model quality directly affects trust decisions.
+**Why the balanced tier for the developer?** Developer dispatch is the
+highest-volume role (one per task). The `developer` agent frontmatter pins
+`model: balanced`; the dispatch path does not override it.
 
-**Why sonnet for developer?** Developer dispatch is the highest-volume role (one per task). Sonnet is 5x cheaper than opus and handles mechanical implementation tasks well. The `developer` agent frontmatter already pins `model: sonnet`; the dispatch path does not override this.
+**Why is reviewer independence still guaranteed?** Each reviewer is dispatched
+into its own fresh Copilot CLI session with a read-only tool grant (see
+`scripts/copilot-spawn-agent-bridge.mjs`). A reviewer cannot see the
+implementer's conversation, and cannot write to the worktree. Completeness is
+enforced at verification time: `verify-attestation` rejects any envelope that
+is missing one of the three reviewer roles.
 
 ## How to override
 
-### Force Claude-native for all reviewers
+### Pin every reviewer to one tier
 
 Set the env var before invoking `/ai-sdlc execute` or `/ai-sdlc orchestrator-tick`:
 
 ```bash
-export AI_SDLC_REVIEWER_HARNESS=claude
+export AI_SDLC_REVIEWER_MODEL_TIER=reasoning
 /ai-sdlc execute AISDLC-NNN
 ```
 
-When `AI_SDLC_REVIEWER_HARNESS=claude`:
-- code-review → `code-reviewer` (claude-native, sonnet)
-- test-review → `test-reviewer` (claude-native, sonnet)
-- security → `security-reviewer` (unchanged — always claude-native opus)
-- developer → `developer` (unchanged — always claude-native sonnet)
+Accepted values: `balanced`, `reasoning`, `inherit` (let each agent's own
+frontmatter govern). Invalid values are ignored so a typo can never silently
+downgrade a security review.
 
-Use this when:
-- Codex CLI is not installed (`which codex` returns nothing).
-- The team has disabled Codex for compliance or budget reasons.
-- You want a fully Claude-native review for an audit or comparison.
+Developer dispatch is never affected by this override.
 
 ### Override per invocation (shell one-liner)
 
 ```bash
-AI_SDLC_REVIEWER_HARNESS=claude /ai-sdlc execute AISDLC-NNN
+AI_SDLC_REVIEWER_MODEL_TIER=reasoning /ai-sdlc execute AISDLC-NNN
 ```
 
 ### Override developer model per invocation
 
-The developer agent frontmatter pins `model: sonnet`. To use a different model for a single dispatch (e.g. opus for a particularly complex task), set `AI_SDLC_DEV_MODEL=opus` — the `orchestrator-tick` command body forwards this as a per-invocation hint in the developer prompt. (Not enforced by the dispatch layer; the agent honors it if present.)
+The developer agent frontmatter pins `model: balanced`. To use a different tier
+for a single dispatch (e.g. `reasoning` for a particularly complex task), set
+`AI_SDLC_DEV_MODEL=reasoning` — the `orchestrator-tick` command body forwards
+this as a per-invocation hint in the developer prompt. (Not enforced by the
+dispatch layer; the agent honors it if present.)
 
 ## Programmatic access
 
-The selection logic lives in `pipeline-cli/src/dispatch/reviewer-harness.ts` and is exported from `@ai-sdlc/pipeline-cli`:
+The selection logic lives in `pipeline-cli/src/dispatch/reviewer-harness.ts` and
+is exported from `@ai-sdlc/pipeline-cli`:
 
 ```typescript
 import { resolveReviewer, resolveReviewerByClassifierName } from '@ai-sdlc/pipeline-cli';
 
 // By role:
 const { agentName, harness, model } = resolveReviewer('code');
-// → { agentName: 'code-reviewer-codex', harness: 'codex', model: 'inherit' }
+// → { agentName: 'code-reviewer', harness: 'copilot', model: 'balanced' }
 
 // By classifier name (used in /ai-sdlc execute Step 7):
-const result = resolveReviewerByClassifierName('critic');
-// → { agentName: 'code-reviewer-codex', harness: 'codex', model: 'inherit' }
+const result = resolveReviewerByClassifierName('security');
+// → { agentName: 'security-reviewer', harness: 'copilot', model: 'reasoning' }
 
-// With override:
-const claudeResult = resolveReviewer('code', 'claude');
-// → { agentName: 'code-reviewer', harness: 'claude-code', model: 'sonnet' }
+// With an explicit tier override:
+const pinned = resolveReviewer('code', 'reasoning');
+// → { agentName: 'code-reviewer', harness: 'copilot', model: 'reasoning' }
 ```
 
-## Cost examples
+## GitHub Copilot CLI requirement
 
-| Scenario | Code/test agents | Security | Per-PR savings |
-|---|---|---|---|
-| Default (Codex) | `*-codex` (zero tokens) | claude opus | ~40-60% vs. all-sonnet |
-| `AI_SDLC_REVIEWER_HARNESS=claude` | `code-reviewer`, `test-reviewer` (sonnet) | claude opus | — |
-| Pre-AISDLC-483 (inherited opus) | `code-reviewer` (opus) | `security-reviewer` (opus) | — |
-
-The savings vary by PR size and model pricing. On a typical 200-line diff, routing code+test to Codex eliminates ~4M tokens/month at the current autonomous drain rate.
-
-## Codex CLI requirement
-
-The Codex-variant agents require `codex` on PATH. Confirm with:
+All roles require `copilot` on PATH. Confirm with:
 
 ```bash
-which codex       # should print /opt/homebrew/bin/codex
-codex --version   # should print v0.128.0 or later
+which copilot       # should print the path to the GitHub Copilot CLI
+copilot --version
 ```
 
-If `codex` is absent, the pipeline will attempt to dispatch `code-reviewer-codex` / `test-reviewer-codex` — these agents detect the absence and return an error verdict. To avoid that, either install Codex or set `AI_SDLC_REVIEWER_HARNESS=claude` globally.
+If `copilot` is absent, `buildReviewPrompts` stamps a
+`⚠ REVIEW HARNESS UNAVAILABLE` note into every reviewer prompt and the
+`--spawner copilot` resolver refuses to dispatch rather than silently falling
+back to another provider.
 
-See also: `docs/operations/codex-execution-path.md` for Codex CLI installation + configuration.
+See also: [`docs/operations/copilot-spawner.md`](./copilot-spawner.md) for
+bridge configuration and [`docs/operations/copilot-execution-path.md`](./copilot-execution-path.md)
+for the per-step design map.

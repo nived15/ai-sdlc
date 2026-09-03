@@ -26,7 +26,7 @@ type Handler = (
  *   #4 — returned response includes resolved file path
  *   #5 — frontmatter validation / reference check
  *   #6 — hermetic tests: routes to worktree / routes to parent / refuses without signal
- *   #7 — CLAUDE.md update (docs, not tested here)
+ *   #7 — .github/copilot-instructions.md update (docs, not tested here)
  *   #8 — tool list documentation (index.ts, tested in index.test.ts)
  */
 describe('task_create MCP tool (AISDLC-234)', () => {

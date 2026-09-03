@@ -241,7 +241,7 @@ function createProvenance(
 
 ```typescript
 const prov = createProvenance({
-  model: 'claude-sonnet-4-5-20250929',
+  model: 'the balanced tier',
   tool: 'ai-sdlc-cli',
   promptHash: 'sha256:abc123...',
 });
@@ -329,7 +329,7 @@ console.log(`Valid ${result.data!.kind}: ${result.data!.metadata.name}`);
 import { createProvenance, provenanceToAnnotations } from '@ai-sdlc/reference';
 
 const prov = createProvenance({
-  model: 'claude-sonnet-4-5-20250929',
+  model: 'the balanced tier',
   tool: 'ai-sdlc-cli',
   promptHash: 'sha256:abc123def456',
   humanReviewer: 'alice@example.com',

@@ -2406,18 +2406,11 @@ export function runVerifier({ headSha, baseSha, repoRoot = process.cwd() }) {
     readFileSync(join(repoRoot, '.ai-sdlc', 'review-policy.md'), 'utf-8'),
   );
   const agentDir = join(repoRoot, 'ai-sdlc-plugin', 'agents');
-  // AISDLC-252: include codex variants so the agentFileHash check extends
-  // to cross-harness reviewers. Envelopes that only have the non-codex
-  // variants are not affected (expectedAgentFileHashes is a lookup map;
-  // missing agentIds are simply not checked — the completeness enforcement
-  // is handled inside verifyAttestation via REVIEWER_ROLE_EQUIVALENCES).
-  const agentIds = [
-    'code-reviewer',
-    'code-reviewer-codex',
-    'test-reviewer',
-    'test-reviewer-codex',
-    'security-reviewer',
-  ];
+  // The agentFileHash check covers the three canonical reviewer roles.
+  // `expectedAgentFileHashes` is a lookup map; missing agentIds are simply
+  // not checked — completeness enforcement lives inside verifyAttestation
+  // via REVIEWER_ROLE_EQUIVALENCES.
+  const agentIds = ['code-reviewer', 'test-reviewer', 'security-reviewer'];
   const expectedAgentFileHashes = Object.fromEntries(
     agentIds.map((a) => [a, sha256Hex(readFileSync(join(agentDir, `${a}.md`), 'utf-8'))]),
   );
@@ -2526,13 +2519,7 @@ export function runVerifier({ headSha, baseSha, repoRoot = process.cwd() }) {
             readFileSync(join(repoRoot, '.ai-sdlc', 'review-policy.md'), 'utf-8'),
           ),
           expectedAgentFileHashes: Object.fromEntries(
-            [
-              'code-reviewer',
-              'code-reviewer-codex',
-              'test-reviewer',
-              'test-reviewer-codex',
-              'security-reviewer',
-            ].map((a) => [
+            ['code-reviewer', 'test-reviewer', 'security-reviewer'].map((a) => [
               a,
               sha256Hex(
                 readFileSync(join(repoRoot, 'ai-sdlc-plugin', 'agents', `${a}.md`), 'utf-8'),
@@ -2567,13 +2554,7 @@ export function runVerifier({ headSha, baseSha, repoRoot = process.cwd() }) {
               readFileSync(join(repoRoot, '.ai-sdlc', 'review-policy.md'), 'utf-8'),
             ),
             expectedAgentFileHashes: Object.fromEntries(
-              [
-                'code-reviewer',
-                'code-reviewer-codex',
-                'test-reviewer',
-                'test-reviewer-codex',
-                'security-reviewer',
-              ].map((a) => [
+              ['code-reviewer', 'test-reviewer', 'security-reviewer'].map((a) => [
                 a,
                 sha256Hex(
                   readFileSync(join(repoRoot, 'ai-sdlc-plugin', 'agents', `${a}.md`), 'utf-8'),
@@ -2868,7 +2849,7 @@ export function runVerifier({ headSha, baseSha, repoRoot = process.cwd() }) {
   }
 
   // --- Forensic logging: harness (AISDLC-202.3) -------------------------
-  // Surface which harness (e.g. codex, claude-code) produced the verdicts.
+  // Surface which harness (always `copilot`) produced the verdicts.
   // Optional field — legacy envelopes (before AISDLC-202.3) carry no
   // `harness` field; log `<unknown>` so operators can distinguish "unknown
   // harness" from "field present but empty".
@@ -2895,7 +2876,7 @@ export function runVerifier({ headSha, baseSha, repoRoot = process.cwd() }) {
     console.log(`[ai-sdlc/attestation] harness: ${harnessLine}`);
   } else {
     console.log(
-      `[ai-sdlc/attestation] harness: <unknown> (legacy envelope or claude-code default)`,
+      `[ai-sdlc/attestation] harness: <unknown> (legacy envelope)`,
     );
   }
 

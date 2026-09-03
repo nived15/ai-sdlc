@@ -22,7 +22,7 @@ export * from './corpus-e2e.js';
 export * from './shadow-mode.js';
 export * from './comment-loop.js';
 export * from './staleness.js';
-export * from './ingress-claude.js';
+export * from './ingress.js';
 export * from './dor-config.js';
 export * from './auto-pass.js';
 export * from './stats.js';

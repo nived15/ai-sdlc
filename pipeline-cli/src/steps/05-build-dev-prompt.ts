@@ -60,7 +60,7 @@ export async function buildDeveloperPrompt(
     `## Commit message template\n` +
     `<conventional-commit type>: <subject> (${opts.taskId})\n\n` +
     `<body>\n\n` +
-    `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>\n\n` +
+    `Co-Authored-By: the reasoning tier 4.6 (1M context) <noreply@github-models.com>\n\n` +
     `## Branch\nYou are on branch \`${opts.branch}\` checked out at \`${opts.worktreePath}\`.\n` +
     feedbackBlock +
     `\nReturn the JSON shape documented in your agent definition.\n`;

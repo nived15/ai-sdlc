@@ -49,11 +49,11 @@ export interface TierAnalysisResult {
  * can produce useful output even on a fresh deployment.
  */
 export const PLAN_COSTS_USD: Record<string, number> = {
-  'claude-code-pro': 20,
-  'claude-code-max-5x': 100,
-  'claude-code-max-20x': 200,
-  'codex-plus': 20,
-  'codex-pro': 200,
+  'copilot-pro': 20,
+  'copilot-business': 100,
+  'copilot-enterprise': 200,
+  'copilot-individual': 20,
+  'copilot-pro-plus': 200,
   'pay-per-token': 0,
 };
 

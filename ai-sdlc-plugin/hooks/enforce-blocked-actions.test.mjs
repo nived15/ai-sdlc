@@ -87,7 +87,7 @@ function runHookRaw(input, extraEnv = {}) {
     const output = execFileSync('node', [hookScript], {
       input,
       encoding: 'utf-8',
-      env: { ...process.env, CLAUDE_PROJECT_DIR: tempDir, ...extraEnv },
+      env: { ...process.env, COPILOT_PROJECT_DIR: tempDir, ...extraEnv },
       timeout: 5000,
     });
     return { output: output.trim(), exitCode: 0 };
@@ -139,7 +139,7 @@ describe('ai-sdlc-plugin enforce-blocked-actions hook', () => {
       const output = execFileSync('node', [hookScript], {
         input: 'not valid json at all',
         encoding: 'utf-8',
-        env: { ...process.env, CLAUDE_PROJECT_DIR: tempDir },
+        env: { ...process.env, COPILOT_PROJECT_DIR: tempDir },
         timeout: 5000,
       });
       assert.equal(output.trim(), '', 'should produce no output (allow)');
@@ -398,7 +398,7 @@ Body B.
     const payload = { tool_name: 'Write', tool_input: { file_path }, cwd };
     return runHookRaw(JSON.stringify(payload), {
       ...env,
-      CLAUDE_PROJECT_DIR: parTempDir,
+      COPILOT_PROJECT_DIR: parTempDir,
     });
   }
 

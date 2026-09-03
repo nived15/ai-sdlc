@@ -14,7 +14,7 @@ requiresDocs: []
 
 **Status:** Implemented (AISDLC-167 umbrella + all 5 phases 167.1–167.5 shipped; `AI_SDLC_DEPS_COMPOSITION` flag stays opt-in per operator decision 2026-05-10)
 **Lifecycle:** Implemented (lifecycle audit 2026-05-13 promoted from Draft; the legacy status field lagged shipped reality)
-**Author:** Dominique Legault (with Claude assist)
+**Author:** Dominique Legault (with GitHub Copilot assist)
 **Created:** 2026-05-01
 **Updated:** 2026-05-13
 **Target Spec Version:** v1alpha1
@@ -66,7 +66,7 @@ Three composition points:
 The morning of 2026-05-01 surfaced four real costs of dispatching without graph awareness:
 
 - **Duplicate dispatch** (AISDLC-104): a parallel session merged the task hours earlier; the foundation `cli-deps` (AISDLC-117) catches this. PPA composition adds: it would have ranked the duplicate as zero-impact (no downstream unblocked) and skipped automatically.
-- **Manual chain tracing**: 100.4 needs 100.3; 100.8 needs 100.7+100.4; the RFC-0011 phase chain is 9 tasks deep. Without composition, the operator (or Claude) reads task descriptions to figure out what to dispatch next. The frontier query alone helps; depth-aware priority makes it obvious which leaf-of-deep-chain to start FIRST.
+- **Manual chain tracing**: 100.4 needs 100.3; 100.8 needs 100.7+100.4; the RFC-0011 phase chain is 9 tasks deep. Without composition, the operator (or GitHub Copilot) reads task descriptions to figure out what to dispatch next. The frontier query alone helps; depth-aware priority makes it obvious which leaf-of-deep-chain to start FIRST.
 - **DoR surprise blast radius**: a `Needs Clarification` verdict on a foundation issue stalls 12 downstream tasks. Without composition, the author sees "this is unclear" but doesn't know "your delay costs N tasks." The DoR feedback flywheel can't calibrate against blast-radius signal it doesn't capture.
 - **No critical-path visibility**: when planning the morning, no surface said "this 5-task chain blocks 12 downstream items, prioritize the head."
 

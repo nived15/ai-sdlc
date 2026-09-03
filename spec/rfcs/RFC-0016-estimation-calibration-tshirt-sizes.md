@@ -28,7 +28,7 @@ implementedBy:
 **Document type:** Normative
 **Status:** Ready for Product owner sign-off (Engineering + Operator signed off 2026-05-03; 8 open questions resolved per §15)
 **Lifecycle:** Ready for Review
-**Author:** Dominique Legault (with Claude assist)
+**Author:** Dominique Legault (with GitHub Copilot assist)
 **Created:** 2026-05-01
 **Updated:** 2026-05-03
 **Target Spec Version:** v1alpha1
@@ -53,7 +53,7 @@ implementedBy:
 
 ## 1. Summary
 
-Claude (and other AI agents) systematically overestimate task duration. Concrete evidence from the 2026-05-01 session:
+GitHub Copilot (and other AI agents) systematically overestimate task duration. Concrete evidence from the 2026-05-01 session:
 
 | Estimate | Actual | Bias |
 |---|---|---|
@@ -82,7 +82,7 @@ The mechanism mirrors human agile teams: estimate → measure → compute deviat
 3. Captured in conversational prose, never indexed
 4. Compared against actuals only ad-hoc by the operator's memory
 
-There's no way to compute "Claude's average bias on this task class." Every estimate is a one-shot prediction with no feedback loop.
+There's no way to compute "GitHub Copilot's average bias on this task class." Every estimate is a one-shot prediction with no feedback loop.
 
 ### 2.2 Why deterministic-first
 
@@ -101,7 +101,7 @@ T-shirt sizes are an industry-standard agile pattern for the same reason they ap
 
 ### 2.3 What this enables
 
-- **Trust calibration.** Operator can ask "what's Claude's median miss on infra tasks?" and get a real number.
+- **Trust calibration.** Operator can ask "what's GitHub Copilot's median miss on infra tasks?" and get a real number.
 - **Better dispatch decisions.** RFC-0015's orchestrator can use calibrated estimates for capacity planning ("can I fit 3 more L-bucket tasks before the off-peak window closes?").
 - **Foundation for confidence intervals.** Once buckets are calibrated, confidence ranges become principled rather than guesses.
 
@@ -128,7 +128,7 @@ T-shirt sizes are an industry-standard agile pattern for the same reason they ap
 
 | Bucket | Wall-clock range | Examples (calibrated against this session) |
 |---|---|---|
-| **XS** | < 10 min | Single-line config edit; CLAUDE.md doc nit; trivial test addition |
+| **XS** | < 10 min | Single-line config edit; .github/copilot-instructions.md doc nit; trivial test addition |
 | **S** | 10-25 min | Single-file fix with tests (AISDLC-123); cosmetic refactor bundle (AISDLC-128 round 2) |
 | **M** | 25-60 min | Multi-file fix + tests + docs (AISDLC-130); single phase of an RFC chain |
 | **L** | 1-2 hours | Multi-module integration (AISDLC-115.4 Phase 3); RFC-implementation phase |
@@ -266,7 +266,7 @@ For task classes where Stage A has high-confidence (≥6 of 8 signals agreeing) 
 Every estimate the agent makes is captured to `$ARTIFACTS_DIR/_estimates/log.jsonl` at the moment of utterance:
 
 ```jsonl
-{"ts":"2026-05-01T22:30:00Z","predictedBy":"claude-opus-4-7","taskId":"AISDLC-123","class":"bug","bucket":"S","scopeFactors":["test-only","corpus-fixture-already-shipped"],"context":"dispatch-decision","estimateInputHash":"sha256:abc...","runIndex":1}
+{"ts":"2026-05-01T22:30:00Z","predictedBy":"the reasoning tier","taskId":"AISDLC-123","class":"bug","bucket":"S","scopeFactors":["test-only","corpus-fixture-already-shipped"],"context":"dispatch-decision","estimateInputHash":"sha256:abc...","runIndex":1}
 ```
 
 ### 5.2 Capture trigger
@@ -580,7 +580,7 @@ Replace "30 min" with "30 min ± 15 min, 80% confidence." Still continuous, stil
 
 ### 10.2 Prediction markets / multi-agent voting
 
-Have multiple agents estimate; aggregate. Adds complexity for marginal value when most estimates come from one agent (Claude). Defer.
+Have multiple agents estimate; aggregate. Adds complexity for marginal value when most estimates come from one agent (GitHub Copilot). Defer.
 
 ### 10.3 Always-defer-to-operator
 

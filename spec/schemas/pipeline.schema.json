@@ -162,21 +162,21 @@
               },
               "harness": {
                 "type": "string",
-                "enum": ["claude-code", "codex", "gemini-cli", "opencode", "aider", "generic-api", "inherit"],
-                "description": "Per-stage harness selection. Defaults to 'inherit' (Pipeline.spec.defaultHarness, default 'claude-code'). RFC-0010 §6.3 / §13."
+                "enum": ["copilot", "inherit"],
+                "description": "Per-stage harness selection. Defaults to 'inherit' (Pipeline.spec.defaultHarness, default 'copilot'). RFC-0010 §6.3 / §13."
               },
               "harnessFallback": {
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": ["claude-code", "codex", "gemini-cli", "opencode", "aider", "generic-api"]
+                  "enum": ["copilot"]
                 },
                 "description": "Ordered fallback chain on availability failures. RFC-0010 §13.5."
               },
               "requiresIndependentHarnessFrom": {
                 "type": "array",
                 "items": { "type": "string" },
-                "description": "Upstream stage names whose resolved harness MUST be excluded from this stage's effective chain (cross-harness review independence per RFC §13.10 / Q8)."
+                "description": "Upstream stage names whose resolved harness MUST be excluded from this stage's effective chain (reviewer-session independence per RFC §13.10 / Q8)."
               },
               "schedule": {
                 "type": "string",
@@ -268,20 +268,20 @@
         },
         "defaultModel": {
           "type": "string",
-          "default": "sonnet",
-          "description": "Resolution target for any Stage with model: inherit (or absent). Defaults to sonnet. RFC-0010 §6.4."
+          "default": "balanced",
+          "description": "Resolution target for any Stage with model: inherit (or absent). Defaults to the balanced tier. RFC-0010 §6.4."
         },
         "defaultHarness": {
           "type": "string",
-          "enum": ["claude-code", "codex", "gemini-cli", "opencode", "aider", "generic-api"],
-          "default": "claude-code",
-          "description": "Resolution target for any Stage with harness: inherit. Defaults to claude-code. RFC-0010 §6.5."
+          "enum": ["copilot"],
+          "default": "copilot",
+          "description": "Resolution target for any Stage with harness: inherit. Defaults to copilot. RFC-0010 §6.5."
         },
         "defaultHarnessFallback": {
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["claude-code", "codex", "gemini-cli", "opencode", "aider", "generic-api"]
+            "enum": ["copilot"]
           },
           "description": "Pipeline-wide default fallback chain applied to stages that omit harnessFallback. RFC-0010 §6.5."
         },
@@ -908,7 +908,7 @@
       "properties": {
         "provider": {
           "type": "string",
-          "description": "Canonical adapter alias resolved against orchestrator/src/embedding/registry.ts. Example: 'openai-text-embedding-3-small'. Unknown names fail pipeline-load with UnknownEmbeddingProvider."
+          "description": "Canonical adapter alias resolved against orchestrator/src/embedding/registry.ts. Example: 'github-models-embedding-small'. Unknown names fail pipeline-load with UnknownEmbeddingProvider."
         },
         "fallback": {
           "type": "string",

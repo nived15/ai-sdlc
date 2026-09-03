@@ -3,7 +3,7 @@
  *
  * Runs the test suite with coverage after the agent stops.
  * If coverage is below the configured threshold, exits with code 2
- * which wakes the model via Claude Code's asyncRewake mechanism.
+ * which wakes the model via GitHub Copilot CLI's asyncRewake mechanism.
  *
  * Exit codes:
  *   0 = coverage OK, no coverage tool available, or skipped
@@ -29,7 +29,7 @@ try {
 // ── Find project root ────────────────────────────────────────────────
 
 const projectDir =
-  process.env.CLAUDE_PROJECT_DIR ||
+  process.env.COPILOT_PROJECT_DIR ||
   (() => {
     try {
       return execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();
@@ -139,7 +139,7 @@ if (excludeWorkspaces.length > 0 && coverageCmd.startsWith('pnpm')) {
 // to detect if THIS SESSION introduced an uncovered change. If we look at
 // HEAD~1, we'd fire on every session inside this repo regardless of
 // whether the model touched source — which produces false positives
-// whenever Claude is doing non-code work (docs, planning, application
+// whenever GitHub Copilot is doing non-code work (docs, planning, application
 // materials, etc.) inside an unrelated cwd that happens to be a git repo
 // with a recent code commit.
 //
@@ -150,7 +150,7 @@ try {
   // `--untracked-files=all` expands untracked DIRECTORIES into the individual
   // files inside them. Without this flag, an untracked dir like `src/new/`
   // reports as a single entry `src/new/` and the `.ts` filter would miss
-  // every new source file inside (code-reviewer-codex round-1 finding).
+  // every new source file inside (code-reviewer-copilot round-1 finding).
   const status = execSync('git status --porcelain --untracked-files=all 2>/dev/null || echo ""', {
     encoding: 'utf-8',
     cwd: projectDir,
@@ -199,13 +199,13 @@ try {
 // fires → exit 2 → wake → ... infinite loop.
 //
 // Sentinel layout:
-//   ~/.claude/ai-sdlc/coverage-failure-<repo-hash>.json
+//   ~/.copilot/ai-sdlc/coverage-failure-<repo-hash>.json
 //   {"head": "<sha>", "fingerprint": "<sha256(stderr+stdout-summary)>"}
 //
 // Per-repo (hash of projectDir) so multiple repos don't collide. Cleared
 // on test success. Compared against on subsequent failures — match → exit 0.
 
-const sentinelDir = join(homedir(), '.claude', 'ai-sdlc');
+const sentinelDir = join(homedir(), '.copilot', 'ai-sdlc');
 const repoHash = createHash('sha256').update(projectDir).digest('hex').slice(0, 12);
 const sentinelPath = join(sentinelDir, `coverage-failure-${repoHash}.json`);
 

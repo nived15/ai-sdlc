@@ -15,7 +15,7 @@
       "properties": {
         "defaultWorkerKind": {
           "type": "string",
-          "enum": ["in-session-agent", "claude-p-shell"],
+          "enum": ["in-session-agent", "copilot-p-shell"],
           "default": "in-session-agent",
           "description": "Which Worker kind the Conductor assigns when a manifest does not declare one explicitly. Phase 1 default is in-session-agent (subscription-preserving)."
         },
@@ -33,7 +33,7 @@
               "type": "integer",
               "minimum": 0,
               "default": 0,
-              "description": "Supervisor concurrent claude -p Worker cap (Phase 2). 0 = supervisor disabled; bump to enable headless dispatch once Phase 2 ships."
+              "description": "Supervisor concurrent copilot -p Worker cap (Phase 2). 0 = supervisor disabled; bump to enable headless dispatch once Phase 2 ships."
             }
           },
           "additionalProperties": false
@@ -46,13 +46,13 @@
               "type": "integer",
               "minimum": 1,
               "default": 5,
-              "description": "RFC-0041 OQ-6 cost-first bias — in-session-agent Workers poll the queue every 5 seconds (faster than claude-p-shell at 15s) so they preferentially claim 'any' manifests."
+              "description": "RFC-0041 OQ-6 cost-first bias — in-session-agent Workers poll the queue every 5 seconds (faster than copilot-p-shell at 15s) so they preferentially claim 'any' manifests."
             },
             "quotaBackoffSec": {
               "type": "integer",
               "minimum": 1,
               "default": 600,
-              "description": "OQ-7 — base cool-down (seconds) after a subscription quota exhaustion (429) when Anthropic's Retry-After header is absent."
+              "description": "OQ-7 — base cool-down (seconds) after a subscription quota exhaustion (429) when GitHub Models's Retry-After header is absent."
             },
             "quotaBackoffMaxSec": {
               "type": "integer",
@@ -77,7 +77,7 @@
         },
         "claudePShell": {
           "type": "object",
-          "description": "Tuning knobs for the claude-p-shell Worker kind. Read by Phase 2 (AISDLC-377.3); declared in Phase 1 for forward-compat.",
+          "description": "Tuning knobs for the copilot-p-shell Worker kind. Read by Phase 2 (AISDLC-377.3); declared in Phase 1 for forward-compat.",
           "properties": {
             "pollIntervalSec": {
               "type": "integer",

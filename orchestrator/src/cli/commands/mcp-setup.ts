@@ -7,11 +7,8 @@
  *    the orchestrator binary itself was last updated. Each generated
  *    config file carries a single top-level `_aiSdlcComment` documenting
  *    how to opt back into floating-tag behaviour.
- *  - Cursor is no longer detected by binary-on-PATH alone; the user
- *    must either have a `.cursor/` directory present (real signal of
- *    use) or pass `--cursor` to opt in. This avoids writing
- *    `.cursor/mcp.json` into projects whose author has Cursor
- *    installed but is not using it on this repo.
+ *  - Detection is limited to the GitHub Copilot CLI (`.mcp.json`) and
+ *    VS Code (`.vscode/mcp.json`) — the two hosts this framework targets.
  */
 
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -19,7 +16,7 @@ import { join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 
 export interface DetectedAgent {
-  name: string; // "Claude Code", "Cursor", etc.
+  name: string; // "GitHub Copilot CLI", "VS Code"
   configPath: string; // relative path to MCP config file
   configKey: string; // "mcpServers" or "servers" (VS Code)
   serverEntry: Record<string, unknown>; // the ai-sdlc server config object
@@ -71,30 +68,21 @@ interface AgentSpec {
   configPath: string;
   configKey: string;
   entryFn: (version: string | undefined, env?: Record<string, string>) => Record<string, unknown>;
-  configDir?: string; // directory signal (e.g. ".cursor")
+  configDir?: string; // directory signal (e.g. ".vscode")
   binary?: string; // binary to check on PATH
   alwaysDetect?: boolean;
-  /** Requires explicit opt-in (e.g. --cursor) even if signals are present. */
+  /** Requires explicit opt-in even if signals are present. */
   requiresOptIn?: boolean;
 }
 
 const AGENT_SPECS: AgentSpec[] = [
   {
-    name: 'Claude Code',
+    name: 'GitHub Copilot CLI',
     configPath: '.mcp.json',
     configKey: 'mcpServers',
     entryFn: standardEntry,
-    binary: 'claude',
+    binary: 'copilot',
     alwaysDetect: true,
-  },
-  {
-    name: 'Cursor',
-    configPath: '.cursor/mcp.json',
-    configKey: 'mcpServers',
-    entryFn: standardEntry,
-    configDir: '.cursor',
-    binary: 'cursor',
-    requiresOptIn: true,
   },
   {
     name: 'VS Code',
@@ -103,14 +91,6 @@ const AGENT_SPECS: AgentSpec[] = [
     entryFn: vscodeEntry,
     configDir: '.vscode',
     binary: 'code',
-  },
-  {
-    name: 'Windsurf',
-    configPath: '.windsurf/mcp.json',
-    configKey: 'mcpServers',
-    entryFn: standardEntry,
-    configDir: '.windsurf',
-    binary: 'windsurf',
   },
 ];
 
@@ -123,19 +103,11 @@ function hasBinary(name: string): boolean {
   }
 }
 
-function hasUserCursorDir(): boolean {
-  const home = process.env.HOME ?? process.env.USERPROFILE;
-  if (!home) return false;
-  return existsSync(join(home, '.cursor'));
-}
-
 export interface DetectAgentsOptions {
   /** When true, adds AI_SDLC_WORKSPACE env to server entries. */
   isWorkspace?: boolean;
   /** Pin the mcp-advisor to this version in generated configs. */
   pinVersion?: string;
-  /** User explicitly asked for Cursor MCP install. */
-  cursorOptIn?: boolean;
 }
 
 /**
@@ -171,25 +143,12 @@ export function detectAgentsDetailed(
     const hasBin = spec.binary ? hasBinary(spec.binary) : false;
 
     if (spec.requiresOptIn) {
-      // For Cursor specifically: explicit --cursor flag, OR a project-local
-      // .cursor/ dir, OR a user-global ~/.cursor/ presence. Just having
-      // `cursor` on PATH is no longer sufficient (too noisy on dev boxes
-      // where Cursor is installed but not used per-project).
-      const userOptIn = options?.cursorOptIn === true;
-      if (userOptIn || hasDir || hasUserCursorDir()) {
-        detected.push({
-          name: spec.name,
-          configPath: spec.configPath,
-          configKey: spec.configKey,
-          serverEntry: spec.entryFn(pinVersion, env),
-        });
-      } else {
-        skipped.push({
-          name: spec.name,
-          reason:
-            'no .cursor/ directory in project or $HOME; pass --cursor to install Cursor MCP config',
-        });
-      }
+      // Reserved for future hosts that need an explicit opt-in signal.
+      // No shipped spec sets this today.
+      skipped.push({
+        name: spec.name,
+        reason: 'requires explicit opt-in',
+      });
       continue;
     }
 

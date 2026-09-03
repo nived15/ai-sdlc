@@ -51,7 +51,7 @@ describe('GET /api/cost', () => {
   it('computes budget correctly', async () => {
     mockGet.mockReturnValueOnce({ total_cost: 250, total_tokens: 500000, run_count: 50 });
     mockAll.mockReturnValueOnce([{ agent_name: 'dev', cost_usd: 250, runs: 50 }]);
-    mockAll.mockReturnValueOnce([{ model: 'claude-sonnet', cost_usd: 250, runs: 50 }]);
+    mockAll.mockReturnValueOnce([{ model: 'gpt-5', cost_usd: 250, runs: 50 }]);
     mockAll.mockReturnValueOnce([{ date: '2026-03-15', cost_usd: 10, runs: 5 }]);
     mockGet.mockReturnValueOnce({
       first_at: '2026-03-01T00:00:00Z',

@@ -39,7 +39,7 @@ framework (Decision Catalog, backlog tasks, DoR upstream-OQ gate).
 - The `@ai-sdlc/pipeline-cli` runtime dependency on PATH (the framework's
   install scripts wire this automatically). The `cli-rfc` binary ships
   with that package.
-- Optional: the Claude Code plugin installed if you want the
+- Optional: the GitHub Copilot CLI plugin installed if you want the
   `/ai-sdlc rfc-init` slash-command surface alongside the CLI.
 
 This tutorial assumes you've read [`docs/concepts/spec-driven.md`](../concepts/spec-driven.md) and understand the three-tier authoring model. The adopter RFC sits at the RFC altitude — above Spec, above Task.
@@ -94,7 +94,7 @@ Scaffold via the CLI:
 ai-sdlc rfc init multi-tenancy-model
 ```
 
-…or via the Claude Code slash command (functionally identical):
+…or via the GitHub Copilot CLI slash command (functionally identical):
 
 ```text
 /ai-sdlc rfc-init multi-tenancy-model
@@ -157,7 +157,7 @@ Replace each placeholder (`<question>`, `<one-line summary>`, etc.) as
 you draft. Treat the template as a starting outline — sections that
 don't apply can be deleted, sections you need can be added.
 
-> **Tip:** if you're using Claude Code, you can ask the assistant to
+> **Tip:** if you're using GitHub Copilot CLI, you can ask the assistant to
 > populate the body from a spoken brief. The agent will respect the
 > template's section ordering and avoid touching the scaffold notice
 > at the top.

@@ -56,7 +56,7 @@ Add `copilot` to `SpawnerKind`, ship a `CopilotHarnessAdapter` that implements `
 - **RFC-0012 §8 (SubagentSpawner)** — the spawner contract this implements.
 - **AISDLC-202.2 (`CodexHarnessAdapter`)** — the architectural template. The new code lives next to `codex-harness.ts` (and `codex-harness.test.ts`) under `pipeline-cli/src/runtime/spawners/copilot-harness.{ts,test.ts}`.
 - **`cli-orchestrator tick --spawner` plumbing** — `SpawnerKind` is referenced in `pipeline-cli/src/orchestrator/loop.ts` (`umbrellaSpawnerKind`, `resolveUmbrellaSpawnerKind`). Both files need the new union member.
-- **`pipeline-cli/README.md`** — the "Spawner kinds" table needs a `copilot` row. `CLAUDE.md` already documents `mock` / `api-key` / `claude` / `codex` under "Spawner kinds for `cli-orchestrator tick --spawner <kind>`" — that table also needs a row.
+- **`pipeline-cli/README.md`** — the "Spawner kinds" table needs a `copilot` row. `.github/copilot-instructions.md` already documents `mock` / `api-key` / `claude` / `codex` under "Spawner kinds for `cli-orchestrator tick --spawner <kind>`" — that table also needs a row.
 
 ## Risk
 
@@ -70,7 +70,7 @@ Add `copilot` to `SpawnerKind`, ship a `CopilotHarnessAdapter` that implements `
 <!-- AC:BEGIN -->
 - [ ] #1 All three sub-tasks (AISDLC-429.1, AISDLC-429.2, AISDLC-429.3) reach Done status.
 - [ ] #2 `pnpm --filter @ai-sdlc/pipeline-cli exec` exposes `--spawner copilot` end-to-end through `cli-execute` and `cli-orchestrator tick`, with the same operator-facing wiring the existing `claude` / `codex` / `api-key` kinds have.
-- [ ] #3 Operator-facing documentation (`pipeline-cli/README.md` spawner-kinds table + `CLAUDE.md` "Spawner kinds" list + `docs/operations/copilot-spawner.md` runbook + cross-link from the operator runbook) is up to date and reviewable as the canonical source for picking the `copilot` kind.
+- [ ] #3 Operator-facing documentation (`pipeline-cli/README.md` spawner-kinds table + `.github/copilot-instructions.md` "Spawner kinds" list + `docs/operations/copilot-spawner.md` runbook + cross-link from the operator runbook) is up to date and reviewable as the canonical source for picking the `copilot` kind.
 
 <!-- AC:END -->
 
@@ -99,7 +99,7 @@ Add `copilot` to `SpawnerKind`, ship a `CopilotHarnessAdapter` that implements `
 - Phase 2 sub-task: `CopilotHarnessAdapter` + `--spawner copilot` resolver (bulk of the work; covers AC #1 through #4 plus #8 and #9).
 - Phase 3 sub-task: Orchestrator wiring + docs + runbook (covers AC #5 through #7).
 
-A single PR is acceptable if the wire format is stable and the diff stays reviewable; otherwise file the phase sub-tasks (per the "Create-before-execution" rule in CLAUDE.md) before dispatching implementation.
+A single PR is acceptable if the wire format is stable and the diff stays reviewable; otherwise file the phase sub-tasks (per the "Create-before-execution" rule in .github/copilot-instructions.md) before dispatching implementation.
 
-**Out-of-scope reminder.** Do NOT resolve any RFC Open Questions inline. If the implementation surfaces a question that touches RFC-0012's `SubagentSpawner` contract semantics, escalate per CLAUDE.md "Subagent Governance — OQ-resolution prohibition (AISDLC-298)" — return `prUrl: null` with a notes field and stop.
+**Out-of-scope reminder.** Do NOT resolve any RFC Open Questions inline. If the implementation surfaces a question that touches RFC-0012's `SubagentSpawner` contract semantics, escalate per .github/copilot-instructions.md "Subagent Governance — OQ-resolution prohibition (AISDLC-298)" — return `prUrl: null` with a notes field and stop.
 <!-- SECTION:NOTES:END -->

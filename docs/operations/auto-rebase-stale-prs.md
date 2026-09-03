@@ -102,8 +102,8 @@ When `git rebase origin/main` exits non-zero inside the temp worktree:
 The operator resolves the conflict using the standard tooling
 (`/ai-sdlc rebase <pr>` for mechanical conflicts, manual editor for
 semantic ones). The label is the operator-facing signal that the workflow
-has done as much as it can — see the [Git Flow](../../CLAUDE.md#git-flow)
-section of `CLAUDE.md`.
+has done as much as it can — see the [Git Flow](../../.github/copilot-instructions.md#git-flow)
+section of `.github/copilot-instructions.md`.
 
 ## Smoke-test instructions (dry-run)
 

@@ -66,14 +66,14 @@ describe('createOpenShellSandbox', () => {
 
     it('attaches providers when configured', async () => {
       const sandbox = createOpenShellSandbox(exec, {
-        providers: ['my-claude', 'my-github'],
+        providers: ['my-copilot', 'my-github'],
       });
       await sandbox.isolate('task-1', makeConstraints());
 
       const createCall = exec.mock.calls.find(
         (c: string[]) => typeof c[0] === 'string' && c[0].includes('sandbox create'),
       );
-      expect(createCall![0]).toContain('--provider my-claude');
+      expect(createCall![0]).toContain('--provider my-copilot');
       expect(createCall![0]).toContain('--provider my-github');
     });
 
@@ -102,7 +102,7 @@ describe('createOpenShellSandbox', () => {
     it('auto-creates providers from autoProviders config', async () => {
       const sandbox = createOpenShellSandbox(exec, {
         autoProviders: [
-          { name: 'my-claude', type: 'claude' },
+          { name: 'my-copilot', type: 'github-copilot' },
           { name: 'my-github', type: 'github', fromExisting: true },
         ],
       });
@@ -112,8 +112,8 @@ describe('createOpenShellSandbox', () => {
         (c: string[]) => typeof c[0] === 'string' && c[0].includes('provider create'),
       );
       expect(providerCalls).toHaveLength(2);
-      expect(providerCalls[0][0]).toContain('--name my-claude');
-      expect(providerCalls[0][0]).toContain('--type claude');
+      expect(providerCalls[0][0]).toContain('--name my-copilot');
+      expect(providerCalls[0][0]).toContain('--type github-copilot');
       expect(providerCalls[0][0]).toContain('--from-existing');
       expect(providerCalls[1][0]).toContain('--name my-github');
 
@@ -121,7 +121,7 @@ describe('createOpenShellSandbox', () => {
       const createCall = exec.mock.calls.find(
         (c: string[]) => typeof c[0] === 'string' && c[0].includes('sandbox create'),
       );
-      expect(createCall![0]).toContain('--provider my-claude');
+      expect(createCall![0]).toContain('--provider my-copilot');
       expect(createCall![0]).toContain('--provider my-github');
     });
 
@@ -152,7 +152,7 @@ describe('createOpenShellSandbox', () => {
         .mockResolvedValue(''); // rest succeed (sandbox create, rm)
 
       const sandbox = createOpenShellSandbox(exec, {
-        autoProviders: [{ name: 'my-claude', type: 'claude' }],
+        autoProviders: [{ name: 'my-copilot', type: 'github-copilot' }],
       });
 
       // Should not throw
@@ -162,15 +162,15 @@ describe('createOpenShellSandbox', () => {
 
     it('deduplicates provider names between providers and autoProviders', async () => {
       const sandbox = createOpenShellSandbox(exec, {
-        providers: ['my-claude'],
-        autoProviders: [{ name: 'my-claude', type: 'claude' }],
+        providers: ['my-copilot'],
+        autoProviders: [{ name: 'my-copilot', type: 'github-copilot' }],
       });
       await sandbox.isolate('task-1', makeConstraints());
 
       const createCall = exec.mock.calls.find(
         (c: string[]) => typeof c[0] === 'string' && c[0].includes('sandbox create'),
       );
-      const providerMatches = createCall![0].match(/--provider my-claude/g);
+      const providerMatches = createCall![0].match(/--provider my-copilot/g);
       expect(providerMatches).toHaveLength(1);
     });
 

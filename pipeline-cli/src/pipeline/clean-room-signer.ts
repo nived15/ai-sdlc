@@ -339,7 +339,7 @@ export function runCleanRoomSigner(opts: CleanRoomSignerOptions): CleanRoomSigne
       test: 'test-reviewer',
       security: 'security-reviewer',
     };
-    const reviewerModel = process.env['AI_SDLC_REVIEWER_MODEL'] ?? 'claude-sonnet-4-6';
+    const reviewerModel = process.env['AI_SDLC_REVIEWER_MODEL'] ?? 'balanced';
     let leafIndex = 0;
     for (const key of ['code', 'test', 'security'] as const) {
       const rv = report.reviewers[key];

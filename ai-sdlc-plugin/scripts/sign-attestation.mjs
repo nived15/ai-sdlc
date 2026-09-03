@@ -164,7 +164,7 @@ function fail(msg, code = 1) {
  *      adopter who pinned the dependency themselves. Ranked above the plugin's
  *      own copy so the repo being signed controls the version, and so
  *      workspace-root hoisting is covered.
- *   3. `$CLAUDE_PLUGIN_DIR` / `$CLAUDE_PLUGIN_ROOT` node_modules — the
+ *   3. `$CLAUDE_PLUGIN_DIR` / `$COPILOT_PLUGIN_ROOT` node_modules — the
  *      zero-config path. Both packages are plugin runtimeDependencies, so
  *      install-runtime-deps.sh puts them here and an adopter needs to install
  *      nothing at all.
@@ -173,7 +173,7 @@ function fail(msg, code = 1) {
  *      pre-push signing hook runs in exactly that context.
  *
  * Resolution deliberately does NOT use a bare `import()`: that resolves
- * relative to this script (under ~/.claude/plugins/), never the repo being
+ * relative to this script (under ~/.copilot/plugins/), never the repo being
  * signed, so candidates 1-2 would be unreachable. `createRequire().resolve`
  * is also unusable — it matches the `require` condition, which neither
  * package's exports map defines, they are import-only.
@@ -215,7 +215,7 @@ function runtimeModuleCandidates(repoRoot, workspaceDir, pkg, distSubpath) {
     join(repoRoot, workspaceDir, ...distSubpath),
     ...nodeModulesWalkUp(repoRoot, pkg, distSubpath),
   ];
-  for (const pluginDir of [process.env.CLAUDE_PLUGIN_DIR, process.env.CLAUDE_PLUGIN_ROOT]) {
+  for (const pluginDir of [process.env.CLAUDE_PLUGIN_DIR, process.env.COPILOT_PLUGIN_ROOT]) {
     if (pluginDir) {
       candidates.push(join(pluginDir, 'node_modules', ...pkg.split('/'), ...distSubpath));
     }
@@ -328,7 +328,7 @@ async function loadRuntimeModule(repoRoot, label, pkg, candidates, distSubpath, 
         '       Inside the ai-sdlc monorepo:\n' +
         `         pnpm --filter ${pkg} build\n\n` +
         '       In a consumer repo, repair the plugin install:\n' +
-        '         bash "$CLAUDE_PLUGIN_ROOT/scripts/install-runtime-deps.sh"\n' +
+        '         bash "$COPILOT_PLUGIN_ROOT/scripts/install-runtime-deps.sh"\n' +
         '       or pin the dependency in the repo itself:\n' +
         `         pnpm add -D ${pkg}\n\n` +
         `       Searched (from repo root ${repoRoot}):\n` +
@@ -558,10 +558,10 @@ async function main() {
   const verdictsPath = args['review-verdicts'];
   const iterationCount = Number(args['iteration-count'] ?? '1');
   const harnessNote = args['harness-note'] ?? '';
-  // AISDLC-202.3: optional harness identification. The Codex execution path
-  // passes --harness-name codex (and optionally --harness-version) so the
+  // AISDLC-202.3: optional harness identification. The GitHub Copilot execution path
+  // passes --harness-name copilot (and optionally --harness-version) so the
   // envelope predicate carries a machine-readable { name, version } field.
-  // Claude Code paths omit these flags and the field is absent (back-compat).
+  // GitHub Copilot CLI paths omit these flags and the field is absent (back-compat).
   const harnessName = typeof args['harness-name'] === 'string' ? args['harness-name'].trim() : '';
   const harnessVersion =
     typeof args['harness-version'] === 'string' ? args['harness-version'].trim() : '';
@@ -594,7 +594,7 @@ async function main() {
   // AISDLC-103 (Verifier Phase 3): collect per-file (base, head) blob
   // deltas for `contentHashV3`. The legacy `diffHash` (sha256 of literal
   // git diff) and `contentHash` (head blob SHA per file) are no longer
-  // emitted — see CLAUDE.md "What CI rejects" / "What CI accepts" for the
+  // emitted — see .github/copilot-instructions.md "What CI rejects" / "What CI accepts" for the
   // full backstory of the v1 → v2 → v3 migration.
   let changedFileDeltas;
   try {
@@ -701,10 +701,10 @@ async function main() {
     // field rather than embedding a bad value.
   }
 
-  // Build harness object when --harness-name was provided. The Codex path
-  // passes --harness-name codex (+ optional --harness-version) so the
+  // Build harness object when --harness-name was provided. The GitHub Copilot path
+  // passes --harness-name copilot (+ optional --harness-version) so the
   // envelope predicate carries a machine-readable harness identification.
-  // Claude Code paths omit the flag and the predicate field stays absent.
+  // GitHub Copilot CLI paths omit the flag and the predicate field stays absent.
   const harnessPayload = harnessName
     ? { name: harnessName, ...(harnessVersion ? { version: harnessVersion } : {}) }
     : undefined;

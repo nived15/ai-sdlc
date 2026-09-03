@@ -61,13 +61,13 @@ const safe = checkAction('git push origin feature-branch', DEFAULT_BLOCKED_ACTIO
 // { allowed: true, command: 'git push origin feature-branch' }
 ```
 
-### Layer 2: Claude Code Hooks
+### Layer 2: GitHub Copilot CLI Hooks
 
 A PreToolUse hook reads `blockedActions` from `agent-role.yaml` and blocks
 matching Bash commands before they execute:
 
 ```bash
-# .claude/hooks/enforce-blocked-actions.sh
+# .copilot/hooks/enforce-blocked-actions.sh
 #!/bin/bash
 node "$(dirname "$0")/enforce-blocked-actions.js"
 ```
@@ -202,7 +202,7 @@ repeatedly dismissing reviews.
 ## Testing
 
 The enforcement module includes comprehensive tests verifying consistency
-between the orchestrator's `checkAction()` and the Claude Code hook's regex
+between the orchestrator's `checkAction()` and the GitHub Copilot CLI hook's regex
 patterns. Both enforcement points are tested against the same set of blocked
 and allowed commands.
 

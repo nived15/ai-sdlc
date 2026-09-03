@@ -386,8 +386,8 @@ describe('setupWorktreeSignalHandler', () => {
  *   GIT_CONFIG_GLOBAL /
  *   GIT_CONFIG_SYSTEM          — can inject gpgsign=true or custom hooks
  *                                that break `git commit` in the fixture.
- *   CLAUDE_PROJECT_DIR /
- *   GIT_ASKPASS / GIT_EDITOR   — set by the IDE / Claude Code; harmless for
+ *   COPILOT_PROJECT_DIR /
+ *   GIT_ASKPASS / GIT_EDITOR   — set by the IDE / GitHub Copilot CLI; harmless for
  *                                normal git ops but can cause unexpected
  *                                subprocess spawning or auth-prompt hangs.
  *   HUSKY                      — controls husky hook execution; without this
@@ -459,7 +459,7 @@ describe('withWorktreeMutex — real git worktree add (AC #7)', () => {
     // Initialise a real git repo with a commit on main.
     //
     // Env-hygiene: all execSync calls use an explicit hermetic env (gitEnv)
-    // to prevent parent-shell GIT_DIR / GIT_WORK_TREE / CLAUDE_PROJECT_DIR /
+    // to prevent parent-shell GIT_DIR / GIT_WORK_TREE / COPILOT_PROJECT_DIR /
     // HUSKY bleed. Identity is passed via GIT_AUTHOR_* env vars so we never
     // need `git config user.email`, which would write into .git/config and
     // could be redirected if GIT_DIR is set in the parent env.

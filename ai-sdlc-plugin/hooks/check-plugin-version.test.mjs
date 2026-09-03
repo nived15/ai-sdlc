@@ -3,7 +3,7 @@
  *
  * Run with: node --test ai-sdlc-plugin/hooks/check-plugin-version.test.mjs
  *
- * Each test points the hook at a temp `CLAUDE_PLUGIN_ROOT` (so we control the
+ * Each test points the hook at a temp `COPILOT_PLUGIN_ROOT` (so we control the
  * "installed" version) and a local http test server (via
  * `AI_SDLC_PLUGIN_MARKETPLACE_URL`) so the hook never touches the network.
  * `XDG_CACHE_HOME` is overridden per-test so cache state never leaks across
@@ -46,12 +46,12 @@ after(async () => {
 let tempRoot;
 let tempHome;
 beforeEach(() => {
-  // Fresh CLAUDE_PLUGIN_ROOT (controls installed version) per test.
+  // Fresh COPILOT_PLUGIN_ROOT (controls installed version) per test.
   tempRoot = join(tmpdir(), `aisdlc-89-root-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  mkdirSync(join(tempRoot, '.claude-plugin'), { recursive: true });
+  mkdirSync(join(tempRoot, '.copilot-plugin'), { recursive: true });
   // Default: installed = 0.7.0 (older than test server's 0.8.1).
   writeFileSync(
-    join(tempRoot, '.claude-plugin', 'plugin.json'),
+    join(tempRoot, '.copilot-plugin', 'plugin.json'),
     JSON.stringify({ name: 'ai-sdlc', version: '0.7.0' }, null, 2),
   );
   // Fresh HOME so cache state is isolated.
@@ -72,7 +72,7 @@ async function runHook({ env = {}, args = [], input = '{}' } = {}) {
       // Inherit PATH but isolate cache + plugin root + marketplace URL.
       PATH: process.env.PATH,
       HOME: tempHome,
-      CLAUDE_PLUGIN_ROOT: tempRoot,
+      COPILOT_PLUGIN_ROOT: tempRoot,
       AI_SDLC_PLUGIN_MARKETPLACE_URL: serverUrl,
       ...env,
     },
@@ -99,7 +99,7 @@ describe('check-plugin-version hook (AISDLC-89)', () => {
       assert.equal(code, 0, 'hook must exit 0 even when stale');
       assert.match(stderr, /v0\.7\.0 installed, v0\.8\.1 available/);
       assert.match(stderr, /\/plugin update ai-sdlc/);
-      // stdout must stay clean — Claude Code's hook protocol reserves stdout.
+      // stdout must stay clean — GitHub Copilot CLI's hook protocol reserves stdout.
       assert.equal(stdout, '');
     } finally {
       cleanup();
@@ -110,7 +110,7 @@ describe('check-plugin-version hook (AISDLC-89)', () => {
     try {
       // Bump installed to match latest.
       writeFileSync(
-        join(tempRoot, '.claude-plugin', 'plugin.json'),
+        join(tempRoot, '.copilot-plugin', 'plugin.json'),
         JSON.stringify({ name: 'ai-sdlc', version: '0.8.1' }, null, 2),
       );
       const { code, stderr, stdout } = await runHook();

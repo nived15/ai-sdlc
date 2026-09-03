@@ -217,7 +217,7 @@ The framework doesn't prescribe — your team owns the cadence and trigger. Once
 
 ```bash
 cli-import-spec --from .specify/specs/auth-feature/
-# or, inside Claude Code:
+# or, inside GitHub Copilot CLI:
 /ai-sdlc import-spec --from .specify/specs/auth-feature/
 ```
 

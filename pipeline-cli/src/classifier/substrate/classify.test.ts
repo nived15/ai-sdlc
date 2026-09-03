@@ -164,9 +164,9 @@ describe('classify — model resolution (AC-2)', () => {
       const result = await classify({ text: 'x' }, 'capture-triage', {
         invoker,
         repoRoot: repo,
-        model: 'claude-sonnet-4-5',
+        model: 'balanced',
       });
-      expect(result.model).toBe('claude-sonnet-4-5');
+      expect(result.model).toBe('balanced');
     } finally {
       rmSync(repo, { recursive: true, force: true });
     }

@@ -469,7 +469,7 @@ describe('Vector 6: credential-exfiltration — sandbox cannot reach signing key
     const proxy = new InferenceProxy({
       prNumber: FIXTURE_CREDENTIAL_EXFILTRATION.prNumber,
       credential: 'sk-fake-credential-for-test',
-      provider: 'anthropic',
+      provider: 'github-models',
     });
     // The proxy exists and has policy methods
     expect(typeof proxy.start).toBe('function');

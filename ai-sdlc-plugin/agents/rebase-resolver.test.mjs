@@ -68,10 +68,10 @@ describe('rebase-resolver frontmatter', () => {
     assert.equal(frontmatter.model, 'inherit');
   });
 
-  it('runs on claude-code harness (no codex requirement)', () => {
+  it('runs on copilot harness (no copilot requirement)', () => {
     // Unlike the reviewer agents, rebase-resolver doesn't need
     // independence from the developer harness — it's mechanical work.
-    assert.equal(frontmatter.harness, 'claude-code');
+    assert.equal(frontmatter.harness, 'copilot');
   });
 
   it('grants Read, Edit, Bash, Grep, Glob (no Write — only edits existing)', () => {

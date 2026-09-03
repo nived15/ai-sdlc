@@ -72,15 +72,15 @@ function makeEmbeddingsDir(tmpDir: string): string {
 
 describe('slug + jsonlPath helpers', () => {
   it('sanitizes unsafe characters in provider + modelVersion', () => {
-    expect(slug('openai-text-embedding-3-small', '2024-01-25')).toBe(
-      'openai-text-embedding-3-small-2024-01-25',
+    expect(slug('github-models-embedding-small', '2024-01-25')).toBe(
+      'github-models-embedding-small-2024-01-25',
     );
     expect(slug('weird/provider', 'v1@latest')).toBe('weird-provider-v1-latest');
   });
 
   it('jsonlPath produces the expected filename layout', () => {
-    expect(jsonlPath('/abs/_embeddings', 'openai-text-embedding-3-small', '2024-01-25')).toBe(
-      '/abs/_embeddings/openai-text-embedding-3-small-2024-01-25.jsonl',
+    expect(jsonlPath('/abs/_embeddings', 'github-models-embedding-small', '2024-01-25')).toBe(
+      '/abs/_embeddings/github-models-embedding-small-2024-01-25.jsonl',
     );
   });
 });
@@ -144,18 +144,18 @@ describe('findFromFile', () => {
   });
 
   it('finds the file holding the source provider', () => {
-    writeJsonlFile(embDir, 'openai-ada-002-2022-12-15.jsonl', [
-      makeEntry('a', 'openai-text-embedding-ada-002', '2022-12-15', 4),
-      makeEntry('b', 'openai-text-embedding-ada-002', '2022-12-15', 4),
+    writeJsonlFile(embDir, 'github-copilot-ada-002-2022-12-15.jsonl', [
+      makeEntry('a', 'github-copilot-text-embedding-ada-002', '2022-12-15', 4),
+      makeEntry('b', 'github-copilot-text-embedding-ada-002', '2022-12-15', 4),
     ]);
-    writeJsonlFile(embDir, 'openai-3-small-2024-01-25.jsonl', [
-      makeEntry('c', 'openai-text-embedding-3-small', '2024-01-25', 4),
+    writeJsonlFile(embDir, 'github-copilot-3-small-2024-01-25.jsonl', [
+      makeEntry('c', 'github-models-embedding-small', '2024-01-25', 4),
     ]);
 
-    const result = findFromFile(embDir, 'openai-text-embedding-ada-002');
+    const result = findFromFile(embDir, 'github-copilot-text-embedding-ada-002');
     expect(result).not.toBeNull();
     expect(result?.modelVersion).toBe('2022-12-15');
-    expect(result?.filePath).toContain('openai-ada-002-2022-12-15.jsonl');
+    expect(result?.filePath).toContain('github-copilot-ada-002-2022-12-15.jsonl');
   });
 
   it('prefers the largest modelVersion when multiple files hold the same provider', () => {
@@ -208,21 +208,21 @@ describe('estimateMigrationCost', () => {
 
   it('AC#1: sums tokens across all source entries and applies default target rate', () => {
     writeJsonlFile(embDir, 'src.jsonl', [
-      makeEntry('x'.repeat(40), 'openai-text-embedding-ada-002', '2022-12-15', 4),
-      makeEntry('x'.repeat(80), 'openai-text-embedding-ada-002', '2022-12-15', 4),
+      makeEntry('x'.repeat(40), 'github-copilot-text-embedding-ada-002', '2022-12-15', 4),
+      makeEntry('x'.repeat(80), 'github-copilot-text-embedding-ada-002', '2022-12-15', 4),
     ]);
 
     const est = estimateMigrationCost(
       embDir,
-      'openai-text-embedding-ada-002',
-      'openai-text-embedding-3-large',
+      'github-copilot-text-embedding-ada-002',
+      'github-copilot-text-embedding-3-large',
     );
     expect(est).not.toBeNull();
     expect(est!.entryCount).toBe(2);
     // 40 chars = 10 tokens; 80 chars = 20 tokens; total = 30 tokens.
     expect(est!.totalTokens).toBe(30);
     expect(est!.ratePer1MTokensUsd).toBe(
-      DEFAULT_PROVIDER_RATES_PER_1M_TOKENS_USD['openai-text-embedding-3-large'],
+      DEFAULT_PROVIDER_RATES_PER_1M_TOKENS_USD['github-copilot-text-embedding-3-large'],
     );
     // 30 / 1M * 0.13 = 3.9e-6
     expect(est!.estimatedCostUsd).toBeCloseTo((30 / 1_000_000) * 0.13, 10);
@@ -230,12 +230,12 @@ describe('estimateMigrationCost', () => {
 
   it('AC#1: respects custom rate override', () => {
     writeJsonlFile(embDir, 'src.jsonl', [
-      makeEntry('x'.repeat(40), 'openai-text-embedding-ada-002', '2022-12-15', 4),
+      makeEntry('x'.repeat(40), 'github-copilot-text-embedding-ada-002', '2022-12-15', 4),
     ]);
     const est = estimateMigrationCost(
       embDir,
-      'openai-text-embedding-ada-002',
-      'openai-text-embedding-3-small',
+      'github-copilot-text-embedding-ada-002',
+      'github-models-embedding-small',
       { ratePer1MTokensUsd: 0.5 },
     );
     expect(est!.ratePer1MTokensUsd).toBe(0.5);
@@ -244,11 +244,11 @@ describe('estimateMigrationCost', () => {
 
   it('AC#1: uses 0.10 fallback rate when target provider is unknown', () => {
     writeJsonlFile(embDir, 'src.jsonl', [
-      makeEntry('x'.repeat(20), 'openai-text-embedding-ada-002', '2022-12-15', 4),
+      makeEntry('x'.repeat(20), 'github-copilot-text-embedding-ada-002', '2022-12-15', 4),
     ]);
     const est = estimateMigrationCost(
       embDir,
-      'openai-text-embedding-ada-002',
+      'github-copilot-text-embedding-ada-002',
       'novel-future-provider-not-in-table',
     );
     expect(est!.ratePer1MTokensUsd).toBe(0.1);
@@ -270,8 +270,8 @@ describe('executeMigration', () => {
   });
 
   it('AC#11: round-trip — entries from source land on target with same text + textHash', async () => {
-    const fromProvider = 'openai-text-embedding-ada-002';
-    const toProvider = 'openai-text-embedding-3-small';
+    const fromProvider = 'github-copilot-text-embedding-ada-002';
+    const toProvider = 'github-models-embedding-small';
 
     writeJsonlFile(embDir, 'src.jsonl', [
       makeEntry('hello world', fromProvider, '2022-12-15', 4),
@@ -614,8 +614,8 @@ describe('runEmbeddingBumpCli (yargs router coverage)', () => {
   it('AC#1: dry-run (text format) emits the cost-estimate report', async () => {
     const artifactsDir = makeArtifactsDir();
     seedSourceJsonl(artifactsDir, 'src.jsonl', [
-      makeEntry('x'.repeat(40), 'openai-text-embedding-ada-002', '2022-12-15', 4),
-      makeEntry('x'.repeat(40), 'openai-text-embedding-ada-002', '2022-12-15', 4),
+      makeEntry('x'.repeat(40), 'github-copilot-text-embedding-ada-002', '2022-12-15', 4),
+      makeEntry('x'.repeat(40), 'github-copilot-text-embedding-ada-002', '2022-12-15', 4),
     ]);
 
     setArgv(
@@ -623,16 +623,16 @@ describe('runEmbeddingBumpCli (yargs router coverage)', () => {
       '--artifacts-dir',
       artifactsDir,
       '--from',
-      'openai-text-embedding-ada-002',
+      'github-copilot-text-embedding-ada-002',
       '--to',
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
     );
     await runEmbeddingBumpCli();
 
     const out = stdoutText();
     expect(out).toMatch(/migrate 2 vectors/);
-    expect(out).toMatch(/openai-text-embedding-ada-002/);
-    expect(out).toMatch(/openai-text-embedding-3-small/);
+    expect(out).toMatch(/github-copilot-text-embedding-ada-002/);
+    expect(out).toMatch(/github-models-embedding-small/);
     expect(out).toMatch(/Estimated cost: \$/);
   });
 
@@ -650,7 +650,7 @@ describe('runEmbeddingBumpCli (yargs router coverage)', () => {
       '--from',
       'p',
       '--to',
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
       '--format',
       'json',
     );

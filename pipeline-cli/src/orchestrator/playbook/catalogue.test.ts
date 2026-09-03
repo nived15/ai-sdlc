@@ -24,11 +24,11 @@ import {
 } from './index.js';
 
 const REPO_ROOT = (() => {
-  // Walk up from this file until we find the worktree root (CLAUDE.md).
+  // Walk up from this file until we find the worktree root (.github/copilot-instructions.md).
   let dir = process.cwd();
   for (let i = 0; i < 10; i++) {
     try {
-      readFileSync(join(dir, 'CLAUDE.md'), 'utf8');
+      readFileSync(join(dir, '.github/copilot-instructions.md'), 'utf8');
       return dir;
     } catch {
       dir = join(dir, '..');

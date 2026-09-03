@@ -12,7 +12,7 @@ export const runCommand = new Command('run')
   .option('--state <path>', 'SQLite state database path')
   .option(
     '--runner <name>',
-    'Select a registered runner by name (e.g. claude-code, copilot, cursor). ' +
+    'Select a registered runner by name (e.g. copilot). ' +
       'Fails fast when the name is not registered — no silent fallback.',
   )
   .action(async (opts, cmd) => {

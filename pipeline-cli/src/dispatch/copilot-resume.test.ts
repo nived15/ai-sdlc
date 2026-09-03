@@ -1,5 +1,5 @@
 /**
- * Tests for the `claude -p` session-resume helpers (RFC-0041 OQ-4 /
+ * Tests for the `copilot -p` session-resume helpers (RFC-0041 OQ-4 /
  * AISDLC-377.2). These are the primitives the supervisor (Phase 2 /
  * AISDLC-377.3) will compose into its actual subprocess spawn loop.
  */
@@ -7,35 +7,33 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  buildClaudePInitialArgv,
-  buildClaudePResumeArgv,
+  buildCopilotInitialArgv,
+  buildCopilotResumeArgv,
   DEFAULT_RESUME_AGENT,
-  extractSessionIdFromClaudeOutput,
-} from './claude-p-resume.js';
+  extractSessionIdFromCopilotOutput,
+} from './copilot-resume.js';
 
-describe('buildClaudePInitialArgv', () => {
-  it('includes --session-id, --agent, --print, --output-format json, --permission-mode', () => {
-    const { argv, sessionId } = buildClaudePInitialArgv({
+describe('buildCopilotInitialArgv', () => {
+  it('includes --allow-all-tools, --no-color, --log-level, --agent and -p <prompt>', () => {
+    const { argv, sessionId } = buildCopilotInitialArgv({
       sessionId: 'abc-123-uuid',
       prompt: 'implement task AISDLC-X',
     });
     expect(sessionId).toBe('abc-123-uuid');
     expect(argv).toEqual([
-      '--print',
-      '--output-format',
-      'json',
-      '--permission-mode',
-      'bypassPermissions',
-      '--session-id',
-      'abc-123-uuid',
+      '--allow-all-tools',
+      '--no-color',
+      '--log-level',
+      'error',
       '--agent',
       DEFAULT_RESUME_AGENT,
+      '-p',
       'implement task AISDLC-X',
     ]);
   });
 
   it('mints a fresh UUID when no sessionId is provided', () => {
-    const { sessionId } = buildClaudePInitialArgv({
+    const { sessionId } = buildCopilotInitialArgv({
       prompt: 'p',
     });
     // RFC-4122 v4 UUIDs look like 8-4-4-4-12 hex chars.
@@ -43,19 +41,20 @@ describe('buildClaudePInitialArgv', () => {
   });
 
   it('threads --model when provided', () => {
-    const { argv } = buildClaudePInitialArgv({
+    const { argv } = buildCopilotInitialArgv({
       sessionId: 'sid',
       prompt: 'p',
-      model: 'claude-sonnet-4-6',
+      model: 'gpt-5',
     });
     expect(argv).toContain('--model');
-    expect(argv).toContain('claude-sonnet-4-6');
-    // --model must appear BEFORE the positional prompt at the end.
+    expect(argv).toContain('gpt-5');
+    // --model must appear BEFORE the trailing `-p <prompt>` pair.
     expect(argv[argv.length - 1]).toBe('p');
+    expect(argv[argv.length - 2]).toBe('-p');
   });
 
   it('threads --agent override', () => {
-    const { argv } = buildClaudePInitialArgv({
+    const { argv } = buildCopilotInitialArgv({
       sessionId: 'sid',
       prompt: 'p',
       agent: 'test-reviewer',
@@ -65,64 +64,69 @@ describe('buildClaudePInitialArgv', () => {
     expect(argv[agentIdx + 1]).toBe('test-reviewer');
   });
 
-  it('threads extraArgs BEFORE the positional prompt', () => {
-    const { argv } = buildClaudePInitialArgv({
+  it('threads extraArgs BEFORE the prompt', () => {
+    const { argv } = buildCopilotInitialArgv({
       sessionId: 'sid',
       prompt: 'p',
-      extraArgs: ['--max-turns', '50'],
+      extraArgs: ['--add-dir', '/tmp/shared'],
     });
-    expect(argv).toContain('--max-turns');
+    expect(argv).toContain('--add-dir');
     expect(argv[argv.length - 1]).toBe('p');
-    expect(argv.indexOf('--max-turns')).toBeLessThan(argv.indexOf('p'));
+    expect(argv.indexOf('--add-dir')).toBeLessThan(argv.indexOf('-p'));
   });
 
-  it('keeps the prompt as the LAST positional argv entry (shell-safe)', () => {
-    const { argv } = buildClaudePInitialArgv({
+  it('keeps the prompt as the LAST argv entry (shell-safe)', () => {
+    const { argv } = buildCopilotInitialArgv({
       sessionId: 'sid',
       prompt: 'a multi-word prompt with "quotes" and spaces',
     });
     expect(argv[argv.length - 1]).toBe('a multi-word prompt with "quotes" and spaces');
   });
+
+  it('always allows tools so headless Workers never block on approval', () => {
+    const { argv } = buildCopilotInitialArgv({ prompt: 'p' });
+    expect(argv).toContain('--allow-all-tools');
+  });
 });
 
-describe('buildClaudePResumeArgv', () => {
-  it('uses --resume <sessionId> + feedback as positional', () => {
-    const argv = buildClaudePResumeArgv({
+describe('buildCopilotResumeArgv', () => {
+  it('uses --resume <sessionId> + -p <feedback>', () => {
+    const argv = buildCopilotResumeArgv({
       sessionId: 'abc-123-uuid',
       feedback: 'reviewer wants edge-case coverage on path P',
     });
     expect(argv).toEqual([
-      '--print',
-      '--output-format',
-      'json',
-      '--permission-mode',
-      'bypassPermissions',
+      '--allow-all-tools',
+      '--no-color',
+      '--log-level',
+      'error',
       '--resume',
       'abc-123-uuid',
+      '-p',
       'reviewer wants edge-case coverage on path P',
     ]);
   });
 
   it('does NOT pass --agent on resume (the prior session pinned it)', () => {
-    const argv = buildClaudePResumeArgv({
+    const argv = buildCopilotResumeArgv({
       sessionId: 'sid',
       feedback: 'fb',
     });
     expect(argv).not.toContain('--agent');
   });
 
-  it('threads extraArgs BEFORE the positional feedback', () => {
-    const argv = buildClaudePResumeArgv({
+  it('threads extraArgs BEFORE the feedback prompt', () => {
+    const argv = buildCopilotResumeArgv({
       sessionId: 'sid',
       feedback: 'fb',
-      extraArgs: ['--model', 'opus'],
+      extraArgs: ['--model', 'gpt-5'],
     });
     expect(argv).toContain('--model');
     expect(argv[argv.length - 1]).toBe('fb');
   });
 
-  it('keeps feedback as the LAST positional argv entry (shell-safe)', () => {
-    const argv = buildClaudePResumeArgv({
+  it('keeps feedback as the LAST argv entry (shell-safe)', () => {
+    const argv = buildCopilotResumeArgv({
       sessionId: 'sid',
       feedback: 'a multi-word feedback string',
     });
@@ -130,15 +134,15 @@ describe('buildClaudePResumeArgv', () => {
   });
 });
 
-describe('extractSessionIdFromClaudeOutput', () => {
+describe('extractSessionIdFromCopilotOutput', () => {
   it('returns session_id from snake_case envelope', () => {
     const parsed = { type: 'result', session_id: 'sid-snake', result: '{}' };
-    expect(extractSessionIdFromClaudeOutput(parsed)).toBe('sid-snake');
+    expect(extractSessionIdFromCopilotOutput(parsed)).toBe('sid-snake');
   });
 
   it('returns sessionId from camelCase envelope (defensive fallback)', () => {
     const parsed = { type: 'result', sessionId: 'sid-camel', result: '{}' };
-    expect(extractSessionIdFromClaudeOutput(parsed)).toBe('sid-camel');
+    expect(extractSessionIdFromCopilotOutput(parsed)).toBe('sid-camel');
   });
 
   it('prefers session_id over sessionId when both present', () => {
@@ -148,26 +152,26 @@ describe('extractSessionIdFromClaudeOutput', () => {
       sessionId: 'sid-camel',
       result: '{}',
     };
-    expect(extractSessionIdFromClaudeOutput(parsed)).toBe('sid-snake');
+    expect(extractSessionIdFromCopilotOutput(parsed)).toBe('sid-snake');
   });
 
   it('returns undefined when neither field is present', () => {
-    expect(extractSessionIdFromClaudeOutput({ type: 'result', result: '{}' })).toBeUndefined();
+    expect(extractSessionIdFromCopilotOutput({ type: 'result', result: '{}' })).toBeUndefined();
   });
 
   it('returns undefined on non-object input (null, string, number, undefined)', () => {
-    expect(extractSessionIdFromClaudeOutput(null)).toBeUndefined();
-    expect(extractSessionIdFromClaudeOutput('string')).toBeUndefined();
-    expect(extractSessionIdFromClaudeOutput(42)).toBeUndefined();
-    expect(extractSessionIdFromClaudeOutput(undefined)).toBeUndefined();
+    expect(extractSessionIdFromCopilotOutput(null)).toBeUndefined();
+    expect(extractSessionIdFromCopilotOutput('string')).toBeUndefined();
+    expect(extractSessionIdFromCopilotOutput(42)).toBeUndefined();
+    expect(extractSessionIdFromCopilotOutput(undefined)).toBeUndefined();
   });
 
   it('returns undefined when the session_id field is an empty string', () => {
-    expect(extractSessionIdFromClaudeOutput({ session_id: '' })).toBeUndefined();
+    expect(extractSessionIdFromCopilotOutput({ session_id: '' })).toBeUndefined();
   });
 
   it('returns undefined when the session_id field is non-string', () => {
-    expect(extractSessionIdFromClaudeOutput({ session_id: 42 })).toBeUndefined();
-    expect(extractSessionIdFromClaudeOutput({ session_id: null })).toBeUndefined();
+    expect(extractSessionIdFromCopilotOutput({ session_id: 42 })).toBeUndefined();
+    expect(extractSessionIdFromCopilotOutput({ session_id: null })).toBeUndefined();
   });
 });

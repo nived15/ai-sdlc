@@ -4,10 +4,10 @@
  * AISDLC-98 reverted AISDLC-82: the Step 0-13 recipe used to live in this
  * command body, briefly moved into an `execute-orchestrator` subagent, and
  * has now moved BACK into the slash command body. The orchestrator design
- * is unimplementable on the current Claude Code harness — plugin subagents
+ * is unimplementable on the current GitHub Copilot CLI harness — plugin subagents
  * cannot use the `Agent` tool (the harness filters it out one level deep
  * regardless of frontmatter). The slash command body, by contrast, runs in
- * the main Claude Code session which DOES have the `Agent` tool, so it
+ * the main Copilot CLI session which DOES have the `Agent` tool, so it
  * can spawn the developer + 3 reviewers directly without a middleman.
  *
  * Body-contract assertions therefore read from `execute.md` itself.
@@ -211,8 +211,8 @@ describe('/ai-sdlc execute body — pipeline lives inline (AISDLC-98)', () => {
     assert.match(cmdBody, /three.*parallel|parallel.*reviewer|3 parallel reviewer/i);
   });
 
-  it('detects Codex availability and emits visible fallback warning', () => {
-    assert.match(cmdBody, /which codex/);
+  it('detects GitHub Copilot availability and emits visible fallback warning', () => {
+    assert.match(cmdBody, /which copilot/);
     assert.match(cmdBody, /INDEPENDENCE NOT ENFORCED/);
   });
 
@@ -262,7 +262,7 @@ describe('/ai-sdlc execute body — pipeline lives inline (AISDLC-98)', () => {
     assert.match(cmdBody, /chore: mark.*complete/);
   });
 
-  it('builds finalSummary per CLAUDE.md template', () => {
+  it('builds finalSummary per .github/copilot-instructions.md template', () => {
     assert.match(cmdBody, /finalSummary/);
     assert.match(cmdBody, /## Summary/);
     assert.match(cmdBody, /## Verification/);
@@ -581,15 +581,15 @@ describe('/ai-sdlc execute body — pipeline lives inline (AISDLC-98)', () => {
   // AISDLC-272 extends resolution to 5 topologies:
   //   1. CLAUDE_PLUGIN_DIR set + deps present → use it
   //   2. CLAUDE_PLUGIN_DIR set + deps missing → self-heal via install-runtime-deps.sh
-  //   3. CLAUDE_PLUGIN_DIR unset + CLAUDE_PLUGIN_ROOT set → try CLAUDE_PLUGIN_ROOT
-  //   4. CLAUDE_PLUGIN_DIR unset → probe ~/.claude/plugins/cache/
+  //   3. CLAUDE_PLUGIN_DIR unset + COPILOT_PLUGIN_ROOT set → try COPILOT_PLUGIN_ROOT
+  //   4. CLAUDE_PLUGIN_DIR unset → probe ~/.copilot/plugins/cache/
   //   5. All env vars unset → $(pwd)/pipeline-cli/bin (dogfood)
 
-  it('AISDLC-272: PIPELINE_CLI_BIN resolution references CLAUDE_PLUGIN_ROOT as fallback', () => {
+  it('AISDLC-272: PIPELINE_CLI_BIN resolution references COPILOT_PLUGIN_ROOT as fallback', () => {
     assert.match(
       cmdBody,
-      /CLAUDE_PLUGIN_ROOT/,
-      'must reference CLAUDE_PLUGIN_ROOT for topology 3 (env set but CLAUDE_PLUGIN_DIR unset)',
+      /COPILOT_PLUGIN_ROOT/,
+      'must reference COPILOT_PLUGIN_ROOT for topology 3 (env set but CLAUDE_PLUGIN_DIR unset)',
     );
   });
 
@@ -611,13 +611,13 @@ describe('/ai-sdlc execute body — pipeline lives inline (AISDLC-98)', () => {
     );
   });
 
-  it('AISDLC-272: PLUGIN_SCRIPTS_DIR uses CLAUDE_PLUGIN_ROOT as secondary fallback', () => {
-    // PLUGIN_SCRIPTS_DIR must fall back to CLAUDE_PLUGIN_ROOT when CLAUDE_PLUGIN_DIR
+  it('AISDLC-272: PLUGIN_SCRIPTS_DIR uses COPILOT_PLUGIN_ROOT as secondary fallback', () => {
+    // PLUGIN_SCRIPTS_DIR must fall back to COPILOT_PLUGIN_ROOT when CLAUDE_PLUGIN_DIR
     // is unset — not just to $(pwd)/ai-sdlc-plugin. This handles topology 3.
     assert.match(
       cmdBody,
-      /PLUGIN_SCRIPTS_DIR=.*CLAUDE_PLUGIN_ROOT/,
-      'PLUGIN_SCRIPTS_DIR must include CLAUDE_PLUGIN_ROOT in its fallback chain',
+      /PLUGIN_SCRIPTS_DIR=.*COPILOT_PLUGIN_ROOT/,
+      'PLUGIN_SCRIPTS_DIR must include COPILOT_PLUGIN_ROOT in its fallback chain',
     );
   });
 
@@ -634,25 +634,25 @@ describe('/ai-sdlc execute body — pipeline lives inline (AISDLC-98)', () => {
 
 // ── AISDLC-442: CCR remote-sandbox guard ─────────────────────────────────────
 describe('/ai-sdlc execute — CCR remote-sandbox guard (AISDLC-442)', () => {
-  it('detects CLAUDE_CODE_ENV=ccr and refuses with an actionable error', () => {
+  it('detects COPILOT_CLI_ENV=ccr and refuses with an actionable error', () => {
     // Primary detection heuristic: canonical CCR env var.
     assert.match(
       cmdBody,
-      /CLAUDE_CODE_ENV.*=.*ccr|CLAUDE_CODE_ENV.*ccr/,
-      'must check CLAUDE_CODE_ENV=ccr as primary CCR detection heuristic',
+      /COPILOT_CLI_ENV.*=.*ccr|COPILOT_CLI_ENV.*ccr/,
+      'must check COPILOT_CLI_ENV=ccr as primary CCR detection heuristic',
     );
   });
 
-  it('detects CLAUDE_REMOTE_EXECUTION=1 and refuses', () => {
+  it('detects COPILOT_REMOTE_EXECUTION=1 and refuses', () => {
     // Secondary detection heuristic.
     assert.match(
       cmdBody,
-      /CLAUDE_REMOTE_EXECUTION.*=.*1/,
-      'must check CLAUDE_REMOTE_EXECUTION=1 as secondary CCR detection heuristic',
+      /COPILOT_REMOTE_EXECUTION.*=.*1/,
+      'must check COPILOT_REMOTE_EXECUTION=1 as secondary CCR detection heuristic',
     );
   });
 
-  it('detects CLAUDE_CODE_ENV set + signing-key absent as conservative fallback heuristic', () => {
+  it('detects COPILOT_CLI_ENV set + signing-key absent as conservative fallback heuristic', () => {
     // Tertiary heuristic: env set + key absent.
     assert.match(
       cmdBody,

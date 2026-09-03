@@ -40,7 +40,7 @@ describe('resolveProjectRoot (AISDLC-99)', () => {
 
     // A directory with no backlog/ subdir, used as the "wrong env var" target
     // (mirrors the real-world plugin bug where AI_SDLC_PROJECT_ROOT points at
-    // ~/.claude/plugins/data/<plugin>/, which has no backlog/).
+    // ~/.copilot/plugins/data/<plugin>/, which has no backlog/).
     bogusDir = join(scratch, 'bogus');
     mkdirSync(bogusDir, { recursive: true });
   });
@@ -73,12 +73,12 @@ describe('resolveProjectRoot (AISDLC-99)', () => {
     expect(result).toBe(resolve(goodProject));
   });
 
-  it('uses CLAUDE_PROJECT_DIR when AI_SDLC_PROJECT_ROOT is unset (precedence)', () => {
-    // CLAUDE_PROJECT_DIR is a recognised secondary signal — Claude Code sets
+  it('uses COPILOT_PROJECT_DIR when AI_SDLC_PROJECT_ROOT is unset (precedence)', () => {
+    // COPILOT_PROJECT_DIR is a recognised secondary signal — GitHub Copilot CLI sets
     // it when a session is bound to a project. We honour it ahead of the
     // walk-up so explicit configuration always wins over discovery.
     const result = resolveProjectRoot({
-      env: { CLAUDE_PROJECT_DIR: goodProject },
+      env: { COPILOT_PROJECT_DIR: goodProject },
       cwd: '/tmp',
     });
     expect(result).toBe(resolve(goodProject));
@@ -390,7 +390,7 @@ describe('resolveProjectRoot — Pattern C end-to-end (AISDLC-216)', () => {
   });
 
   it('Pattern C with worktree cwd falls back to parent, then re-routes via env (AC #4 + #6 composition)', () => {
-    // Simulates: Claude Code invoked from inside a worktree subdir.
+    // Simulates: GitHub Copilot CLI invoked from inside a worktree subdir.
     // walkUpForBacklog stops at worktreeRoot (which has backlog/), so it
     // never reaches parentRoot — no Pattern C check needed for this sub-path.
     const nestedInWorktree = join(worktreeRoot, 'src', 'lib');

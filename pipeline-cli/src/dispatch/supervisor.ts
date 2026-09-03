@@ -1,26 +1,26 @@
 /**
- * Worker Supervisor for the `claude-p-shell` Worker kind (RFC-0041 §4.5).
+ * Worker Supervisor for the `copilot-p-shell` Worker kind (RFC-0041 §4.5).
  *
  * The supervisor is a small daemon that polls the Dispatch Board's `queue/`
- * subdirectory at a fixed cadence and spawns `claude -p` subprocesses for
- * each manifest whose `workerKind` ∈ {`claude-p-shell`, `any`}. Each spawn:
+ * subdirectory at a fixed cadence and spawns `copilot -p` subprocesses for
+ * each manifest whose `workerKind` ∈ {`copilot-p-shell`, `any`}. Each spawn:
  *
- *   - scrubs `CLAUDECODE` from the env (RFC §4.4 — Claude Code's startup
- *     guard refuses to launch when `CLAUDECODE=1` is set);
+ *   - scrubs `COPILOT_CLI_SESSION` from the env (RFC §4.4 — GitHub Copilot CLI's startup
+ *     guard refuses to launch when `COPILOT_CLI_SESSION=1` is set);
  *   - runs in the manifest's `worktree` cwd;
  *   - is tracked by PID so concurrency caps + stale-heartbeat sweeps work.
  *
  * The core (`runSupervisorTick`) is a pure-ish function: it takes a
  * `SupervisorState` (in-memory), an injectable `spawn` (so tests can avoid
- * touching `claude` and just observe the argv/env shape), and an injectable
+ * touching `copilot` and just observe the argv/env shape), and an injectable
  * `now`. The CLI bin wraps it in a `setInterval` loop.
  *
  * **OQ resolutions baked into this module:**
  *   - OQ-1: supervisor lives in `pipeline-cli/bin/`, not a separate package.
- *   - OQ-2: env is inherited (no new auth mode). `CLAUDECODE` is the only
- *     scrubbed key — `ANTHROPIC_API_KEY` / `~/.claude/credentials` flow
+ *   - OQ-2: env is inherited (no new auth mode). `COPILOT_CLI_SESSION` is the only
+ *     scrubbed key — the operator's GitHub Copilot CLI credentials flow
  *     through unchanged.
- *   - OQ-3: 30-min heartbeat threshold matches `ShellClaudePSpawner`'s
+ *   - OQ-3: 30-min heartbeat threshold matches the Copilot harness adapter's
  *     `DEFAULT_TIMEOUT_MS`.
  *   - OQ-6: 15-second default poll cadence (slower than in-session-agent's
  *     5s) so subscription Workers preferentially win `any` races.
@@ -75,7 +75,7 @@ export function createSupervisorState(): SupervisorState {
 export interface SupervisorTickOptions {
   /** Absolute path to the dispatch board (`<repo>/.ai-sdlc/dispatch`). */
   boardDir: string;
-  /** Maximum concurrent `claude -p` Workers. From DispatchConfig. */
+  /** Maximum concurrent `copilot -p` Workers. From DispatchConfig. */
   maxConcurrent: number;
   /** Stale-heartbeat threshold passed to `sweepStaleHeartbeats`. */
   staleMs: number;
@@ -83,8 +83,8 @@ export interface SupervisorTickOptions {
   state: SupervisorState;
   /** Injectable spawn primitive — defaults to `node:child_process.spawn`. */
   spawn: SupervisorSpawn;
-  /** Path to the `claude` binary. Default: 'claude'. */
-  claudeBinary?: string;
+  /** Path to the `copilot` binary. Default: 'copilot'. */
+  copilotBinary?: string;
   /** Injectable wall clock (defaults to `Date.now`). */
   now?: () => Date;
   /** Optional stderr logger; falls back to no-op. Tests inject a buffer. */
@@ -109,8 +109,8 @@ export interface SupervisorTickResult {
  *      under the same `cause: stale-heartbeat` is the documented OQ-3
  *      "no race" property).
  *   2. Up to `maxConcurrent - state.inflight.size` times, atomically claim
- *      the next `workerKind ∈ {claude-p-shell, any}` manifest and spawn
- *      `env -u CLAUDECODE claude -p ...` in the manifest's worktree.
+ *      the next `workerKind ∈ {copilot-p-shell, any}` manifest and spawn
+ *      `env -u COPILOT_CLI_SESSION copilot -p ...` in the manifest's worktree.
  *   3. Wire the child's `exit` event to drop its PID from `state.inflight`
  *      and (on non-zero exit) write a `spawn-rejected` diagnostic.
  *
@@ -125,7 +125,7 @@ export function runSupervisorTick(opts: SupervisorTickOptions): SupervisorTickRe
     staleMs,
     state,
     spawn,
-    claudeBinary = 'claude',
+    copilotBinary = 'copilot',
     now = () => new Date(),
     log = () => {},
   } = opts;
@@ -150,20 +150,20 @@ export function runSupervisorTick(opts: SupervisorTickOptions): SupervisorTickRe
 
   let spawned = 0;
   while (state.inflight.size < maxConcurrent) {
-    const result = claimNext(boardDir, 'claude-p-shell', now);
+    const result = claimNext(boardDir, 'copilot-p-shell', now);
     if (!result.claimed || !result.manifest) break;
     const manifest = result.manifest;
 
-    // Scrub CLAUDECODE from the env (RFC §4.4). We also forward the parent
+    // Scrub COPILOT_CLI_SESSION from the env (RFC §4.4). We also forward the parent
     // env explicitly so OQ-2 (inherit operator env) is preserved.
     const env: NodeJS.ProcessEnv = { ...process.env };
-    delete env.CLAUDECODE;
+    delete env.COPILOT_CLI_SESSION;
 
-    const argv = buildClaudeArgv(manifest);
+    const argv = buildCopilotArgv(manifest);
 
     let child: ChildProcess;
     try {
-      child = spawn(claudeBinary, argv, { cwd: manifest.worktree, env });
+      child = spawn(copilotBinary, argv, { cwd: manifest.worktree, env });
     } catch (err) {
       writeSpawnRejected(boardDir, manifest, stringifyError(err));
       log(`[supervisor] spawn-rejected task=${manifest.taskId} err=${stringifyError(err)}`);
@@ -208,7 +208,7 @@ export function runSupervisorTick(opts: SupervisorTickOptions): SupervisorTickRe
           writeSpawnRejected(
             boardDir,
             manifest,
-            `claude -p exited code=${code} signal=${signal ?? 'null'}`,
+            `copilot -p exited code=${code} signal=${signal ?? 'null'}`,
           );
         }
         log(
@@ -228,22 +228,23 @@ export function runSupervisorTick(opts: SupervisorTickOptions): SupervisorTickRe
 }
 
 /**
- * Build the argv list passed to `claude -p`. Mirrors `ShellClaudePSpawner`
- * but uses `--working-directory <worktree>` only by setting `options.cwd`
- * (no `--cwd` flag exists on `claude`). The prompt positional points the
+ * Build the argv list passed to `copilot -p`. The worktree is selected via
+ * `options.cwd` (the Copilot CLI has no `--cwd` flag). The prompt points the
  * Worker at the Dispatch Board manifest by passing the absolute path to
  * the inflight manifest; the developer agent's slash-command body reads
  * the manifest and acts on it. Lastly we include `--resume <sessionId>`
  * when the manifest carries a `lastSessionId` so iterate-dev (OQ-4) can
  * resume the prior conversation.
+ *
+ * `--allow-all-tools` is required for headless operation: the Worker runs
+ * unattended in an isolated worktree with no operator to approve tool calls.
  */
-export function buildClaudeArgv(manifest: DispatchManifest): string[] {
+export function buildCopilotArgv(manifest: DispatchManifest): string[] {
   const argv: string[] = [
-    '--print',
-    '--output-format',
-    'json',
-    '--permission-mode',
-    'bypassPermissions',
+    '--allow-all-tools',
+    '--no-color',
+    '--log-level',
+    'error',
     '--agent',
     'developer',
   ];
@@ -252,7 +253,7 @@ export function buildClaudeArgv(manifest: DispatchManifest): string[] {
   }
   // The prompt is just the manifest path — the developer agent's prompt
   // template reads the manifest and inflates it to a full task brief.
-  argv.push(buildManifestPrompt(manifest));
+  argv.push('-p', buildManifestPrompt(manifest));
   return argv;
 }
 
@@ -263,7 +264,7 @@ export function buildClaudeArgv(manifest: DispatchManifest): string[] {
  */
 export function buildManifestPrompt(manifest: DispatchManifest): string {
   return [
-    `RFC-0041 claude-p-shell Worker — task ${manifest.taskId}.`,
+    `RFC-0041 copilot-p-shell Worker — task ${manifest.taskId}.`,
     `Worktree: ${manifest.worktree}`,
     `Branch: ${manifest.branch}`,
     `Task file: ${manifest.spec.taskFile}`,
@@ -281,7 +282,7 @@ function writeSpawnRejected(boardDir: string, manifest: DispatchManifest, err: s
     outcome: 'failed',
     completedAt: new Date().toISOString(),
     workerId: `supervisor-pid-${process.pid}`,
-    workerKind: 'claude-p-shell',
+    workerKind: 'copilot-p-shell',
     cause: 'spawn-rejected',
     notes: err,
   };

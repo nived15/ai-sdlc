@@ -2,9 +2,9 @@
  * AISDLC-115.4 AC #7 — end-to-end: vague issue → DoR comment posted →
  * author edits → re-check → admitted as ready.
  *
- * This test composes the real comment-loop + ingress-claude modules
+ * This test composes the real comment-loop + ingress-copilot modules
  * against an in-memory poster to exercise the full lifecycle the way
- * the GitHub Action and Claude Code subagent shims will at runtime.
+ * the GitHub Action and GitHub Copilot CLI subagent shims will at runtime.
  * No network, no LLM — Stage A alone is enough to drive both verdicts
  * (the BEFORE state fails Gates 1/2/5 deterministically; the AFTER
  * state passes Stage A clean).
@@ -22,7 +22,7 @@ import {
   type CommentPoster,
   type ExistingComment,
 } from './comment-loop.js';
-import { refineBacklogTask } from './ingress-claude.js';
+import { refineBacklogTask } from './ingress.js';
 import type { DorConfig } from './dor-config.js';
 
 const enforceConfig: DorConfig = {

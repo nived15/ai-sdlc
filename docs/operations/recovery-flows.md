@@ -10,23 +10,23 @@ This document describes all recovery paths for a stalled or crashed pipeline dis
 Is there a worktree for the task?
 │
 ├─ NO → Nothing to recover. Run normally:
-│        ai-sdlc-pipeline execute <task-id> --run --spawner api-key
+│        ai-sdlc-pipeline execute <task-id> --run --spawner copilot
 │
 └─ YES → Is there an open PR for the branch?
          │
          ├─ NO (worktree + sentinel + commits, no PR)
          │   → Crash BEFORE Step 11 (push).
          │   → Path A: Recoverable-abort resume (AISDLC-242).
-         │   → Run: ai-sdlc-pipeline execute <task-id> --run --spawner api-key
+         │   → Run: ai-sdlc-pipeline execute <task-id> --run --spawner copilot
          │          (executePipeline detects the worktree and will re-use it)
          │
          ├─ YES, DRAFT PR (Step 11 completed, Steps 12-13 incomplete)
          │   → Path B: Resume from draft PR (AISDLC-273).
-         │   → Run: ai-sdlc-pipeline execute <task-id> --resume-from-draft --spawner api-key
+         │   → Run: ai-sdlc-pipeline execute <task-id> --resume-from-draft --spawner copilot
          │
          └─ YES, READY PR (Steps 11-13 completed; reviewers flagged issues post-merge)
              → Path C: Rework PR (AISDLC-273).
-             → Run: ai-sdlc-pipeline execute <task-id> --rework-pr <pr-number> --spawner api-key
+             → Run: ai-sdlc-pipeline execute <task-id> --rework-pr <pr-number> --spawner copilot
 ```
 
 ---
@@ -44,7 +44,7 @@ Is there a worktree for the task?
 **Recovery:**
 
 ```bash
-ai-sdlc-pipeline execute <task-id> --run --spawner api-key
+ai-sdlc-pipeline execute <task-id> --run --spawner copilot
 ```
 
 The `executePipeline()` function detects the recoverable state via `detectRecoverableWorktree()` and surfaces it in the `recoverableAbort` field of the return envelope. The CLI emits a progress line:
@@ -80,7 +80,7 @@ The `executePipeline()` function detects the recoverable state via `detectRecove
 ```bash
 ai-sdlc-pipeline execute <task-id> \
   --resume-from-draft \
-  --spawner api-key
+  --spawner copilot
 ```
 
 **Output shape:**
@@ -98,9 +98,9 @@ ai-sdlc-pipeline execute <task-id> \
 
 **Constraints:**
 - Does NOT re-dispatch the developer. The existing commits are the unit of work.
-- Requires a real spawner (`--spawner api-key`, `--spawner claude`, or `--spawner codex`) even for the reviewer-only sub-cases (the spawner is used to re-run reviewers in sub-case C).
+- Requires a real spawner (`--spawner copilot`, `--spawner copilot`, or `--spawner copilot`) even for the reviewer-only sub-cases (the spawner is used to re-run reviewers in sub-case C).
 - `--spawner mock` is refused.
-- The legacy `--spawner claude-cli` was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) — see [`docs/operations/claude-cli-spawner-removed.md`](./claude-cli-spawner-removed.md).
+- The legacy `--spawner copilot` was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) — see [`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md).
 
 ---
 
@@ -117,7 +117,7 @@ ai-sdlc-pipeline execute <task-id> \
 ```bash
 ai-sdlc-pipeline execute <task-id> \
   --rework-pr <pr-number> \
-  --spawner api-key
+  --spawner copilot
 ```
 
 **What it does:**
@@ -200,9 +200,9 @@ The `draft PR` vs `ready PR` distinction in the trace is the AISDLC-273 Step 3 p
 | `--rework-pr <n>` | real spawner | Rework existing PR branch with reviewer findings (AISDLC-273) |
 | `--dry-run` | — | Validate + compute plan, no mutation |
 | `--spawner mock` | — | Dry-run/plumbing fixture; refused for `--run`/`--resume-from-draft`/`--rework-pr` |
-| `--spawner api-key` | `ANTHROPIC_API_KEY` env | Real API-key billed dispatch |
-| `--spawner claude` | `claude` CLI on PATH | Subscription-billed shell-out (`claude -p`, AISDLC-349) — default for `cli-orchestrator tick` since AISDLC-352 |
-| `--spawner codex` | `CODEX_SPAWN_AGENT_BIN` env | Codex CLI host-bridge dispatch (AISDLC-202.2) |
+| `--spawner copilot` | `GITHUB_MODELS_TOKEN` env | Real API-key billed dispatch |
+| `--spawner copilot` | `copilot` CLI on PATH | Subscription-billed shell-out (`copilot -p`, AISDLC-349) — default for `cli-orchestrator tick` since AISDLC-352 |
+| `--spawner copilot` | `COPILOT_SPAWN_AGENT_BIN` env | GitHub Copilot CLI host-bridge dispatch (AISDLC-202.2) |
 | `--max-iterations N` | — | Cap for Step 9 + rework loops (default 2) |
 
-> The legacy `--spawner claude-cli` (inline manifest mode, AISDLC-198) was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) — see [`docs/operations/claude-cli-spawner-removed.md`](./claude-cli-spawner-removed.md).
+> The legacy `--spawner copilot` (inline manifest mode, AISDLC-198) was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) — see [`docs/operations/copilot-spawner.md`](./copilot-cli-spawner-removed.md).

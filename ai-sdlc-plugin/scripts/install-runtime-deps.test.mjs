@@ -188,7 +188,7 @@ after(() => {
 describe('plugin manifests — runtimeDependencies must not drift (AISDLC-554)', () => {
   // The repo ships TWO manifests: ai-sdlc-plugin/plugin.json (which
   // install-runtime-deps.sh itself reads, via "$PLUGIN_DIR/plugin.json") and
-  // ai-sdlc-plugin/.claude-plugin/plugin.json (the marketplace-canonical
+  // ai-sdlc-plugin/.copilot-plugin/plugin.json (the marketplace-canonical
   // manifest). Nothing enforced that their runtimeDependencies agree, so a bump
   // applied to one could silently never reach a marketplace-installed adopter —
   // which is exactly the production path AISDLC-554 exists to unblock. Whichever
@@ -196,21 +196,21 @@ describe('plugin manifests — runtimeDependencies must not drift (AISDLC-554)',
   const pluginRoot = join(__dirname, '..');
   const topLevel = JSON.parse(readFileSync(join(pluginRoot, 'plugin.json'), 'utf-8'));
   const marketplace = JSON.parse(
-    readFileSync(join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf-8'),
+    readFileSync(join(pluginRoot, '.copilot-plugin', 'plugin.json'), 'utf-8'),
   );
 
   it('both manifests declare identical runtimeDependencies', () => {
     assert.deepEqual(
       marketplace.runtimeDependencies,
       topLevel.runtimeDependencies,
-      'ai-sdlc-plugin/plugin.json and ai-sdlc-plugin/.claude-plugin/plugin.json must declare the same runtimeDependencies',
+      'ai-sdlc-plugin/plugin.json and ai-sdlc-plugin/.copilot-plugin/plugin.json must declare the same runtimeDependencies',
     );
   });
 
   it('both declare @ai-sdlc/orchestrator, which carries the attestation signing runtime', () => {
     for (const [label, manifest] of [
       ['plugin.json', topLevel],
-      ['.claude-plugin/plugin.json', marketplace],
+      ['.copilot-plugin/plugin.json', marketplace],
     ]) {
       assert.ok(
         manifest.runtimeDependencies?.['@ai-sdlc/orchestrator'],
@@ -232,14 +232,14 @@ describe('install-runtime-deps.sh — script exists and is executable', () => {
 });
 
 describe('install-runtime-deps.sh — argument validation', () => {
-  it('exits 1 when CLAUDE_PLUGIN_ROOT is unset and no arg is given', () => {
+  it('exits 1 when COPILOT_PLUGIN_ROOT is unset and no arg is given', () => {
     const result = spawnSync('bash', [SCRIPT], {
-      env: { PATH: process.env.PATH, CLAUDE_PLUGIN_ROOT: '' },
+      env: { PATH: process.env.PATH, COPILOT_PLUGIN_ROOT: '' },
       encoding: 'utf-8',
       timeout: 5_000,
     });
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /CLAUDE_PLUGIN_ROOT is unset/);
+    assert.match(result.stderr, /COPILOT_PLUGIN_ROOT is unset/);
   });
 
   it('exits 1 when plugin.json is missing in the target dir', () => {
@@ -459,9 +459,9 @@ describe('install-runtime-deps.sh — idempotence', () => {
 });
 
 describe('install-runtime-deps.sh — fresh-install simulation (AISDLC-441 happy path)', () => {
-  it('simulates Claude Code copying plugin cache without npm install + heals successfully', () => {
+  it('simulates GitHub Copilot CLI copying plugin cache without npm install + heals successfully', () => {
     // Reproduce the exact failure scenario described in GH issue 713:
-    //   1. Claude Code's local marketplace installer creates the cache dir
+    //   1. GitHub Copilot CLI's local marketplace installer creates the cache dir
     //      with plugin files (plugin.json, hooks/, scripts/, etc.) but does
     //      NOT invoke npm install — so node_modules/ does not exist.
     //   2. /ai-sdlc execute or any tool calling pipeline-cli fails because

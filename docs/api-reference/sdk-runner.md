@@ -1,6 +1,6 @@
 # SDK Runner
 
-The `ClaudeCodeSdkRunner` uses the Claude Code Agent SDK's `query()` API for
+The `CopilotRunner` uses the GitHub Copilot CLI Agent SDK's `query()` API for
 programmatic agent control with budget caps, turn limits, and fine-grained tool
 filtering.
 
@@ -8,7 +8,7 @@ filtering.
 
 ```typescript
 import {
-  ClaudeCodeSdkRunner,
+  CopilotRunner,
   runParallelSdkReviews,
   DEFAULT_REVIEW_CONFIGS,
   type SdkReviewConfig,
@@ -17,18 +17,18 @@ import {
 } from '@ai-sdlc/orchestrator';
 ```
 
-## `ClaudeCodeSdkRunner`
+## `CopilotRunner`
 
 Implements the `AgentRunner` interface using the Agent SDK instead of spawning
 a CLI subprocess.
 
 ```typescript
-class ClaudeCodeSdkRunner implements AgentRunner {
+class CopilotRunner implements AgentRunner {
   run(context: AgentContext): Promise<AgentResult>;
 }
 ```
 
-### Advantages over `ClaudeCodeRunner`
+### Advantages over `CopilotRunner`
 
 | Feature | CLI Runner | SDK Runner |
 |---|---|---|
@@ -42,7 +42,7 @@ class ClaudeCodeSdkRunner implements AgentRunner {
 ### Usage
 
 ```typescript
-const runner = new ClaudeCodeSdkRunner();
+const runner = new CopilotRunner();
 
 const result = await runner.run({
   issueId: '42',
@@ -50,7 +50,7 @@ const result = await runner.run({
   issueBody: 'Users cannot log in with SSO...',
   workDir: '/path/to/repo',
   branch: 'ai-sdlc/issue-42',
-  model: 'claude-sonnet-4-6',
+  model: 'the balanced tier',
   constraints: {
     maxFilesPerChange: 15,
     requireTests: true,
@@ -157,10 +157,10 @@ if (result.allApproved) {
 
 ## Prerequisites
 
-The SDK runner requires `@anthropic-ai/claude-agent-sdk` as an optional peer
+The SDK runner requires `@github-models-ai/copilot-agent-sdk` as an optional peer
 dependency. If not installed, the runner returns an error with installation
 instructions.
 
 ```bash
-pnpm add @anthropic-ai/claude-agent-sdk
+pnpm add @github-models-ai/copilot-agent-sdk
 ```

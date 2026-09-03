@@ -9,7 +9,7 @@
  *    shell out to git/gh or touch the filesystem.
  *  - Mock the spawner factory via `PipelineToolDeps.spawnerFactory` so the
  *    Step 9 wrapper never invokes the real `defaultSpawner()` (which would
- *    throw — neither `claude` nor `ANTHROPIC_API_KEY` is present in the
+ *    throw — neither `copilot` nor `ANTHROPIC_API_KEY` is present in the
  *    test environment).
  *  - Cover: registration shape (14 tools, naming, schemas), successful
  *    invocation, schema validation rejection, and error propagation.
@@ -394,7 +394,7 @@ describe('pipeline_step_6_parse_dev_return', () => {
 });
 
 describe('pipeline_step_7_build_review_prompts', () => {
-  it('invokes buildReviewPrompts with the test-injected codex flag', async () => {
+  it('invokes buildReviewPrompts with the test-injected copilot flag', async () => {
     const build = vi.fn(async () => ({
       prompts: [
         { reviewer: 'code-reviewer' as const, prompt: 'P1' },
@@ -480,7 +480,7 @@ describe('pipeline_step_9_iterate', () => {
 
   it('propagates spawner factory errors as isError', async () => {
     const spawnerFactory = vi.fn(async () => {
-      throw new Error('no claude CLI on PATH');
+      throw new Error('no copilot CLI on PATH');
     });
     const { server, tools } = createServerStub();
     registerPipelineTools(server, {
@@ -497,7 +497,7 @@ describe('pipeline_step_9_iterate', () => {
       initialVerdict: FAKE_VERDICT,
     });
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('no claude CLI on PATH');
+    expect(result.content[0].text).toContain('no copilot CLI on PATH');
   });
 });
 

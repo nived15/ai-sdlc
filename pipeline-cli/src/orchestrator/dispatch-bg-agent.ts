@@ -4,13 +4,13 @@
  *
  * ## Why this module exists
  *
- * `/ai-sdlc orchestrator-tick` (the Conductor) runs in the main Claude Code
+ * `/ai-sdlc orchestrator-tick` (the Conductor) runs in the main GitHub Copilot CLI
  * session's slash-command body. To drain the dispatch frontier in a single
  * session, the Conductor needs to spawn dev subagents itself (Pattern X)
  * instead of leaving the work for sibling sessions (Pattern Z) or shelling
  * out to a paid subprocess pool (Pattern Y).
  *
- * Plugin subagents cannot use the `Agent` tool (Claude Code filters it one
+ * Plugin subagents cannot use the `Agent` tool (GitHub Copilot CLI filters it one
  * level deep — AISDLC-98). The Conductor IS the slash command body, so it
  * COULD call `Agent` directly — but in practice the `orchestrator-tick`
  * body is bash-heavy and the `Agent` call must happen from a separate

@@ -64,21 +64,21 @@ const DEFAULT_INPUTS = {
     {
       agentId: 'code-reviewer',
       agentFileContent: '---\nname: code-reviewer\n---\nbody one',
-      harness: 'codex',
+      harness: 'copilot',
       approved: true,
       findings: { critical: 0, major: 0, minor: 1, suggestion: 2 },
     },
     {
       agentId: 'test-reviewer',
       agentFileContent: '---\nname: test-reviewer\n---\nbody two',
-      harness: 'codex',
+      harness: 'copilot',
       approved: true,
       findings: { critical: 0, major: 0, minor: 0, suggestion: 1 },
     },
     {
       agentId: 'security-reviewer',
       agentFileContent: '---\nname: security-reviewer\n---\nbody three',
-      harness: 'codex',
+      harness: 'copilot',
       approved: true,
       findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
     },
@@ -2210,17 +2210,17 @@ describe('buildPredicate — harness field (AISDLC-202.3 AC #1)', () => {
   it('includes harness.name only when version is absent', () => {
     const predicate = buildPredicate({
       ...DEFAULT_INPUTS,
-      harness: { name: 'codex' },
+      harness: { name: 'copilot' },
     });
-    expect(predicate.harness).toEqual({ name: 'codex' });
+    expect(predicate.harness).toEqual({ name: 'copilot' });
   });
 
   it('includes both harness.name and harness.version when provided', () => {
     const predicate = buildPredicate({
       ...DEFAULT_INPUTS,
-      harness: { name: 'codex', version: '0.128.0' },
+      harness: { name: 'copilot', version: '1.0.0' },
     });
-    expect(predicate.harness).toEqual({ name: 'codex', version: '0.128.0' });
+    expect(predicate.harness).toEqual({ name: 'copilot', version: '1.0.0' });
   });
 
   it('omits harness field when name is empty string', () => {
@@ -2246,46 +2246,43 @@ describe('validatePredicateShape — harness field back-compat (AISDLC-202.3 AC 
   });
 
   it('accepts a predicate with harness.name only', () => {
-    const raw = makeRawPredicate({ harness: { name: 'codex' } });
+    const raw = makeRawPredicate({ harness: { name: 'copilot' } });
     const err = validatePredicateShape(raw);
     expect(err).toBeNull();
   });
 
   it('accepts a predicate with harness.name and harness.version', () => {
-    const raw = makeRawPredicate({ harness: { name: 'codex', version: '0.128.0' } });
+    const raw = makeRawPredicate({ harness: { name: 'copilot', version: '1.0.0' } });
     const err = validatePredicateShape(raw);
     expect(err).toBeNull();
   });
 
   it('rejects harness as a non-object', () => {
-    const raw = makeRawPredicate({ harness: 'codex' });
+    const raw = makeRawPredicate({ harness: 'copilot' });
     const err = validatePredicateShape(raw);
     expect(err).toMatch(/harness must be an object/);
   });
 
   it('rejects harness.name that does not match SHORT_ID', () => {
-    const raw = makeRawPredicate({ harness: { name: 'codex cli' } }); // space not allowed
+    const raw = makeRawPredicate({ harness: { name: 'copilot cli' } }); // space not allowed
     const err = validatePredicateShape(raw);
     expect(err).toMatch(/harness\.name does not match SHORT_ID/);
   });
 
   it('rejects harness.version that does not match SEMVER', () => {
-    const raw = makeRawPredicate({ harness: { name: 'codex', version: 'not-semver' } });
+    const raw = makeRawPredicate({ harness: { name: 'copilot', version: 'not-semver' } });
     const err = validatePredicateShape(raw);
     expect(err).toMatch(/harness\.version does not match SEMVER/);
   });
 });
 
 describe('verifyAttestation — harness field round-trip (AISDLC-202.3 AC #2)', () => {
-  it('verifies a Codex-run envelope with harness field and exposes it in the predicate', () => {
+  it('verifies a Copilot-run envelope with harness field and exposes it in the predicate', () => {
     const { privateKeyPem, publicKeyPem } = generateSigningKeyPair();
-    // AISDLC-252: when implementer harness is 'codex', reviewers must use a
-    // different harness (independence enforcement). Use claude-code reviewers
-    // so this test focuses on harness field round-trip, not independence.
     const predicate = buildPredicate({
       ...DEFAULT_INPUTS,
-      harness: { name: 'codex', version: '0.128.0' },
-      reviewers: DEFAULT_INPUTS.reviewers.map((r) => ({ ...r, harness: 'claude-code' })),
+      harness: { name: 'copilot', version: '1.0.0' },
+      reviewers: DEFAULT_INPUTS.reviewers.map((r) => ({ ...r, harness: 'copilot' })),
     });
     const envelope = signAttestation({ predicate, privateKeyPem, keyid: 'k' });
     const result = verifyAttestation({
@@ -2298,7 +2295,7 @@ describe('verifyAttestation — harness field round-trip (AISDLC-202.3 AC #2)', 
     });
     expect(result.valid).toBe(true);
     if (result.valid) {
-      expect(result.predicate.harness).toEqual({ name: 'codex', version: '0.128.0' });
+      expect(result.predicate.harness).toEqual({ name: 'copilot', version: '1.0.0' });
     }
   });
 
@@ -2321,24 +2318,24 @@ describe('verifyAttestation — harness field round-trip (AISDLC-202.3 AC #2)', 
   });
 });
 
-// ─── AISDLC-252 — cross-harness reviewer equivalence + independence ──
+// ─── AISDLC-252 — reviewer-role equivalence + completeness ──────────
 //
-// AC #1: code-reviewer-codex and test-reviewer-codex satisfy their roles.
-// AC #2: Hermetic envelope with codex reviewers + security-reviewer PASSES.
-// AC #3: codex code-reviewer but NO test-reviewer (either variant) FAILS.
-// AC #4: Codex implementer + codex reviewer → independence violation.
+// Every reviewer dispatches through the GitHub Copilot CLI in its own fresh
+// session, so the equivalence map has exactly one agentId per role and the
+// enforced invariant is reviewer-set completeness.
 
 describe('REVIEWER_ROLE_EQUIVALENCES (AISDLC-252)', () => {
-  it('exports the expected equivalence map with codex variants for code + test', () => {
-    expect(REVIEWER_ROLE_EQUIVALENCES['code-reviewer']).toContain('code-reviewer');
-    expect(REVIEWER_ROLE_EQUIVALENCES['code-reviewer']).toContain('code-reviewer-codex');
-    expect(REVIEWER_ROLE_EQUIVALENCES['test-reviewer']).toContain('test-reviewer');
-    expect(REVIEWER_ROLE_EQUIVALENCES['test-reviewer']).toContain('test-reviewer-codex');
-    // Security stays Claude-only — no codex variant.
+  it('exports one canonical agentId per role', () => {
+    expect(REVIEWER_ROLE_EQUIVALENCES['code-reviewer']).toEqual(['code-reviewer']);
+    expect(REVIEWER_ROLE_EQUIVALENCES['test-reviewer']).toEqual(['test-reviewer']);
     expect(REVIEWER_ROLE_EQUIVALENCES['security-reviewer']).toEqual(['security-reviewer']);
-    expect(REVIEWER_ROLE_EQUIVALENCES['security-reviewer']).not.toContain(
-      'security-reviewer-codex',
-    );
+  });
+
+  it('carries no third-party harness variants', () => {
+    const allVariants = Object.values(REVIEWER_ROLE_EQUIVALENCES).flatMap((v) => [...v]);
+    for (const variant of allVariants) {
+      expect(variant).not.toMatch(/codex|cursor|claude|aider|windsurf/i);
+    }
   });
 
   it('exports INDEPENDENCE_REQUIRED_ROLES covering code + test but not security', () => {
@@ -2354,43 +2351,10 @@ describe('REVIEWER_ROLE_EQUIVALENCES (AISDLC-252)', () => {
   });
 });
 
-describe('verifyAttestation — cross-harness reviewer variants (AISDLC-252)', () => {
-  // Shared inputs for codex-reviewer envelope: uses code-reviewer-codex +
-  // test-reviewer-codex + security-reviewer (Claude). Implementer harness
-  // is claude-code (absent field = default) so no independence check applies.
-  const CODEX_REVIEWER_INPUTS = {
-    ...DEFAULT_INPUTS,
-    reviewers: [
-      {
-        agentId: 'code-reviewer-codex',
-        agentFileContent: '---\nname: code-reviewer-codex\n---\nbody',
-        harness: 'codex',
-        approved: true,
-        findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
-      },
-      {
-        agentId: 'test-reviewer-codex',
-        agentFileContent: '---\nname: test-reviewer-codex\n---\nbody',
-        harness: 'codex',
-        approved: true,
-        findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
-      },
-      {
-        agentId: 'security-reviewer',
-        agentFileContent: '---\nname: security-reviewer\n---\nbody',
-        harness: 'claude-code',
-        approved: true,
-        findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
-      },
-    ],
-    // No implementer harness (= claude-code default, no independence check)
-    harness: undefined,
-  };
-
-  // AC #2: envelope with code-reviewer-codex + test-reviewer-codex + security-reviewer PASSES.
-  it('AC #2: accepts code-reviewer-codex + test-reviewer-codex + security-reviewer (claude-code implementer)', () => {
+describe('verifyAttestation — reviewer-set completeness (AISDLC-252)', () => {
+  it('accepts an envelope carrying all three canonical reviewer roles', () => {
     const { privateKeyPem, publicKeyPem } = generateSigningKeyPair();
-    const predicate = buildPredicate(CODEX_REVIEWER_INPUTS);
+    const predicate = buildPredicate(DEFAULT_INPUTS);
     const envelope = signAttestation({ predicate, privateKeyPem, keyid: 'k' });
     const result = verifyAttestation({
       envelope,
@@ -2400,24 +2364,38 @@ describe('verifyAttestation — cross-harness reviewer variants (AISDLC-252)', (
     expect(result.valid).toBe(true);
   });
 
-  // AC #3: codex code-reviewer but NO test-reviewer (either variant) FAILS.
-  it('AC #3: rejects when code-reviewer-codex present but no test-reviewer variant at all', () => {
+  it('accepts an envelope that declares the copilot implementer harness', () => {
+    const { privateKeyPem, publicKeyPem } = generateSigningKeyPair();
+    const predicate = buildPredicate({
+      ...DEFAULT_INPUTS,
+      harness: { name: 'copilot', version: '1.0.0' },
+    });
+    const envelope = signAttestation({ predicate, privateKeyPem, keyid: 'k' });
+    const result = verifyAttestation({
+      envelope,
+      trustedReviewers: [makeTrustedReviewer(publicKeyPem)],
+      expected: buildExpected(predicate),
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects when the test-reviewer role is missing entirely', () => {
     const { privateKeyPem, publicKeyPem } = generateSigningKeyPair();
     const inputs = {
       ...DEFAULT_INPUTS,
       reviewers: [
         {
-          agentId: 'code-reviewer-codex',
-          agentFileContent: '---\nname: code-reviewer-codex\n---\nbody',
-          harness: 'codex',
+          agentId: 'code-reviewer',
+          agentFileContent: '---\nname: code-reviewer\n---\nbody',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
-        // No test-reviewer or test-reviewer-codex
+        // No test-reviewer
         {
           agentId: 'security-reviewer',
           agentFileContent: '---\nname: security-reviewer\n---\nbody',
-          harness: 'claude-code',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -2437,31 +2415,22 @@ describe('verifyAttestation — cross-harness reviewer variants (AISDLC-252)', (
     }
   });
 
-  // AC #4: Codex implementer + codex reviewer → independence violation (rejection).
-  it('AC #4: rejects when implementer harness is codex AND code-reviewer harness is codex (same harness = no independence)', () => {
+  it('rejects when the security-reviewer role is missing entirely', () => {
     const { privateKeyPem, publicKeyPem } = generateSigningKeyPair();
     const inputs = {
       ...DEFAULT_INPUTS,
-      harness: { name: 'codex', version: '0.128.0' },
       reviewers: [
         {
-          agentId: 'code-reviewer-codex',
-          agentFileContent: '---\nname: code-reviewer-codex\n---\nbody',
-          harness: 'codex', // same as implementer → violation
+          agentId: 'code-reviewer',
+          agentFileContent: '---\nname: code-reviewer\n---\nbody',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
         {
           agentId: 'test-reviewer',
           agentFileContent: '---\nname: test-reviewer\n---\nbody',
-          harness: 'claude-code',
-          approved: true,
-          findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
-        },
-        {
-          agentId: 'security-reviewer',
-          agentFileContent: '---\nname: security-reviewer\n---\nbody',
-          harness: 'claude-code',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -2476,62 +2445,9 @@ describe('verifyAttestation — cross-harness reviewer variants (AISDLC-252)', (
     });
     expect(result.valid).toBe(false);
     if (!result.valid) {
-      expect(result.reason).toMatch(/independence violation/);
-      expect(result.reason).toMatch(/codex/);
+      expect(result.reason).toMatch(/reviewer set incomplete/);
+      expect(result.reason).toMatch(/security-reviewer/);
     }
-  });
-
-  // AC #4 counterpart: Codex implementer + claude-code reviewer → PASSES independence.
-  it('AC #4 counterpart: accepts codex implementer with claude-code code-reviewer (cross-harness independence satisfied)', () => {
-    const { privateKeyPem, publicKeyPem } = generateSigningKeyPair();
-    const inputs = {
-      ...DEFAULT_INPUTS,
-      harness: { name: 'codex', version: '0.128.0' },
-      reviewers: [
-        {
-          agentId: 'code-reviewer',
-          agentFileContent: '---\nname: code-reviewer\n---\nbody',
-          harness: 'claude-code', // different from implementer → independence OK
-          approved: true,
-          findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
-        },
-        {
-          agentId: 'test-reviewer',
-          agentFileContent: '---\nname: test-reviewer\n---\nbody',
-          harness: 'claude-code',
-          approved: true,
-          findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
-        },
-        {
-          agentId: 'security-reviewer',
-          agentFileContent: '---\nname: security-reviewer\n---\nbody',
-          harness: 'claude-code',
-          approved: true,
-          findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
-        },
-      ],
-    };
-    const predicate = buildPredicate(inputs);
-    const envelope = signAttestation({ predicate, privateKeyPem, keyid: 'k' });
-    const result = verifyAttestation({
-      envelope,
-      trustedReviewers: [makeTrustedReviewer(publicKeyPem)],
-      expected: buildExpected(predicate),
-    });
-    expect(result.valid).toBe(true);
-  });
-
-  // AC #1: old canonical names still work (back-compat for pre-252 envelopes).
-  it('AC #1 back-compat: accepts legacy code-reviewer + test-reviewer + security-reviewer (no codex variants)', () => {
-    const { privateKeyPem, publicKeyPem } = generateSigningKeyPair();
-    const predicate = buildPredicate(DEFAULT_INPUTS); // has code-reviewer, test-reviewer, security-reviewer
-    const envelope = signAttestation({ predicate, privateKeyPem, keyid: 'k' });
-    const result = verifyAttestation({
-      envelope,
-      trustedReviewers: [makeTrustedReviewer(publicKeyPem)],
-      expected: buildExpected(predicate),
-    });
-    expect(result.valid).toBe(true);
   });
 });
 

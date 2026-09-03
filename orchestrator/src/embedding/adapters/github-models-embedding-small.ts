@@ -1,23 +1,23 @@
 /**
- * Default embedding adapter: openai-text-embedding-3-small per RFC-0019 §7.
+ * Default embedding adapter: github-models-embedding-small per RFC-0019 §7.
  *
- * Model: text-embedding-3-small (OpenAI, snapshot 2024-01-25)
+ * Provider: GitHub Models inference API (`https://models.github.ai/inference`)
  * Dimensions: 1536
  * Max input: 8191 tokens
  * Batch: up to 2048 inputs per call
- * Billing: pay-per-token at ~$0.02 / 1M tokens
+ * Billing: covered by the org's GitHub Models entitlement; usage is metered
+ *          per token so the adapter still reports a cost estimate.
  *
- * Why text-embedding-3-small over -large:
- * At $0.02/1M tokens, a 10K-token corpus re-embed costs ~$0.0002. The -large
- * variant is 6.5x more expensive for marginal quality improvement on the
- * short-text drift detection use case (RFC-0009 OQ-6). Adopters with
- * quality-sensitive use cases MAY register the -large variant.
+ * Why the small variant:
+ * A 10K-token corpus re-embed is a fraction of a cent. The large variant is
+ * several times more expensive for marginal quality improvement on the
+ * short-text drift-detection use case (RFC-0009 OQ-6). Adopters with
+ * quality-sensitive use cases MAY register a larger variant.
  *
- * Why snapshot 2024-01-25:
- * Most recent stable snapshot as of RFC-0019 authoring. Pinning the snapshot
- * date makes adapter upgrades a code change (visible in PR review) rather
- * than a silent provider-side rollout. OpenAI has silently changed
- * text-embedding-ada-002 behavior in the past — explicit pinning prevents that.
+ * Why the pinned model version:
+ * Pinning makes adapter upgrades a code change (visible in PR review) rather
+ * than a silent provider-side rollout — a provider that silently changes
+ * embedding behaviour would invalidate every stored vector without warning.
  */
 
 import { createHash } from 'node:crypto';
@@ -30,8 +30,8 @@ import type {
 import { EmbeddingProviderError, EmbeddingDimensionMismatch } from '../errors.js';
 import type { EmbeddingCostRecord } from '../types.js';
 
-/** OpenAI /v1/embeddings response shape (subset used here). */
-interface OpenAIEmbeddingsResponse {
+/** GitHub Models `/embeddings` response shape (subset used here). */
+interface GitHubModelsEmbeddingsResponse {
   data: Array<{
     embedding: number[];
     index: number;
@@ -42,11 +42,17 @@ interface OpenAIEmbeddingsResponse {
   };
 }
 
-/** Cost rate for text-embedding-3-small as of 2024-01-25. */
+/** Metered rate used for cost attribution. */
 const COST_PER_TOKEN_USD = 0.02 / 1_000_000; // $0.02 per 1M tokens
 
-/** Maximum inputs per batch call (OpenAI API limit). */
+/** Maximum inputs per batch call (API limit). */
 const MAX_BATCH_SIZE = 2048;
+
+/** Inference endpoint for GitHub Models embeddings. */
+const EMBEDDINGS_URL = 'https://models.github.ai/inference/embeddings';
+
+/** Env var holding the GitHub token used for GitHub Models inference. */
+const TOKEN_ENV_VAR = 'GITHUB_MODELS_TOKEN';
 
 /**
  * Callback invoked by the adapter after each embed() / embedBatch() call
@@ -56,8 +62,8 @@ const MAX_BATCH_SIZE = 2048;
  */
 export type EmbeddingCostCallback = (record: EmbeddingCostRecord) => void;
 
-export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
-  readonly name = 'openai-text-embedding-3-small';
+export class GitHubModelsEmbeddingSmall implements EmbeddingAdapter {
+  readonly name = 'github-models-embedding-small';
   readonly modelId = 'text-embedding-3-small';
   readonly modelVersion = '2024-01-25';
   readonly dimensions = 1536;
@@ -72,7 +78,7 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
   };
 
   readonly requires: EmbeddingRequires = {
-    envVar: 'OPENAI_API_KEY',
+    envVar: TOKEN_ENV_VAR,
   };
 
   /** Optional cost-tracking callback. Set by the orchestrator after adapter instantiation. */
@@ -91,20 +97,20 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
   }
 
   async isAvailable(): Promise<EmbeddingAvailability> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env[TOKEN_ENV_VAR]) {
       return {
         available: false,
         reason: 'env-var-missing',
-        detail: 'OPENAI_API_KEY not set; openai-text-embedding-3-small requires it.',
+        detail: `${TOKEN_ENV_VAR} not set; ${this.name} requires it.`,
       };
     }
     return { available: true };
   }
 
   async getAccountId(): Promise<string | null> {
-    const key = process.env.OPENAI_API_KEY;
+    const key = process.env[TOKEN_ENV_VAR];
     if (!key) return null;
-    // One-way derivation: SHA-256 of '<adapter-name>:<api-key>'.
+    // One-way derivation: SHA-256 of '<adapter-name>:<token>'.
     // MUST NOT leak the credential.
     return createHash('sha256').update(`${this.name}:${key}`).digest('hex');
   }
@@ -124,15 +130,15 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
       );
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env[TOKEN_ENV_VAR];
     if (!apiKey) {
       throw new EmbeddingProviderError(
         this.name,
-        'OPENAI_API_KEY is not set. Call isAvailable() before embed().',
+        `${TOKEN_ENV_VAR} is not set. Call isAvailable() before embed().`,
       );
     }
 
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
+    const response = await fetch(EMBEDDINGS_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -149,17 +155,17 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
       const body = await response.text().catch(() => '(unreadable)');
       throw new EmbeddingProviderError(
         this.name,
-        `OpenAI /v1/embeddings returned HTTP ${response.status}: ${body}`,
+        `GitHub Models /embeddings returned HTTP ${response.status}: ${body}`,
       );
     }
 
-    const data = (await response.json()) as OpenAIEmbeddingsResponse;
+    const data = (await response.json()) as GitHubModelsEmbeddingsResponse;
     const vector = data.data[0]?.embedding;
 
     if (!vector) {
       throw new EmbeddingProviderError(
         this.name,
-        'OpenAI /v1/embeddings response contained no embedding in data[0].',
+        'GitHub Models /embeddings response contained no embedding in data[0].',
       );
     }
 
@@ -174,7 +180,7 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
 
   /**
    * Embed a batch of texts.
-   * OpenAI accepts up to 2048 inputs per call; this method chunks above that.
+   * The API accepts up to 2048 inputs per call; this method chunks above that.
    * Input order is preserved in the returned array.
    *
    * @param texts - Array of source texts. Each MUST be non-empty.
@@ -194,21 +200,21 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
       }
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env[TOKEN_ENV_VAR];
     if (!apiKey) {
       throw new EmbeddingProviderError(
         this.name,
-        'OPENAI_API_KEY is not set. Call isAvailable() before embedBatch().',
+        `${TOKEN_ENV_VAR} is not set. Call isAvailable() before embedBatch().`,
       );
     }
 
     const results: number[][] = [];
 
-    // Chunk into MAX_BATCH_SIZE slices to respect the OpenAI API limit.
+    // Chunk into MAX_BATCH_SIZE slices to respect the API limit.
     for (let i = 0; i < texts.length; i += MAX_BATCH_SIZE) {
       const chunk = texts.slice(i, i + MAX_BATCH_SIZE);
 
-      const response = await fetch('https://api.openai.com/v1/embeddings', {
+      const response = await fetch(EMBEDDINGS_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -225,13 +231,13 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
         const body = await response.text().catch(() => '(unreadable)');
         throw new EmbeddingProviderError(
           this.name,
-          `OpenAI /v1/embeddings returned HTTP ${response.status} on batch chunk [${i}, ${i + chunk.length}): ${body}`,
+          `GitHub Models /embeddings returned HTTP ${response.status} on batch chunk [${i}, ${i + chunk.length}): ${body}`,
         );
       }
 
-      const data = (await response.json()) as OpenAIEmbeddingsResponse;
+      const data = (await response.json()) as GitHubModelsEmbeddingsResponse;
 
-      // OpenAI returns data sorted by index — preserve input order.
+      // The API returns data sorted by index — preserve input order.
       const sorted = [...data.data].sort((a, b) => a.index - b.index);
       for (const item of sorted) {
         if (item.embedding.length !== this.dimensions) {

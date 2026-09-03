@@ -17,7 +17,7 @@
  *     as 0 (operator's quota is plentiful).
  *
  * Heuristic (matches AISDLC-377.5 §Scope):
- *   - `claude-p-shell` when big-AND-tight-AND-available:
+ *   - `copilot-p-shell` when big-AND-tight-AND-available:
  *       estimatedTokens > BIG_TOKEN_THRESHOLD
  *       AND quotaUtilization > TIGHT_QUOTA_THRESHOLD
  *       AND claudePShellMaxConcurrent > 0
@@ -223,7 +223,7 @@ export interface RecommendWorkerInput {
 /**
  * Pure decision function. See module doc for the heuristic.
  *
- *   - `claude-p-shell` when big-AND-tight-AND-available
+ *   - `copilot-p-shell` when big-AND-tight-AND-available
  *   - `in-session-agent` when small-OR-plentiful (cost-preferred default)
  *   - `any` when no signal at all (missing estimatedTokens)
  */
@@ -242,6 +242,6 @@ export function recommendWorkerKind(input: RecommendWorkerInput): ManifestWorker
   const big = estimatedTokens > BIG_TOKEN_THRESHOLD;
   const tight = (quotaUtilization ?? 0) > TIGHT_QUOTA_THRESHOLD;
 
-  if (big && tight) return 'claude-p-shell';
+  if (big && tight) return 'copilot-p-shell';
   return 'in-session-agent';
 }

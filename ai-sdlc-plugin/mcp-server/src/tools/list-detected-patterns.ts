@@ -14,14 +14,14 @@ export function registerListDetectedPatterns(server: McpServer, _deps: ToolDeps)
       limit: z.number().optional().describe('Maximum number of patterns to return (default: 20)'),
     },
     async ({ since, limit }) => {
-      const jsonlPath = join(homedir(), '.claude', 'usage-data', 'tool-sequences.jsonl');
+      const jsonlPath = join(homedir(), '.copilot', 'usage-data', 'tool-sequences.jsonl');
 
       if (!existsSync(jsonlPath)) {
         return {
           content: [
             {
               type: 'text' as const,
-              text: 'No telemetry data found at ~/.claude/usage-data/tool-sequences.jsonl. Run a few Claude Code sessions with the AI-SDLC plugin to collect data.',
+              text: 'No telemetry data found at ~/.copilot/usage-data/tool-sequences.jsonl. Run a few Copilot CLI sessions with the AI-SDLC plugin to collect data.',
             },
           ],
         };

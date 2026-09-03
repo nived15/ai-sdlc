@@ -11,8 +11,8 @@ import {
 describe('Provenance tracking', () => {
   it('creates a provenance record with defaults', () => {
     const prov = createPipelineProvenance({});
-    expect(prov.model).toBe('claude-sonnet-4-5-20250929');
-    expect(prov.tool).toBe('claude-code');
+    expect(prov.model).toBe('balanced');
+    expect(prov.tool).toBe('copilot');
     expect(prov.promptHash).toBe('no-prompt');
     expect(prov.reviewDecision).toBe('pending');
     expect(prov.timestamp).toBeDefined();
@@ -48,21 +48,21 @@ describe('Provenance tracking', () => {
     const prov = createPipelineProvenance({ promptText: 'hello' });
     const block = attachProvenanceToPR(prov);
     expect(block).toContain('## Provenance');
-    expect(block).toContain('claude-sonnet-4-5-20250929');
-    expect(block).toContain('claude-code');
+    expect(block).toContain('balanced');
+    expect(block).toContain('copilot');
     expect(block).toContain('provenance-annotations');
   });
 
   it('round-trips provenance through annotations', () => {
     const prov = createPipelineProvenance({
-      model: 'gpt-4',
+      model: 'gpt-5',
       tool: 'copilot',
       promptText: 'test prompt',
     });
     const annotations = provenanceToAnnotations(prov);
     const restored = provenanceFromAnnotations(annotations);
     expect(restored).toBeDefined();
-    expect(restored!.model).toBe('gpt-4');
+    expect(restored!.model).toBe('gpt-5');
     expect(restored!.tool).toBe('copilot');
     expect(restored!.promptHash).toBe(prov.promptHash);
   });

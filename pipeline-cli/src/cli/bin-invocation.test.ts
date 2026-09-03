@@ -11,7 +11,7 @@
  * into `node_modules/.bin/`. The `|| echo <fallback-json>` safety net then
  * fired unconditionally, defeating the AISDLC-141/142/147/149/154 cost
  * optimizations entirely (every PR ran full-budget reviewers, blowing
- * through Anthropic credits, posting CHANGES_REQUESTED on credit
+ * through GitHub Models credits, posting CHANGES_REQUESTED on credit
  * exhaustion).
  *
  * AISDLC-181 extension: the AISDLC-156 sweep covered the per-CLI cost-saver

@@ -1,7 +1,7 @@
 /**
  * SubagentSpawner interface (RFC-0012 §8.1) and a MockSpawner suitable for
  * unit/integration tests inside this package. The production implementations
- * (`ShellClaudePSpawner`, `ClaudeCodeSDKSpawner`) land in Phase 2 (AISDLC-100.2).
+ * (`CopilotHarnessAdapter`, `CopilotHarnessAdapter`) land in Phase 2 (AISDLC-100.2).
  *
  * Re-exporting the type here so consumers can import either from `./types` or
  * from `./runtime` — the MCP wrapper layer (Phase 3) prefers `./runtime`.

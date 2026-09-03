@@ -24,7 +24,7 @@ import {
   CALIBRATION_FLOOR,
   createCostWarningState,
   DEFAULT_PER_TASK_USD,
-  estimateClaudePShellCost,
+  estimateCopilotPShellCost,
   formatCostWarning,
   isSupervisorMissing,
   maybeEmitCostWarning,
@@ -53,7 +53,7 @@ function mkManifest(taskId: string): DispatchManifest {
     branch: `ai-sdlc/${taskId.toLowerCase()}`,
     worktree: `.worktrees/${taskId.toLowerCase()}`,
     baseSha: 'abc',
-    workerKind: 'claude-p-shell',
+    workerKind: 'copilot-p-shell',
     dispatchedAt: '2026-05-20T10:00:00.000Z',
     dispatchedBy: 'conductor-test',
     spec: {
@@ -67,23 +67,23 @@ function plantShellVerdict(boardDir: string, taskId: string, durationMs: number)
   // Set up a complete lifecycle so writeVerdict doesn't error on missing
   // inflight artifacts (it's tolerant, but cleaner to do it right).
   writeManifest(boardDir, mkManifest(taskId));
-  claimNext(boardDir, 'claude-p-shell');
+  claimNext(boardDir, 'copilot-p-shell');
   const verdict: DispatchVerdict = {
     schemaVersion: 'v1',
     taskId,
     outcome: 'success',
     completedAt: new Date().toISOString(),
     workerId: 'mock',
-    workerKind: 'claude-p-shell',
+    workerKind: 'copilot-p-shell',
     durationMs,
   };
   writeVerdict(boardDir, verdict);
 }
 
-describe('estimateClaudePShellCost', () => {
-  it('returns the default estimate when no claude-p-shell verdicts exist', () => {
+describe('estimateCopilotPShellCost', () => {
+  it('returns the default estimate when no copilot-p-shell verdicts exist', () => {
     const boardDir = mkBoard();
-    const result = estimateClaudePShellCost(boardDir);
+    const result = estimateCopilotPShellCost(boardDir);
     expect(result.calibrated).toBe(false);
     expect(result.perTaskUsd).toBe(DEFAULT_PER_TASK_USD);
     expect(result.sampleSize).toBe(0);
@@ -94,7 +94,7 @@ describe('estimateClaudePShellCost', () => {
     for (let i = 0; i < CALIBRATION_FLOOR - 1; i++) {
       plantShellVerdict(boardDir, `AISDLC-COST-${i}`, 600_000);
     }
-    const result = estimateClaudePShellCost(boardDir);
+    const result = estimateCopilotPShellCost(boardDir);
     expect(result.calibrated).toBe(false);
     expect(result.sampleSize).toBeLessThan(CALIBRATION_FLOOR);
     expect(result.perTaskUsd).toBe(DEFAULT_PER_TASK_USD);
@@ -106,7 +106,7 @@ describe('estimateClaudePShellCost', () => {
     for (let i = 0; i < CALIBRATION_FLOOR; i++) {
       plantShellVerdict(boardDir, `AISDLC-CAL-${i}`, 30 * 60_000);
     }
-    const result = estimateClaudePShellCost(boardDir);
+    const result = estimateCopilotPShellCost(boardDir);
     expect(result.calibrated).toBe(true);
     expect(result.sampleSize).toBe(CALIBRATION_FLOOR);
     // Expected ≈ $0.20.
@@ -119,7 +119,7 @@ describe('estimateClaudePShellCost', () => {
     for (let i = 0; i < CALIBRATION_FLOOR; i++) {
       plantShellVerdict(boardDir, `AISDLC-OUTLIER-${i}`, 100 * 60 * 60_000);
     }
-    const result = estimateClaudePShellCost(boardDir);
+    const result = estimateCopilotPShellCost(boardDir);
     expect(result.calibrated).toBe(true);
     expect(result.perTaskUsd).toBeLessThanOrEqual(1.0);
   });
@@ -130,7 +130,7 @@ describe('estimateClaudePShellCost', () => {
     for (let i = 0; i < CALIBRATION_FLOOR; i++) {
       plantShellVerdict(boardDir, `AISDLC-MICRO-${i}`, 60_000);
     }
-    const result = estimateClaudePShellCost(boardDir);
+    const result = estimateCopilotPShellCost(boardDir);
     expect(result.calibrated).toBe(true);
     expect(result.perTaskUsd).toBeGreaterThanOrEqual(0.05);
   });
@@ -154,7 +154,7 @@ describe('estimateClaudePShellCost', () => {
         'utf-8',
       );
     }
-    const result = estimateClaudePShellCost(boardDir);
+    const result = estimateCopilotPShellCost(boardDir);
     expect(result.calibrated).toBe(false);
     expect(result.perTaskUsd).toBe(DEFAULT_PER_TASK_USD);
   });
@@ -169,7 +169,7 @@ describe('formatCostWarning', () => {
       totalDurationMs: 0,
     });
     expect(line).toMatch(/^\[dispatch-cost\]/);
-    expect(line).toContain('claude-p-shell');
+    expect(line).toContain('copilot-p-shell');
     expect(line).toContain('Agent SDK credit pool');
     expect(line).toContain('post-2026-06-15');
     expect(line).toContain('$0.20');
@@ -191,13 +191,13 @@ describe('formatCostWarning', () => {
 });
 
 describe('maybeEmitCostWarning', () => {
-  it('fires once for the first claude-p-shell manifest in a session', () => {
+  it('fires once for the first copilot-p-shell manifest in a session', () => {
     const boardDir = mkBoard();
     const state = createCostWarningState();
     const writes: string[] = [];
     const line = maybeEmitCostWarning({
       state,
-      workerKind: 'claude-p-shell',
+      workerKind: 'copilot-p-shell',
       boardDir,
       write: (l) => writes.push(l),
     });
@@ -212,13 +212,13 @@ describe('maybeEmitCostWarning', () => {
     const writes: string[] = [];
     maybeEmitCostWarning({
       state,
-      workerKind: 'claude-p-shell',
+      workerKind: 'copilot-p-shell',
       boardDir,
       write: (l) => writes.push(l),
     });
     maybeEmitCostWarning({
       state,
-      workerKind: 'claude-p-shell',
+      workerKind: 'copilot-p-shell',
       boardDir,
       write: (l) => writes.push(l),
     });
@@ -249,7 +249,7 @@ describe('maybeEmitCostWarning', () => {
       write: (l) => writes.push(l),
     });
     expect(writes).toHaveLength(0);
-    // Crucially: state.fired stays false, so the next claude-p-shell emit
+    // Crucially: state.fired stays false, so the next copilot-p-shell emit
     // will still trigger the warning.
     expect(state.fired).toBe(false);
   });
@@ -260,7 +260,7 @@ describe('maybeEmitCostWarning', () => {
     const writes: string[] = [];
     maybeEmitCostWarning({
       state,
-      workerKind: 'claude-p-shell',
+      workerKind: 'copilot-p-shell',
       boardDir,
       suppressCostWarning: true,
       write: (l) => writes.push(l),
@@ -282,7 +282,7 @@ describe('maybeEmitCostWarning', () => {
     try {
       maybeEmitCostWarning({
         state,
-        workerKind: 'claude-p-shell',
+        workerKind: 'copilot-p-shell',
         boardDir,
       });
     } finally {
@@ -293,10 +293,10 @@ describe('maybeEmitCostWarning', () => {
 });
 
 describe('isSupervisorMissing', () => {
-  it('returns false when there is no pending claude-p-shell work', () => {
+  it('returns false when there is no pending copilot-p-shell work', () => {
     expect(
       isSupervisorMissing({
-        pendingClaudePShell: 0,
+        pendingCopilotPShell: 0,
         pidFileExists: false,
         pidLive: false,
       }),
@@ -306,7 +306,7 @@ describe('isSupervisorMissing', () => {
   it('returns true when pending work exists and no PID file', () => {
     expect(
       isSupervisorMissing({
-        pendingClaudePShell: 3,
+        pendingCopilotPShell: 3,
         pidFileExists: false,
         pidLive: false,
       }),
@@ -316,7 +316,7 @@ describe('isSupervisorMissing', () => {
   it('returns true when pending work exists, PID file exists, but the owning PID is dead', () => {
     expect(
       isSupervisorMissing({
-        pendingClaudePShell: 1,
+        pendingCopilotPShell: 1,
         pidFileExists: true,
         pidLive: false,
       }),
@@ -326,7 +326,7 @@ describe('isSupervisorMissing', () => {
   it('returns false when pending work exists and a live PID owns the lock', () => {
     expect(
       isSupervisorMissing({
-        pendingClaudePShell: 1,
+        pendingCopilotPShell: 1,
         pidFileExists: true,
         pidLive: true,
       }),

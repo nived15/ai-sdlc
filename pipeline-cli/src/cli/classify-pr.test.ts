@@ -109,7 +109,7 @@ describe('cli-classify-pr — paths-file input', () => {
     const d = stdoutJson();
     expect([...d.reviewers].sort()).toEqual(['critic', 'security', 'testing']);
     // modelOverride is preserved on rawOutput so callers can plumb it through
-    expect(d.rawOutput?.modelOverride?.security).toBe('opus');
+    expect(d.rawOutput?.modelOverride?.security).toBe('reasoning');
   });
 });
 

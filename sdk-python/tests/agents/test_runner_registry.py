@@ -64,10 +64,10 @@ class TestRunnerRegistry:
 
     def test_discover_claude_code(self):
         reg = RunnerRegistry()
-        with patch.dict(os.environ, {"CLAUDE_CODE_PATH": "/usr/local/bin/claude"}):
+        with patch.dict(os.environ, {"CLAUDE_CODE_PATH": "/usr/local/bin/copilot"}):
             discovered = reg.discover_from_env()
-        assert "claude-code" in discovered
-        assert reg.has("claude-code")
+        assert "copilot" in discovered
+        assert reg.has("copilot")
 
     def test_discover_custom_cmd(self):
         reg = RunnerRegistry()

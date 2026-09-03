@@ -229,7 +229,7 @@ describe('Full session lifecycle integration', () => {
     // 1. session_start
     const startResult = await handleSessionStart(deps, {
       developer: 'integration-tester',
-      tool: 'claude-code',
+      tool: 'copilot',
     });
     expect(startResult.sessionId).toBeTruthy();
     expect(startResult.linkedIssue).toBe(42);
@@ -251,7 +251,7 @@ describe('Full session lifecycle integration', () => {
     // 4. track_usage ×2
     const usage1 = handleTrackUsage(deps, {
       sessionId,
-      model: 'claude-opus-4-6',
+      model: 'reasoning',
       inputTokens: 5000,
       outputTokens: 2000,
     });
@@ -260,7 +260,7 @@ describe('Full session lifecycle integration', () => {
 
     const usage2 = handleTrackUsage(deps, {
       sessionId,
-      model: 'claude-haiku-4-5-20251001',
+      model: 'gpt-5-mini',
       inputTokens: 3000,
       outputTokens: 1000,
     });
@@ -287,8 +287,8 @@ describe('Full session lifecycle integration', () => {
     expect(endResult!.totalOutputTokens).toBe(3000);
     expect(endResult!.totalCostUsd).toBeGreaterThan(0);
     expect(endResult!.durationMs).toBeGreaterThanOrEqual(0);
-    expect(endResult!.byModel['claude-opus-4-6']).toBeDefined();
-    expect(endResult!.byModel['claude-haiku-4-5-20251001']).toBeDefined();
+    expect(endResult!.byModel['reasoning']).toBeDefined();
+    expect(endResult!.byModel['gpt-5-mini']).toBeDefined();
 
     // Verify persistence: cost entries
     const costEntries = deps.store.getCostEntries({ runId: sessionId });

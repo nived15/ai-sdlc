@@ -13,7 +13,7 @@ table row + `docs/operations/copilot-spawner.md` runbook.
 are autocomplete helpers, not coding-agent dispatchers, and are out of
 scope for this design.
 
-**Companion to:** [`docs/operations/codex-execution-path.md`](./codex-execution-path.md) —
+**Companion to:** [`docs/operations/copilot-execution-path.md`](./copilot-execution-path.md) —
 the architectural template (AISDLC-202.1) that this design mirrors. Read
 that first if you want context on why every Step 0-13 box is a "shared
 deterministic primitive" except the LLM-boundary boxes 5b and 7b.
@@ -21,12 +21,12 @@ deterministic primitive" except the LLM-boundary boxes 5b and 7b.
 ## Positioning
 
 RFC-0012 defines two execution tiers; Copilot CLI maps the same way
-Codex CLI does:
+GitHub Copilot CLI does:
 
-| Tier | Claude Code path | Copilot CLI status |
+| Tier | GitHub Copilot CLI path | Copilot CLI status |
 |---|---|---|
-| Tier 1 attended | `/ai-sdlc execute <task-id>` runs in the main Claude Code session and dispatches plugin agents with `Agent(developer, code-reviewer, test-reviewer, security-reviewer)`. | Copilot CLI can be the attended driver from a terminal session, but it does not expose Claude Code's plugin `Agent` tool. The operator-driven attended path needs either (a) a documented "run reviewer prompts one-at-a-time by hand" procedure or (b) the Phase 2 `CopilotHarnessAdapter` available as a programmatic dispatcher invoked from outside the Copilot session. |
-| Tier 2 unattended | `executePipeline()` runs deterministic steps and uses an injected `SubagentSpawner` for LLM boundaries. | Once the Phase 2 `CopilotHarnessAdapter` ships, `--spawner copilot` becomes selectable from `cli-execute` / `cli-orchestrator tick`. A TypeScript spawner CAN call the `copilot` CLI because it advertises a non-interactive prompt mode (see Step 5b row below) — unlike Codex's `spawn_agent`, which is a host tool reachable only from within a Codex session. |
+| Tier 1 attended | `/ai-sdlc execute <task-id>` runs in the main Copilot CLI session and dispatches plugin agents with `Agent(developer, code-reviewer, test-reviewer, security-reviewer)`. | Copilot CLI can be the attended driver from a terminal session, but it does not expose GitHub Copilot CLI's plugin `Agent` tool. The operator-driven attended path needs either (a) a documented "run reviewer prompts one-at-a-time by hand" procedure or (b) the Phase 2 `CopilotHarnessAdapter` available as a programmatic dispatcher invoked from outside the Copilot session. |
+| Tier 2 unattended | `executePipeline()` runs deterministic steps and uses an injected `SubagentSpawner` for LLM boundaries. | Once the Phase 2 `CopilotHarnessAdapter` ships, `--spawner copilot` becomes selectable from `cli-execute` / `cli-orchestrator tick`. A TypeScript spawner CAN call the `copilot` CLI because it advertises a non-interactive prompt mode (see Step 5b row below) — unlike GitHub Copilot's `spawn_agent`, which is a host tool reachable only from within a GitHub Copilot session. |
 
 The Copilot path must preserve the RFC-0012 boundary: deterministic work
 stays in `@ai-sdlc/pipeline-cli` and MCP tools; LLM work is the only
@@ -34,20 +34,20 @@ harness-specific part.
 
 ## Step Map
 
-| RFC-0012 step | Claude Code Tier 1 primitive | Copilot CLI equivalent | Classification | Proposed Copilot adapter shape |
+| RFC-0012 step | GitHub Copilot CLI Tier 1 primitive | Copilot CLI equivalent | Classification | Proposed Copilot adapter shape |
 |---|---|---|---|---|
 | 0. Sweep merged worktrees | Slash command Bash and shared step/MCP wrapper. | Shell command or MCP `pipeline_step_0_sweep`. | No change needed (shared deterministic primitives). | Copilot dispatch is irrelevant here — Step 0 is pure git/GitHub cleanup. The operator's environment runs the shared step. |
 | 1. Validate task | Backlog MCP plus shared `validateTask`. | MCP `pipeline_step_1_validate` or `node pipeline-cli/bin/ai-sdlc-pipeline.mjs validate-task`. | No change needed (shared deterministic primitives). | Copilot should fail closed on validation errors before any worktree is created. |
 | 2. Compute branch | Shared `computeBranchName` or MCP Step 2. | MCP `pipeline_step_2_compute_branch` or CLI compute branch command. | No change needed (shared deterministic primitives). | Step 2's `computeBranchSlug` already carries the AISDLC-202.2 block-scalar fix; no Copilot-specific work needed. |
 | 3. Setup worktree | Shared `setupWorktree`. | MCP `pipeline_step_3_setup_worktree` or CLI setup command. | No change needed (shared deterministic primitives). | Copilot should run this only after Step 2 returns a valid branch and worktree path. |
-| 4. Begin task and write sentinel | Plugin task edit plus per-worktree `.active-task`. | MCP `pipeline_step_4_begin_task` or plugin/backlog MCP plus sentinel write. | No change needed (shared deterministic primitives), with Copilot workflow constraint. | Per-worktree sentinel must live INSIDE the worktree (matches the Pattern C contract in CLAUDE.md). The Copilot CLI invocation will be cwd'd to the worktree per Step 5b below, so the sentinel resolves correctly. |
+| 4. Begin task and write sentinel | Plugin task edit plus per-worktree `.active-task`. | MCP `pipeline_step_4_begin_task` or plugin/backlog MCP plus sentinel write. | No change needed (shared deterministic primitives), with Copilot workflow constraint. | Per-worktree sentinel must live INSIDE the worktree (matches the Pattern C contract in .github/copilot-instructions.md). The Copilot CLI invocation will be cwd'd to the worktree per Step 5b below, so the sentinel resolves correctly. |
 | 5. Build developer prompt | Shared `buildDeveloperPrompt`. | MCP `pipeline_step_5_build_dev_prompt` or CLI prompt builder. | No change needed (shared deterministic primitives). | The prompt should include a `harness: copilot` note only outside the task contract, not by changing the developer return schema. |
-| **5b. Spawn developer** | Claude Code `Agent(developer)`. | `copilot` CLI invocation in non-interactive mode (see "Copilot CLI invocation grammar" below). | **Needs Copilot adapter.** | `CopilotHarnessAdapter.spawn({ type: 'developer', prompt, cwd, … }) -> SubagentResult`. The adapter loads the system prompt from `options.systemPrompts.developer` (defaulting to the built-in "behave like the ai-sdlc developer + return canonical JSON" string), spawns the CLI cwd'd to the worktree, and demands the same `DeveloperReturn` JSON envelope Step 6 expects. |
-| 6. Parse developer return | Shared `parseDeveloperReturnWithRetry`. | Same shared parser after Copilot developer output is captured. | No change needed after adapter normalisation. | Adapter passes raw stdout + (when available) the bridge's pre-parsed JSON in a `SubagentResult`-compatible envelope so existing parser/retry code runs unmodified. `tryParseJson()` in `codex-harness.ts` already tolerates ``` ```json ... ``` ``` fenced output; the Copilot adapter MUST reuse the same lenient extraction (Copilot CLI may also emit fenced JSON despite a system prompt asking for raw). |
+| **5b. Spawn developer** | GitHub Copilot CLI `Agent(developer)`. | `copilot` CLI invocation in non-interactive mode (see "Copilot CLI invocation grammar" below). | **Needs Copilot adapter.** | `CopilotHarnessAdapter.spawn({ type: 'developer', prompt, cwd, … }) -> SubagentResult`. The adapter loads the system prompt from `options.systemPrompts.developer` (defaulting to the built-in "behave like the ai-sdlc developer + return canonical JSON" string), spawns the CLI cwd'd to the worktree, and demands the same `DeveloperReturn` JSON envelope Step 6 expects. |
+| 6. Parse developer return | Shared `parseDeveloperReturnWithRetry`. | Same shared parser after Copilot developer output is captured. | No change needed after adapter normalisation. | Adapter passes raw stdout + (when available) the bridge's pre-parsed JSON in a `SubagentResult`-compatible envelope so existing parser/retry code runs unmodified. `tryParseJson()` in `copilot-harness.ts` already tolerates ``` ```json ... ``` ``` fenced output; the Copilot adapter MUST reuse the same lenient extraction (Copilot CLI may also emit fenced JSON despite a system prompt asking for raw). |
 | 7. Build review prompts | Shared `buildReviewPrompts`. | MCP `pipeline_step_7_build_review_prompts` or CLI prompt builder. | No change needed (shared deterministic primitives). | Copilot must preserve the returned reviewer-specific prompts and harness note. |
-| **7b. Spawn reviewers** | Claude Code `Agent(code-reviewer)`, `Agent(test-reviewer)`, `Agent(security-reviewer)` in parallel. | Three concurrent `copilot` CLI invocations (one per reviewer). | **Needs Copilot adapter.** | `CopilotHarnessAdapter.spawnParallel([…])` fans out via `Promise.all`. Each reviewer dispatch must return canonical `ReviewerVerdict` envelopes (`{approved, findings, summary, harness: 'copilot'}`) — see "Reviewer verdict shape" below. |
+| **7b. Spawn reviewers** | GitHub Copilot CLI `Agent(code-reviewer)`, `Agent(test-reviewer)`, `Agent(security-reviewer)` in parallel. | Three concurrent `copilot` CLI invocations (one per reviewer). | **Needs Copilot adapter.** | `CopilotHarnessAdapter.spawnParallel([…])` fans out via `Promise.all`. Each reviewer dispatch must return canonical `ReviewerVerdict` envelopes (`{approved, findings, summary, harness: 'copilot'}`) — see "Reviewer verdict shape" below. |
 | 8. Aggregate verdicts | Shared `aggregateVerdicts`. | MCP `pipeline_step_8_aggregate_verdicts` or shared function. | No change needed after adapter normalisation. | Adapter output must be accepted directly by Step 8. Counts and approval are derived by the shared aggregator, not by Copilot prose. |
-| 9. Iterate | Slash command prose loop plus shared prompt builders and aggregator. | Programmatic `executePipeline()` loop with Copilot spawner. | **Needs Copilot adapter.** | Adapter must support repeated developer + reviewer calls with feedback. Iteration count and cap stay in shared pipeline logic. The Copilot CLI is invoked fresh for each iteration (no session reuse); this matches the Codex bridge's per-call model. |
+| 9. Iterate | Slash command prose loop plus shared prompt builders and aggregator. | Programmatic `executePipeline()` loop with Copilot spawner. | **Needs Copilot adapter.** | Adapter must support repeated developer + reviewer calls with feedback. Iteration count and cap stay in shared pipeline logic. The Copilot CLI is invoked fresh for each iteration (no session reuse); this matches the GitHub Copilot bridge's per-call model. |
 | 10. Finalize and sign | Shared `finalizeTask`, plugin `task_complete`, verdict file, signer. | Shared finalize plus Backlog MCP `task_complete` or equivalent atomic move. | No change needed (shared deterministic primitives). | Copilot finalisation must not manually copy task files. It must use the AISDLC-203 atomic helper or Backlog MCP `task_complete`, then verify the task ID exists in exactly one backlog location. Attestation signing is harness-agnostic — the signer reads the verdict file the adapter wrote during Step 8. |
 | 10.5. Rebase / hash oracle where configured | Signer / hash helper. | Same signer / hash helper. | No change needed (shared deterministic primitives). | Copilot should not re-sign if the reviewed content hash changed without rerunning reviewers. The v5/v6 contentHash + Merkle-transcript logic is harness-agnostic. |
 | 11. Push and open PR | Shared `pushAndPr`. | MCP `pipeline_step_11_push_and_pr` or shared function. | No change needed (shared deterministic primitives). | Copilot must never force-push (except `--force-with-lease` after rebase), merge, close PRs, or delete branches. The pre-push hook chain is harness-agnostic. |
@@ -57,22 +57,22 @@ harness-specific part.
 **Summary by classification:**
 
 - **No change needed (shared deterministic primitives):** Steps 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 10.5, 11, 12, 13 (14 of 16 boxes).
-- **Needs Copilot adapter:** Steps 5b, 7b, 9 (the LLM-boundary boxes — same set as Codex).
+- **Needs Copilot adapter:** Steps 5b, 7b, 9 (the LLM-boundary boxes — same set as GitHub Copilot).
 - **Blocked / needs upstream change in Copilot CLI:** None confirmed at the time of writing; several **open questions** below could surface a blocked classification if the CLI's actual invocation grammar diverges from the assumptions stated below. Phase 2 cannot start until those OQs are routed to the operator (see "Open questions blocking Phase 2 dispatch").
 
 ## Harness comparison callout
 
-The Codex execution path (AISDLC-202.1) had to distinguish two adapter
-options because Codex's `spawn_agent` is a *host tool* (only reachable
-from inside a Codex CLI session, not callable from TypeScript). Copilot
+The GitHub Copilot execution path (AISDLC-202.1) had to distinguish two adapter
+options because GitHub Copilot's `spawn_agent` is a *host tool* (only reachable
+from inside a GitHub Copilot CLI session, not callable from TypeScript). Copilot
 CLI does NOT have that constraint — it ships as a standalone binary
 intended to be invoked non-interactively from a parent shell or CI
 script. Consequently:
 
-- The "Host-tool adapter" row in `codex-execution-path.md`'s "Codex
+- The "Host-tool adapter" row in `copilot-execution-path.md`'s "GitHub Copilot
   Adapter Contract" table does **NOT** have a Copilot analogue. The
   attended Copilot operator does not need a separate documented manual
-  procedure analogous to the Codex one — they would simply invoke
+  procedure analogous to the GitHub Copilot one — they would simply invoke
   `--spawner copilot` from a regular shell (no Copilot CLI session
   needs to wrap the pipeline call).
 - The "CLI subprocess adapter" row IS the canonical path for Copilot.
@@ -81,10 +81,10 @@ script. Consequently:
   for primacy.
 
 That said, the AISDLC-202.2 contract surface (`CopilotSpawnAgentFn`
-callback boundary) is retained verbatim from Codex to keep the
+callback boundary) is retained verbatim from GitHub Copilot to keep the
 architectural template aligned — operators who want to wrap the
 `copilot` CLI in their own auth/transport (`COPILOT_SPAWN_AGENT_BIN`
-env var) get the same ergonomics they have today with Codex.
+env var) get the same ergonomics they have today with GitHub Copilot.
 
 ## Copilot CLI invocation grammar (proposed, with open questions)
 
@@ -97,14 +97,14 @@ questions" below).
 ### Binary discovery
 
 1. **Preferred** — `$COPILOT_SPAWN_AGENT_BIN` env var pointing to the
-   operator's own wrapper script (mirrors `$CODEX_SPAWN_AGENT_BIN`).
+   operator's own wrapper script (mirrors `$COPILOT_SPAWN_AGENT_BIN`).
    Lets operators inject auth, transport, model-pin overrides, or a
    thin shim that translates the JSON-line wire protocol into whatever
    Copilot's actual flag surface looks like.
 2. **Fallback** — `copilot` resolved on `PATH`.
 3. **Throw** — neither configured: emit the operator-facing
    "configure `COPILOT_SPAWN_AGENT_BIN` or install the `copilot` CLI"
-   error BEFORE any pipeline mutation (mirrors the Codex resolver's
+   error BEFORE any pipeline mutation (mirrors the GitHub Copilot resolver's
    pre-flight pattern, AISDLC-429.2 AC #4).
 
 ### Non-interactive invocation
@@ -125,7 +125,7 @@ Rationale for the proposed shape:
 - **`--prompt-file` over stdin or positional args:** the developer
   prompts can be ~5-20 KB (full task spec + AC list + previous
   iteration feedback). Passing via a temp file is shell-safe (no
-  quoting / argv-length-limit risk) and matches how the Codex bridge
+  quoting / argv-length-limit risk) and matches how the GitHub Copilot bridge
   buffers large prompts.
 - **Separate `--system-prompt-file`:** keeps the per-`SubagentType`
   role context distinct from the user prompt. The adapter writes both
@@ -140,7 +140,7 @@ Rationale for the proposed shape:
 - **`--output-format json`:** if the CLI supports a structured-output
   mode, the bridge passes it through as the `parsed` field of
   `CopilotSpawnAgentResponse`. If not, the bridge falls through to
-  raw stdout and lets `tryParseJson()` (reused from Codex) extract a
+  raw stdout and lets `tryParseJson()` (reused from GitHub Copilot) extract a
   fenced or bare JSON envelope from the model's reply.
 
 **The above is the PROPOSAL — every flag listed is contingent on
@@ -150,8 +150,8 @@ MUST NOT guess the flag surface; the operator's walkthrough of the
 
 ### Per-`SubagentType` system prompt strategy
 
-Mirrors the Codex adapter (`DEFAULT_SYSTEM_PROMPTS` in
-`pipeline-cli/src/runtime/spawners/codex-harness.ts`):
+Mirrors the GitHub Copilot adapter (`DEFAULT_SYSTEM_PROMPTS` in
+`pipeline-cli/src/runtime/spawners/copilot-harness.ts`):
 
 | `SubagentType` | Built-in default | Operator override channel |
 |---|---|---|
@@ -168,7 +168,7 @@ heavy-lifting (diff analysis, verification commands, commit + push
 contract) to the *user prompt* that `buildDeveloperPrompt` /
 `buildReviewPrompts` already construct.
 
-This matches the Codex precedent: the pipeline-built user prompts
+This matches the GitHub Copilot precedent: the pipeline-built user prompts
 already carry the task spec, diff, AC list, and JSON envelope contract.
 The system prompt is a thin role-reinforcement layer that operators can
 swap for the full plugin-agent body when they want stricter behavioural
@@ -176,7 +176,7 @@ parity.
 
 ## Reviewer verdict shape
 
-Identical to the Codex path. Copilot reviewer dispatch must return
+Identical to the GitHub Copilot path. Copilot reviewer dispatch must return
 canonical `ReviewerVerdict` objects before Step 8:
 
 ```json
@@ -204,7 +204,7 @@ If the `copilot` CLI does NOT emit structured JSON natively (see
 **OQ-3**), the adapter's only lever is the **prompt-side instruction**:
 the system prompts above explicitly demand the canonical envelope as
 the FINAL assistant message, and `normalizeReviewerVerdict()` (reused
-verbatim from `codex-harness.ts`) coerces whatever object-shaped
+verbatim from `copilot-harness.ts`) coerces whatever object-shaped
 response comes back into the canonical shape (defaulting
 `approved=false`, `findings=[]`, `harness='copilot'` when fields are
 missing). Non-object responses fall through to Step 8's "no parseable
@@ -214,7 +214,7 @@ treating the dispatch as approved.
 ## Subprocess-wrapping gotchas
 
 The default `subprocessCopilotSpawnAgent()` must handle the same
-substrate concerns the Codex bridge handles, plus a Copilot-specific
+substrate concerns the GitHub Copilot bridge handles, plus a Copilot-specific
 TTY consideration:
 
 1. **TTY requirement.** GitHub Copilot CLI's interactive mode draws a
@@ -235,7 +235,7 @@ TTY consideration:
    `CopilotSpawnAgentResponse` accumulates the full transcript;
    `parsed` is set when the bridge extracts a JSON envelope.
 4. **Per-call timeout.** Honour `request.timeoutMs` — default 30
-   minutes (matches `ShellClaudePSpawner` + `CodexHarnessAdapter`).
+   minutes (matches `CopilotHarnessAdapter` + `CopilotHarnessAdapter`).
    `SIGTERM` on timeout, surface as `error` on the `SubagentResult`.
 5. **Temp-file cleanup.** If the proposed `--prompt-file` /
    `--system-prompt-file` grammar is correct (OQ-1), the bridge MUST
@@ -249,7 +249,7 @@ TTY consideration:
    Copilot.
 7. **Non-zero exit handling.** A non-zero exit code from `copilot`
    maps to a `SubagentResult` with `status: 'error'` and the trimmed
-   stderr in the `error` field — same shape Codex uses. Step 6's
+   stderr in the `error` field — same shape GitHub Copilot uses. Step 6's
    retry loop (`parseDeveloperReturnWithRetry`) consumes that
    directly.
 
@@ -264,8 +264,8 @@ agent — **OQ-4** covers the exact tier matrix.
 **Implication for the Phase 2 resolver:** `resolveSpawner('copilot')`
 MUST refuse-loud when neither `$COPILOT_SPAWN_AGENT_BIN` is set nor
 `copilot` is resolvable on PATH — DO NOT silently fall back to
-`ANTHROPIC_API_KEY` / paid API tokens (mirrors the AISDLC-393
-"billing safety" pattern that refuses dispatch when `claude` is
+`GITHUB_MODELS_TOKEN` / paid API tokens (mirrors the AISDLC-393
+"billing safety" pattern that refuses dispatch when `copilot` is
 missing on the GH-issue path). The error message must name BOTH the
 env var AND the install hint.
 
@@ -275,16 +275,16 @@ runbook must document:
 - Which Copilot subscription tiers are entitled (pending OQ-4).
 - How `gh auth login` vs. `copilot auth login` interacts (OQ-5).
 - That `--spawner copilot` consumes Copilot subscription quota, not
-  Claude Code Max or `ANTHROPIC_API_KEY` budget.
+  GitHub Copilot CLI Max or `GITHUB_MODELS_TOKEN` budget.
 - That CI use of `--spawner copilot` requires a Copilot-entitled
   token in the runner's env (separate from `GITHUB_TOKEN`).
 
-## Tier 1 deviation from Claude Code `Agent` dispatch
+## Tier 1 deviation from GitHub Copilot CLI `Agent` dispatch
 
-The Tier 1 attended path is meaningfully different from Claude Code:
+The Tier 1 attended path is meaningfully different from GitHub Copilot CLI:
 
-- **Claude Code Tier 1:** the operator runs `/ai-sdlc execute` inside a
-  Claude Code session. The session itself drives Step 0-13; subagents
+- **GitHub Copilot CLI Tier 1:** the operator runs `/ai-sdlc execute` inside a
+  Copilot CLI session. The session itself drives Step 0-13; subagents
   dispatch via the plugin `Agent` tool; verdicts are emitted as JSON
   in the subagent's final assistant message and consumed back in the
   parent session's slash-command-body context.
@@ -293,11 +293,11 @@ The Tier 1 attended path is meaningfully different from Claude Code:
   (or `cli-orchestrator tick`) shelling out to `copilot` *per
   dispatch* — every developer + reviewer call is a fresh `copilot`
   invocation. There is no long-lived Copilot session that wraps the
-  pipeline. This is closer to how `--spawner claude` (`claude -p`)
-  works than how Claude Code Tier 1 works.
+  pipeline. This is closer to how `--spawner copilot` (`copilot -p`)
+  works than how GitHub Copilot CLI Tier 1 works.
 
 This is a deliberate choice, not a limitation: it keeps the Copilot
-adapter symmetric with `ShellClaudePSpawner` and `CodexHarnessAdapter`
+adapter symmetric with `CopilotHarnessAdapter` and `CopilotHarnessAdapter`
 (both per-call shell-outs), and it sidesteps the "how does an LLM-driven
 slash-command body call back into another LLM" recursion problem that
 `/ai-sdlc execute` solves via the plugin `Agent` tool but `copilot`
@@ -306,12 +306,12 @@ does not currently expose.
 A future task (out of scope for AISDLC-429) could explore a "Copilot
 Workspace as long-lived session" model where the operator drives the
 pipeline from inside a Copilot session, dispatching to itself for
-sub-tasks. That would be a Tier 1 attended analogue of Claude Code's
+sub-tasks. That would be a Tier 1 attended analogue of GitHub Copilot CLI's
 slash-command body. Phase 1 / Phase 2 / Phase 3 do not block on it.
 
 ## Open questions (resolved 2026-05-26)
 
-Per CLAUDE.md "Subagent Governance — OQ-resolution prohibition
+Per .github/copilot-instructions.md "Subagent Governance — OQ-resolution prohibition
 (AISDLC-298)", these questions were surfaced for operator routing
 through the [Decision Catalog (RFC-0035)](../../spec/rfcs/RFC-0035-decision-catalog-operator-routing.md).
 
@@ -422,15 +422,15 @@ prompt + retry path.
 **Recommended escalation route:** operator runs a smoke dispatch of
 the proposed grammar on a real Copilot-entitled machine and captures
 the raw stdout for a developer-class prompt + a reviewer-class
-prompt. Same procedure AISDLC-247 used for the Codex cross-harness
+prompt. Same procedure AISDLC-247 used for the GitHub Copilot cross-session
 review pilot.
 
 **Resolution (2026-05-26):** **Option (b)** — Copilot CLI emits
 free-form text only. No JSON / NDJSON / stream-json output flag is
 documented across any of the four cited sources. **Bridge contract:**
-identical to the Codex bridge — rely on prompt-side instruction
+identical to the GitHub Copilot bridge — rely on prompt-side instruction
 ("your FINAL message MUST be a single JSON object…") + `tryParseJson`'s
-fenced-extraction tolerance. Verdict-loss risk is the same as Codex
+fenced-extraction tolerance. Verdict-loss risk is the same as GitHub Copilot
 and is mitigated the same way (retry path in
 `parseDeveloperReturnWithRetry` for developer dispatches; the standard
 reviewer prompt template enforces JSON envelope shape for reviewer
@@ -462,8 +462,8 @@ links the canonical source into the AISDLC-429.3 ticket.
 [GitHub Copilot CLI marketing page](https://github.com/features/copilot/cli):
 *"Copilot CLI is included as a core feature of all GitHub Copilot
 plans (Free, Pro, Pro+, Business, and Enterprise)."* This is the
-widest tier matrix of any AI-SDLC spawner (Codex requires a paid
-ChatGPT plan; Claude requires API key or Claude Code subscription).
+widest tier matrix of any AI-SDLC spawner (GitHub Copilot requires a paid
+ChatGPT plan; GitHub Copilot requires API key or GitHub Copilot CLI subscription).
 **Runbook impact:** Phase 3's `copilot-spawner.md` runbook states
 "any GitHub Copilot plan including Free" as the entitlement
 requirement. README's "supported harnesses" table can highlight
@@ -521,7 +521,7 @@ machine (the Step 7b reviewer fan-out via `Promise.all`):
 
 **Why it matters:** if (b), (c), or (d), `CopilotHarnessAdapter.spawnParallel`
 needs an internal serialisation layer (or a per-call subdir cwd) that
-the Codex adapter does not need. The AISDLC-202.2 Codex precedent has
+the GitHub Copilot adapter does not need. The AISDLC-202.2 GitHub Copilot precedent has
 the host bridge handle this internally if it matters; the Copilot
 bridge may need to handle it itself.
 
@@ -537,7 +537,7 @@ documented session-state directory `~/.copilot/session-state/<session-id>/`
 suggests per-invocation session isolation by default). If the
 AISDLC-429.2 smoke test reveals token-cache races or CLI-side
 rate-limit serialisation, `CopilotHarnessAdapter.spawnParallel` adds
-an internal `p-limit(1)` wrapper (the Codex-bridge fallback pattern).
+an internal `p-limit(1)` wrapper (the GitHub Copilot-bridge fallback pattern).
 Phase 2 AC #5 covers the smoke test; no Phase 2 contract changes
 hinge on this resolution.
 
@@ -587,7 +587,7 @@ canonical envelope. Does the `copilot` CLI:
 
 **Why it matters:** if (b), the retry prompt has to carry the prior
 attempt's diff + reviewer feedback inline, which inflates the prompt
-size. The Codex bridge currently does (b) and it works; we should
+size. The GitHub Copilot bridge currently does (b) and it works; we should
 verify Copilot does not behave differently in a way that breaks the
 retry loop.
 
@@ -600,10 +600,10 @@ cross-invocation `--resume <session-id>` flag is documented.
 documents `--share='./[filename]'` and `--share-gist` for *exporting*
 completed sessions, but not for *resuming* them in a later subprocess
 invocation. `/resume` is an interactive slash-command (in-shell only).
-**Bridge contract:** fresh session per invocation (mirrors the Codex
+**Bridge contract:** fresh session per invocation (mirrors the GitHub Copilot
 bridge). Step 6's `parseDeveloperReturnWithRetry` carries the prior
 attempt's diff + reviewer feedback inline in the retry prompt — same
-shape as the Codex retry path. The Codex bridge has been operating
+shape as the GitHub Copilot retry path. The GitHub Copilot bridge has been operating
 under option (b) successfully since AISDLC-202.2; no Copilot-specific
 deviation needed.
 
@@ -614,11 +614,11 @@ Per the parent task (AISDLC-429) and the AISDLC-202 precedent:
 | Phase 2 (AISDLC-429.2) | Phase 3 (AISDLC-429.3) |
 |---|---|
 | `pipeline-cli/src/runtime/spawners/copilot-harness.{ts,test.ts}` | `pipeline-cli/README.md` spawner-kinds table row |
-| `SpawnerKind` extension to include `'copilot'` | `CLAUDE.md` "Spawner kinds for `cli-orchestrator tick --spawner <kind>`" list entry |
-| `SPAWNER_KINDS` array update | `docs/operations/copilot-spawner.md` operator runbook (mirroring `cross-harness-review.md`'s pilot procedure section) |
+| `SpawnerKind` extension to include `'copilot'` | `.github/copilot-instructions.md` "Spawner kinds for `cli-orchestrator tick --spawner <kind>`" list entry |
+| `SPAWNER_KINDS` array update | `docs/operations/copilot-spawner.md` operator runbook (mirroring `cross-session-review.md`'s pilot procedure section) |
 | `resolveSpawner('copilot')` resolver + missing-binary pre-flight | Orchestrator umbrella flag wiring in `pipeline-cli/src/orchestrator/loop.ts` (`umbrellaSpawnerKind` / `resolveUmbrellaSpawnerKind`) |
 | Hermetic tests (no real `copilot` binary required) | Cross-link from this design doc to the new runbook |
-| 80%+ patch coverage gate | Cross-harness review extension (out of scope for the initial cut, per parent-task non-goal) |
+| 80%+ patch coverage gate | independent parallel review extension (out of scope for the initial cut, per parent-task non-goal) |
 
 **Dispatch status (2026-05-26):** OQ-1, OQ-2, OQ-3, OQ-4, OQ-5, OQ-7,
 OQ-8 are resolved from authoritative GitHub Copilot CLI documentation
@@ -630,9 +630,9 @@ dispatchable.**
 
 ## References
 
-- [`docs/operations/codex-execution-path.md`](./codex-execution-path.md) — the architectural template this design mirrors.
-- [`docs/operations/cross-harness-review.md`](./cross-harness-review.md) — for the eventual Copilot-as-reviewer extension (out of scope here).
-- [`pipeline-cli/src/runtime/spawners/codex-harness.ts`](../../pipeline-cli/src/runtime/spawners/codex-harness.ts) — the reference adapter; `CopilotHarnessAdapter` will be structurally parallel.
+- [`docs/operations/copilot-execution-path.md`](./copilot-execution-path.md) — the architectural template this design mirrors.
+- [`docs/operations/copilot-spawner.md`](./copilot-spawner.md) — for the eventual Copilot-as-reviewer extension (out of scope here).
+- [`pipeline-cli/src/runtime/spawners/copilot-harness.ts`](../../pipeline-cli/src/runtime/spawners/copilot-harness.ts) — the reference adapter; `CopilotHarnessAdapter` will be structurally parallel.
 - [`pipeline-cli/src/cli/execute.ts`](../../pipeline-cli/src/cli/execute.ts) — `SpawnerKind`, `SPAWNER_KINDS`, `resolveSpawner()`; Phase 2 extends all three.
 - [`spec/rfcs/RFC-0012-two-tier-pipeline-architecture.md`](../../spec/rfcs/RFC-0012-two-tier-pipeline-architecture.md) — §8 `SubagentSpawner` contract.
 - [`spec/rfcs/RFC-0035-decision-catalog-operator-routing.md`](../../spec/rfcs/RFC-0035-decision-catalog-operator-routing.md) — the routing mechanism for the open questions above.

@@ -44,7 +44,7 @@ function fakeEntry(opts: Partial<CalibrationCorpusEntry>): CalibrationCorpusEntr
     timestamp: '2026-05-15T10:00:00Z',
     taskType: 'decision-recommendation',
     input: { text: 'pick' },
-    model: 'claude-haiku-4-5',
+    model: 'gpt-5-mini',
     classification: 'opt-a',
     confidence: 0.82,
     reasoning: 'r',
@@ -124,7 +124,7 @@ describe('buildCorpusEntryToDecisionIdMap', () => {
     return {
       corpusEntryId,
       effectiveThreshold: 0.7,
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       metBehindThreshold: true,
       recommendation: { optionId: 'opt-a', confidence: 0.82, rationale: 'r' },
       alternativesConsidered: [],

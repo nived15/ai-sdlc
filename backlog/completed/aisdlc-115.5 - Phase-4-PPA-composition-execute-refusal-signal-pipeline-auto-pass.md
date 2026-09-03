@@ -61,7 +61,7 @@ RFC-0011 Phase 4 wires DoR verdicts into existing pipeline boundaries:
 ## Verification
 - pnpm build && pnpm test && pnpm lint && pnpm format:check — clean
 - 35 new tests across 5 files; all 664 pipeline-cli + 2,933 orchestrator tests pass
-- Coverage: auto-pass.ts 100%, evaluate.ts 100%, dor-config.ts 100%, ingress-claude.ts 98.16%, 01-validate.ts 95.62%, admission-score.ts near-100%
+- Coverage: auto-pass.ts 100%, evaluate.ts 100%, dor-config.ts 100%, ingress.ts 98.16%, 01-validate.ts 95.62%, admission-score.ts near-100%
 - 3 reviews APPROVED: code 0c/0M/2m/2s; test 0c/0M/1m/3s; security 0c/0M/1m/1s
 - Stage A regression suite (corpus.test.ts, RFC §5.6 tier 1) UNCHANGED
 

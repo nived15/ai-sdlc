@@ -556,7 +556,7 @@ describe('renderPrTasksComment', () => {
     blocking.gates[0]!.finding = `URL extracted: https://example.test/?t=${fakeAnthropicToken}`;
     const body = renderPrTasksComment([blocking]);
     expect(body).not.toContain(fakeAnthropicToken);
-    expect(body).toContain('[REDACTED:ANTHROPIC]');
+    expect(body).toContain('[REDACTED:INFERENCE_KEY_SCOPED]');
   });
 });
 

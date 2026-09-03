@@ -3,7 +3,7 @@
 # AI-SDLC SubagentStart Hook
 #
 # Injects governance context into spawned subagents (developer, reviewers, etc.).
-# SessionStart does NOT fire for subagents (verified in claude-code source:
+# SessionStart does NOT fire for subagents (verified in copilot source:
 # runAgent.ts:532-543 calls executeSubagentStartHooks, not processSessionStartHooks),
 # so this hook is the only place governance context reaches a subagent.
 #

@@ -97,7 +97,7 @@ Root cause was upstream of the comparison logic implied by the task title: Gate
 7's regex/comparison in `gate-7-deps.ts` was already correct (it captures only
 the bare tracked-work id, never the surrounding phrase, and already compares
 case-insensitively). The actual bug is that `refineBacklogTask()`
-(`ingress-claude.ts`) — the only real caller of the gate — never populated
+(`ingress.ts`) — the only real caller of the gate — never populated
 `IssueInput.references` (or any other field) from the task's frontmatter
 `dependencies:` / `references:` lists. Gate 7 was therefore always comparing
 against an empty declared-dependency set, so every body dep-phrase was flagged
@@ -109,7 +109,7 @@ merges `dependencies:` + `references:`, and wiring it into the ingress shim.
 
 - `pipeline-cli/src/dor/types.ts` (modified): added `IssueInput.declaredDependencyRefs?: string[]` — deliberately a NEW field, not a reuse of `references` (which Gate 3 treats as file-existence resolution targets; mixing tracked-work ids into it would turn a Gate-7 false positive into a Gate-3 one).
 - `pipeline-cli/src/dor/gates/gate-7-deps.ts` (modified): added `extractFrontmatterListField()` (generic YAML list-field parser, inline + block-list forms) and `extractDeclaredDependencyRefs()` (merges `dependencies:` + `references:`). `findInvisibleDependencies()` now merges `input.references` (legacy caller override, kept for backward compat) with `input.declaredDependencyRefs` before the case-insensitive comparison.
-- `pipeline-cli/src/dor/ingress-claude.ts` (modified): `refineBacklogTask()` now calls `extractDeclaredDependencyRefs(frontmatter)` and populates `input.declaredDependencyRefs` before evaluating the rubric.
+- `pipeline-cli/src/dor/ingress.ts` (modified): `refineBacklogTask()` now calls `extractDeclaredDependencyRefs(frontmatter)` and populates `input.declaredDependencyRefs` before evaluating the rubric.
 - `pipeline-cli/src/dor/gates/gate-7-deps.test.ts` (modified): added `extractFrontmatterListField` / `extractDeclaredDependencyRefs` unit tests plus a dedicated AISDLC-563 describe block covering both real reproductions (AISDLC-557's "once AISDLC&#8209;554 merges", AISDLC-561's "Depends on AISDLC&#8209;560 because"), the true positive (undeclared reference still fails), a `references:`-only declaration, and explicit case-/surrounding-word-insensitivity assertions.
 - `pipeline-cli/src/dor/ingress-claude.test.ts` (modified): added 4 end-to-end tests through the real `refineBacklogTask()` entry point (not just the gate unit) — both real reproductions pass, the true positive still fails, and a `references:`-only declaration passes.
 

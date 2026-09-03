@@ -36,7 +36,7 @@
  * time, not at publish-fail time. Wired as `pnpm lint:publishable` in
  * the root package.json. The operator should add it as a step in
  * `.github/workflows/ci.yml` (path is blocked from the developer
- * subagent — see CLAUDE.md "Publishable package configs (AISDLC-97)").
+ * subagent — see .github/copilot-instructions.md "Publishable package configs (AISDLC-97)").
  *
  * Usage
  * -----

@@ -51,10 +51,10 @@ The single public entry point.
 | Field | Default | Description |
 |---|---|---|
 | `threshold` | per-org config or `0.7` | Per-call confidence threshold override |
-| `invoker` | required when calling | The `LlmInvoker` implementation (production = Anthropic Haiku adapter; tests = `FakeLlmInvoker`) |
+| `invoker` | required when calling | The `LlmInvoker` implementation (production = GitHub Models Haiku adapter; tests = `FakeLlmInvoker`) |
 | `repoRoot` | `process.cwd()` | Project root for config + corpus resolution |
 | `corpusDir` | `<repoRoot>/.ai-sdlc/classifier-corpus/` | Per-task-type corpus directory |
-| `model` | per-org config or `claude-haiku-4-5` | Model identifier passed to the invoker |
+| `model` | per-org config or `copilot-haiku-4-5` | Model identifier passed to the invoker |
 | `ledgerWriter` | none | SubscriptionLedger writer for cost accounting (AC-9) |
 | `skipCorpus` | `false` | When true, skip the corpus write (useful for dry-run previews) |
 
@@ -95,13 +95,13 @@ Both honour the same shape:
 ```yaml
 classifier:
   threshold: 0.7                   # global default for this file
-  model: claude-haiku-4-5          # global default model
+  model: copilot-haiku-4-5          # global default model
   dailyTokenCap: 1000000           # audit-only daily token budget
   overrideWindowHours: 24          # how long the operator has to override (capture-config only)
   perTaskType:
     capture-severity:              # tighter threshold for severity
       threshold: 0.85
-      model: claude-sonnet-4-5
+      model: the balanced tier
     pr-comment-is-capture:         # looser for noisier classification
       threshold: 0.55
 ```
@@ -119,8 +119,8 @@ interface LlmInvoker {
 }
 ```
 
-Production callers wire an Anthropic Haiku adapter (the substrate doesn't
-depend on `@anthropic-ai/sdk` directly — that adapter lives in a
+Production callers wire an GitHub Models Haiku adapter (the substrate doesn't
+depend on `@github-models-ai/sdk` directly — that adapter lives in a
 downstream consumer module). Tests inject `FakeLlmInvoker` with scripted
 responses:
 
@@ -244,7 +244,7 @@ await substrate.classify(
     ledgerWriter: async (entry) => {
       // Wire to your SubscriptionLedger:
       await subscriptionLedger.append({
-        harness: 'anthropic-haiku',
+        harness: 'github-models-haiku',
         accountId: 'default',
         tenant: 'main',
         tokens: entry.inputTokens + entry.outputTokens,

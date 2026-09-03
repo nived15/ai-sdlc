@@ -31,17 +31,17 @@ function createMockTracker(overrides: Partial<IssueTracker> = {}): IssueTracker 
 }
 
 describe('executeTriage', () => {
-  const originalApiKey = process.env.ANTHROPIC_API_KEY;
+  const originalApiKey = process.env.GITHUB_MODELS_TOKEN;
 
   beforeEach(() => {
-    process.env.ANTHROPIC_API_KEY = 'test-api-key';
+    process.env.GITHUB_MODELS_TOKEN = 'test-api-key';
   });
 
   afterEach(() => {
     if (originalApiKey !== undefined) {
-      process.env.ANTHROPIC_API_KEY = originalApiKey;
+      process.env.GITHUB_MODELS_TOKEN = originalApiKey;
     } else {
-      delete process.env.ANTHROPIC_API_KEY;
+      delete process.env.GITHUB_MODELS_TOKEN;
     }
     vi.restoreAllMocks();
   });
@@ -61,7 +61,7 @@ describe('executeTriage', () => {
         JSON.stringify({
           content: [{ type: 'text', text: JSON.stringify(verdictData) }],
           usage: { input_tokens: 200, output_tokens: 50 },
-          model: 'claude-sonnet-4-5-20250929',
+          model: 'balanced',
         }),
         { status: 200 },
       ),
@@ -219,14 +219,14 @@ describe('executeTriage', () => {
   });
 
   it('handles triage runner failure gracefully', async () => {
-    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.GITHUB_MODELS_TOKEN;
 
     const tracker = createMockTracker();
     const result = await executeTriage('42', { tracker, dryRun: true });
 
     expect(result.rejected).toBe(true);
     expect(result.verdict.riskScore).toBe(7);
-    expect(result.error).toContain('ANTHROPIC_API_KEY');
+    expect(result.error).toContain('GITHUB_MODELS_TOKEN');
   });
 
   it('handles comment posting failure gracefully', async () => {

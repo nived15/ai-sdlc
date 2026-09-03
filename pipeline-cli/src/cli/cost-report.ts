@@ -26,7 +26,7 @@
  *
  * Subscription cost-conversion math (deliberately simple for v1):
  *   For each ledger file, costUsd = consumedTokens / windowTokens * monthlyUsd /
- *   (24 * 30 / windowHours). Defaults to Claude Code Max-20x: $200/mo, 5h window.
+ *   (24 * 30 / windowHours). Defaults to GitHub Copilot CLI Max-20x: $200/mo, 5h window.
  *   Operators override per-plan via `--subscription-monthly-usd` and
  *   `--subscription-window-hours`. The CLI emits ONE row per ledger file with
  *   `costModel='subscription-quota'`.
@@ -81,7 +81,7 @@ export interface UnifiedCostRow {
   costModel: 'pay-per-token' | 'subscription-quota';
   /** 'inputTokens' | 'outputTokens' | 'embeddingTokens' | 'subscription-window'. */
   category: string;
-  /** Provider/model identifier (e.g., 'openai-text-embedding-3-small@2024-01-25'). */
+  /** Provider/model identifier (e.g., 'github-models-embedding-small@2024-01-25'). */
   source: string;
   /** Consumer attribution (OQ-6); 'unspecified' for unlabeled LLM rows. */
   consumer: string;
@@ -227,7 +227,7 @@ export function loadCostLedgerJsonl(
  * Convert subscription-window consumption into a single cost row per
  * ledger file using a simple monthly-cost-proportional model.
  *
- * Reasoning: Claude Code Max-20x is $200/mo with a 5h sliding window. If
+ * Reasoning: GitHub Copilot CLI Max-20x is $200/mo with a 5h sliding window. If
  * the window quota is consumed, the operator is effectively paying that
  * pro-rated fraction of the monthly subscription. The math is intentionally
  * approximate — surfaces "subscription dollars at play" without claiming
@@ -347,7 +347,7 @@ export interface UnifiedReportOptions {
   subscriptionWindowTokens?: number;
 }
 
-/** Default subscription-cost-conversion knobs (Claude Code Max-20x). */
+/** Default subscription-cost-conversion knobs (GitHub Copilot CLI Max-20x). */
 export const SUBSCRIPTION_DEFAULTS = {
   monthlyUsd: 200,
   windowHours: 5,
@@ -409,7 +409,7 @@ export async function runCostReportCli(): Promise<void> {
     .option('subscription-monthly-usd', {
       type: 'number',
       default: SUBSCRIPTION_DEFAULTS.monthlyUsd,
-      description: 'Subscription monthly cost in USD (default: 200, Claude Code Max-20x).',
+      description: 'Subscription monthly cost in USD (default: 200, GitHub Copilot CLI Max-20x).',
     })
     .option('subscription-window-hours', {
       type: 'number',

@@ -20,7 +20,7 @@
  * rule). They are implemented inline here rather than invoking the subagent
  * because Step 11 is part of the deterministic (non-LLM) tier of the
  * pipeline — it runs without a spawner, in tight integration test harnesses,
- * and must not require a live Claude CLI session. The resolve logic has no
+ * and must not require a live GitHub Copilot CLI session. The resolve logic has no
  * LLM-dependent parts: it is purely text-pattern work.
  *
  * @module steps/11-late-rebase

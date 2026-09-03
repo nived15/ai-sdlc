@@ -94,14 +94,14 @@ describe('loadCostLedgerJsonl', () => {
   it('classifies embedding entries into a single embeddingTokens row with consumer label', () => {
     const path = join(tmp, 'ledger.jsonl');
     writeJsonl(path, [
-      makeEmbeddingEntry('openai-text-embedding-3-small', '2024-01-25', 1000, 0.00002),
+      makeEmbeddingEntry('github-models-embedding-small', '2024-01-25', 1000, 0.00002),
     ]);
     const rows = loadCostLedgerJsonl(path);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       costModel: 'pay-per-token',
       category: 'embeddingTokens',
-      source: 'openai-text-embedding-3-small@2024-01-25',
+      source: 'github-models-embedding-small@2024-01-25',
       consumer: 'rfc-0009-tessellation-drift',
       tokens: 1000,
       recordCount: 1,
@@ -112,7 +112,7 @@ describe('loadCostLedgerJsonl', () => {
   it('splits chat entries into input + output rows cost-prorated by token share', () => {
     const path = join(tmp, 'ledger.jsonl');
     // 100 input + 100 output + $0.0008 → 50/50 cost split.
-    writeJsonl(path, [makeChatEntry('claude-sonnet-4-5', 100, 100, 0.0008, 'developer')]);
+    writeJsonl(path, [makeChatEntry('balanced', 100, 100, 0.0008, 'developer')]);
     const rows = loadCostLedgerJsonl(path);
 
     expect(rows).toHaveLength(2);
@@ -182,7 +182,7 @@ describe('convertSubscriptionWindowToCost', () => {
     // 50% of $1.389 ~ $0.6944.
     const row = convertSubscriptionWindowToCost(
       state,
-      'claude-code-default-tenant.json',
+      'copilot-default-tenant.json',
       200,
       5,
       200_000,
@@ -209,11 +209,11 @@ describe('loadSubscriptionLedgerDir', () => {
     const ledgerDir = join(tmp, '_ledger');
     mkdirSync(ledgerDir);
     writeFileSync(
-      join(ledgerDir, 'claude-code-org1.json'),
+      join(ledgerDir, 'copilot-org1.json'),
       JSON.stringify({ windowStart: '2026-05-23T00:00:00Z', consumedTokens: 50_000 }),
     );
     writeFileSync(
-      join(ledgerDir, 'codex-org1.json'),
+      join(ledgerDir, 'copilot-org1.json'),
       JSON.stringify({ windowStart: '2026-05-23T00:00:00Z', consumedTokens: 25_000 }),
     );
     writeFileSync(join(ledgerDir, 'README.md'), 'ignore me');
@@ -265,7 +265,7 @@ describe('buildUnifiedReport', () => {
     const ledgerDir = join(tmp, '_ledger');
     mkdirSync(ledgerDir);
     writeFileSync(
-      join(ledgerDir, 'claude-code-x.json'),
+      join(ledgerDir, 'copilot-x.json'),
       JSON.stringify({ windowStart: 's', consumedTokens: 100_000 }),
     );
 
@@ -280,7 +280,7 @@ describe('buildUnifiedReport', () => {
     writeJsonl(path, [
       makeEmbeddingEntry('z-provider', 'v', 1, 0.001),
       makeEmbeddingEntry('a-provider', 'v', 1, 0.001),
-      makeChatEntry('sonnet', 100, 0, 0.001),
+      makeChatEntry('balanced', 100, 0, 0.001),
     ]);
     const rows = buildUnifiedReport({ costLedgerJsonl: path });
     const sources = rows.map((r) => r.source);
@@ -319,7 +319,7 @@ describe('renderTextTable', () => {
       {
         costModel: 'pay-per-token',
         category: 'inputTokens',
-        source: 'sonnet',
+        source: 'balanced',
         consumer: 'dev',
         tokens: 100,
         costUsd: 0.01,
@@ -328,7 +328,7 @@ describe('renderTextTable', () => {
       {
         costModel: 'pay-per-token',
         category: 'outputTokens',
-        source: 'sonnet',
+        source: 'balanced',
         consumer: 'dev',
         tokens: 200,
         costUsd: 0.02,
@@ -348,7 +348,7 @@ describe('renderCsv', () => {
       {
         costModel: 'pay-per-token',
         category: 'embeddingTokens',
-        source: 'openai@v',
+        source: 'github-copilot@v',
         consumer: 'drift',
         tokens: 100,
         costUsd: 0.01,
@@ -359,7 +359,7 @@ describe('renderCsv', () => {
     expect(csv.split('\n')[0]).toBe(
       'costModel,category,source,consumer,tokens,costUsd,recordCount',
     );
-    expect(csv).toContain('pay-per-token,embeddingTokens,openai@v,drift,100,0.010000,1');
+    expect(csv).toContain('pay-per-token,embeddingTokens,github-copilot@v,drift,100,0.010000,1');
   });
 
   it('quotes values containing commas/quotes/newlines', () => {

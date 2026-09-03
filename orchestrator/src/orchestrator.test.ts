@@ -188,8 +188,8 @@ function makeCostSummary(overrides?: Partial<CostSummary>): CostSummary {
     entryCount: 5,
     avgCostPerRun: 2,
     avgTokensPerRun: 1000,
-    costByAgent: { 'claude-code': 10 },
-    costByModel: { 'claude-3': 10 },
+    costByAgent: { 'copilot': 10 },
+    costByModel: { 'gpt-5': 10 },
     ...overrides,
   };
 }
@@ -1086,7 +1086,7 @@ describe('Orchestrator', () => {
       const mockStore = makeMockStateStore();
       const entries: AutonomyLedgerEntry[] = [
         {
-          agentName: 'claude-code',
+          agentName: 'copilot',
           currentLevel: 1,
           totalTasks: 10,
           successCount: 8,
@@ -1264,7 +1264,7 @@ describe('Orchestrator', () => {
       ];
       const agents: AutonomyLedgerEntry[] = [
         {
-          agentName: 'claude-code',
+          agentName: 'copilot',
           currentLevel: 1,
           totalTasks: 5,
           successCount: 4,

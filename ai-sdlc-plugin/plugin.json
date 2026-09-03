@@ -1,7 +1,7 @@
 {
   "name": "ai-sdlc",
   "version": "0.12.0",
-  "description": "AI-SDLC governance framework for Claude Code — action enforcement, telemetry, quality gates, and review agents",
+  "description": "AI-SDLC governance framework for GitHub Copilot CLI — action enforcement, telemetry, quality gates, and review agents",
   "author": {
     "name": "AI-SDLC Framework",
     "url": "https://ai-sdlc.io"
@@ -22,12 +22,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
+            "command": "bash \"${COPILOT_PLUGIN_ROOT}/hooks/session-start.sh\"",
             "statusMessage": "Loading AI-SDLC governance..."
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-plugin-version.sh\"",
+            "command": "bash \"${COPILOT_PLUGIN_ROOT}/hooks/check-plugin-version.sh\"",
             "statusMessage": "Checking plugin version..."
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-start.sh\"",
+            "command": "bash \"${COPILOT_PLUGIN_ROOT}/hooks/subagent-start.sh\"",
             "statusMessage": "Injecting AI-SDLC governance into subagent..."
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/enforce-blocked-actions.sh\"",
+            "command": "bash \"${COPILOT_PLUGIN_ROOT}/hooks/enforce-blocked-actions.sh\"",
             "if": "Bash(*)",
             "statusMessage": "Checking action policy..."
           }
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/enforce-blocked-actions.sh\"",
+            "command": "bash \"${COPILOT_PLUGIN_ROOT}/hooks/enforce-blocked-actions.sh\"",
             "statusMessage": "Checking write policy..."
           }
         ]
@@ -72,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/collect-tool-sequence.sh\"",
+            "command": "bash \"${COPILOT_PLUGIN_ROOT}/hooks/collect-tool-sequence.sh\"",
             "async": true
           }
         ]
@@ -83,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/deferred-coverage-check.sh\"",
+            "command": "bash \"${COPILOT_PLUGIN_ROOT}/hooks/deferred-coverage-check.sh\"",
             "asyncRewake": true,
             "statusMessage": "Checking coverage..."
           }
@@ -96,7 +96,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/permission-check.sh\"",
+            "command": "bash \"${COPILOT_PLUGIN_ROOT}/hooks/permission-check.sh\"",
             "if": "Bash(gh pr merge*)"
           }
         ]
@@ -112,10 +112,10 @@
     "ai-sdlc": {
       "command": "node",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/node_modules/@ai-sdlc/plugin-mcp-server/dist/bin.js"
+        "${COPILOT_PLUGIN_ROOT}/node_modules/@ai-sdlc/plugin-mcp-server/dist/bin.js"
       ],
       "env": {
-        "AI_SDLC_PROJECT_ROOT": "${CLAUDE_PLUGIN_DATA}"
+        "AI_SDLC_PROJECT_ROOT": "${COPILOT_PLUGIN_DATA}"
       }
     }
   },

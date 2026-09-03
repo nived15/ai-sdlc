@@ -18,7 +18,7 @@ const { readFileSync, existsSync, readdirSync } = require('fs');
 const { join, resolve, isAbsolute, relative, sep, dirname } = require('path');
 const { execSync } = require('child_process');
 
-// ── Read stdin (tool input JSON from Claude Code) ────────────────────
+// ── Read stdin (tool input JSON from GitHub Copilot CLI) ────────────────────
 
 let input;
 try {
@@ -40,7 +40,7 @@ const toolCwd = typeof input?.cwd === 'string' ? input.cwd : null;
 // ── Find project root and load agent-role.yaml ───────────────────────
 
 const projectDir =
-  process.env.CLAUDE_PROJECT_DIR ||
+  process.env.COPILOT_PROJECT_DIR ||
   (() => {
     try {
       return execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();

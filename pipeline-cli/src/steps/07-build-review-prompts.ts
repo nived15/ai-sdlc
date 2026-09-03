@@ -2,10 +2,10 @@
  * Step 7 — Build review prompts (3 reviewers — code, test, security).
  *
  * Mirrors `execute-orchestrator.md` Step 7. Captures the PR diff + changed
- * file list, detects whether `codex` is installed (independence harness),
- * and produces three reviewer-specific prompt strings that can be fed to
- * three parallel `SubagentSpawner.spawn()` calls (Tier 2) or three parallel
- * Agent tool invocations (Tier 1).
+ * file list, detects whether the `copilot` CLI is installed (dispatch
+ * harness), and produces three reviewer-specific prompt strings that can be
+ * fed to three parallel `SubagentSpawner.spawn()` calls (Tier 2) or three
+ * parallel agent invocations (Tier 1).
  *
  * The three reviewer subagents themselves run via the LLM dispatch boundary
  * (Step 7b) which is NOT part of this step.
@@ -25,8 +25,8 @@ export interface BuildReviewPromptsOptions {
   worktreePath: string;
   workDir: string;
   runner?: Runner;
-  /** Override the codex-availability detection (test injection). */
-  codexAvailable?: boolean;
+  /** Override the copilot-CLI availability detection (test injection). */
+  copilotAvailable?: boolean;
 }
 
 const REVIEWERS: ReviewerType[] = ['code-reviewer', 'test-reviewer', 'security-reviewer'];
@@ -54,19 +54,19 @@ export async function buildReviewPrompts(
           .filter(Boolean)
       : [];
 
-  // Codex independence detection
-  let codexAvailable = opts.codexAvailable;
-  if (codexAvailable === undefined) {
+  // Dispatch-harness detection: the reviewers run through the GitHub Copilot CLI.
+  let copilotAvailable = opts.copilotAvailable;
+  if (copilotAvailable === undefined) {
     try {
-      const which = await runner('which', ['codex'], { allowFailure: true });
-      codexAvailable = which.code === 0 && which.stdout.trim().length > 0;
+      const which = await runner('which', ['copilot'], { allowFailure: true });
+      copilotAvailable = which.code === 0 && which.stdout.trim().length > 0;
     } catch {
-      codexAvailable = false;
+      copilotAvailable = false;
     }
   }
-  const harnessNote = codexAvailable
+  const harnessNote = copilotAvailable
     ? ''
-    : '⚠ INDEPENDENCE NOT ENFORCED (codex unavailable, fell back to claude-code)';
+    : '⚠ REVIEW HARNESS UNAVAILABLE (GitHub Copilot CLI not found on PATH)';
 
   // Optional review policy from .ai-sdlc/review-policy.md (project-specific calibration)
   const policyPath = join(opts.workDir, '.ai-sdlc', 'review-policy.md');

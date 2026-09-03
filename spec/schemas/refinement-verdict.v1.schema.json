@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-sdlc.io/schemas/v1alpha1/refinement-verdict.v1.schema.json",
   "title": "AI-SDLC RefinementVerdict",
-  "description": "Per-issue verdict produced by the Definition-of-Ready evaluator (RFC-0011 §5, §9.2). One file per evaluation; written to the calibration log and consumed by ingress shims (GitHub Action, Claude Code subagent, future Forge / Slack shims).",
+  "description": "Per-issue verdict produced by the Definition-of-Ready evaluator (RFC-0011 §5, §9.2). One file per evaluation; written to the calibration log and consumed by ingress shims (GitHub Action, GitHub Copilot CLI subagent, future Forge / Slack shims).",
   "type": "object",
   "required": ["issueId", "rubricVersion", "overallVerdict", "gates", "signedAt", "evaluatorVersion"],
   "properties": {

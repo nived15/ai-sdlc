@@ -134,7 +134,7 @@ The framework can't tell whether the failure is operator-side or framework-side.
 A dependency outside the framework's control failed. Examples:
 
 - GitHub API outage
-- Anthropic API rate-limited
+- GitHub Models API rate-limited
 - npm registry returned a corrupt tarball
 - Network partition during pull
 

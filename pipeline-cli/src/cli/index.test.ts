@@ -120,9 +120,9 @@ describe('CLI router', () => {
 
   it('aggregate-verdicts returns APPROVED for clean verdicts', async () => {
     const verdicts = JSON.stringify([
-      { agentId: 'code-reviewer', harness: 'claude-code', approved: true, findings: [] },
-      { agentId: 'test-reviewer', harness: 'claude-code', approved: true, findings: [] },
-      { agentId: 'security-reviewer', harness: 'claude-code', approved: true, findings: [] },
+      { agentId: 'code-reviewer', harness: 'copilot', approved: true, findings: [] },
+      { agentId: 'test-reviewer', harness: 'copilot', approved: true, findings: [] },
+      { agentId: 'security-reviewer', harness: 'copilot', approved: true, findings: [] },
     ]);
     setArgv('aggregate-verdicts', '--verdicts', verdicts, '--work-dir', tmp);
     await buildCli().parseAsync();
@@ -206,7 +206,7 @@ describe('CLI router', () => {
     await buildCli().parseAsync();
     const out = stdoutChunks.join('');
     expect(out).not.toContain(fakeAnthropicToken);
-    expect(out).toContain('[REDACTED:ANTHROPIC]');
+    expect(out).toContain('[REDACTED:INFERENCE_KEY_SCOPED]');
     expect(out).toContain('### Gate 3');
     expect(out).toContain('<!-- ai-sdlc:dor-comment channel="author" -->');
   });
@@ -361,7 +361,7 @@ describe('CLI router', () => {
     await buildCli().parseAsync();
     const out = stdoutChunks.join('');
     expect(out).not.toContain(fakeAnthropicToken);
-    expect(out).toContain('[REDACTED:ANTHROPIC]');
+    expect(out).toContain('[REDACTED:INFERENCE_KEY_SCOPED]');
     expect(out).toContain('## Backlog tasks: DoR clarifications needed');
   });
 });

@@ -82,5 +82,5 @@ RFC-0014 Phase 3 — wired the AISDLC-166 dependency snapshot into the DoR clari
 - Phase 4 (AISDLC-167.4) — Slack digest + dashboard graph view (reuses the snapshot + blast-radius primitives).
 - Phase 5 (AISDLC-167.5) — soak window + flag promotion (needs corpus accumulating with `blastRadius` populated).
 - When AISDLC-167.2 (PPA composition) lands, the DoR ingress shim should pre-sort `radius.downstream` by `effectivePriority` before passing it to `renderBlastRadiusCallout` so the visible head matches "the most important downstream items" rather than the lex-numeric tail.
-- A future sibling PR can wire `evaluateAndCommentBacklogTaskClaude` (in `ingress-claude.ts`) to compute the snapshot + thread the radius into the comment + log call sites — currently the renderer + library helpers are wired but the ingress shim continues to call them with no extra args (preserves baseline behaviour).
+- A future sibling PR can wire `evaluateAndCommentBacklogTaskClaude` (in `ingress.ts`) to compute the snapshot + thread the radius into the comment + log call sites — currently the renderer + library helpers are wired but the ingress shim continues to call them with no extra args (preserves baseline behaviour).
 <!-- FS:END -->

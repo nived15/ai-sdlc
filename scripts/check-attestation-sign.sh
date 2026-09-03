@@ -318,21 +318,21 @@ fi
 ITERATION_COUNT="${AI_SDLC_ITERATION_COUNT:-1}"
 HARNESS_NOTE="${AI_SDLC_HARNESS_NOTE:-}"
 
-# ── AISDLC-250: Codex harness identification ──────────────────────────
-# When `CODEX_VERSION` is set (operator pre-exports
-# `export CODEX_VERSION="codex@$(codex --version)"`), pass
-# `--harness-name codex --harness-version <version>` to the signer so
+# ── AISDLC-250: GitHub Copilot harness identification ──────────────────────────
+# When `COPILOT_VERSION` is set (operator pre-exports
+# `export COPILOT_VERSION="copilot@$(copilot --version)"`), pass
+# `--harness-name copilot --harness-version <version>` to the signer so
 # the attestation envelope carries the harness field automatically.
-# Format: "codex@X.Y.Z" → harness-name=codex, harness-version=X.Y.Z.
+# Format: "copilot@X.Y.Z" → harness-name=copilot, harness-version=X.Y.Z.
 # When unset, no extra args are passed (back-compat: harness field absent).
 # AISDLC-555: array, not a string. An unquoted $HARNESS_ARGS expansion is
 # word-split by the shell; an array preserves argument boundaries exactly.
 HARNESS_ARGS=()
-if [ -n "${CODEX_VERSION:-}" ]; then
-  # Strip the "codex@" prefix to extract the version number.
-  CODEX_VERSION_NUM="${CODEX_VERSION#codex@}"
-  HARNESS_ARGS=(--harness-name codex --harness-version "$CODEX_VERSION_NUM")
-  echo "[attestation-sign] Codex harness detected: name=codex version=$CODEX_VERSION_NUM" >&2
+if [ -n "${COPILOT_VERSION:-}" ]; then
+  # Strip the "copilot@" prefix to extract the version number.
+  COPILOT_VERSION_NUM="${COPILOT_VERSION#copilot@}"
+  HARNESS_ARGS=(--harness-name copilot --harness-version "$COPILOT_VERSION_NUM")
+  echo "[attestation-sign] GitHub Copilot harness detected: name=copilot version=$COPILOT_VERSION_NUM" >&2
 fi
 
 echo "[attestation-sign] Auto-signing attestation for $TASK_ID against HEAD $HEAD_SHA (schema: $SCHEMA_VERSION)" >&2
@@ -449,7 +449,7 @@ Reviewers' verdicts at .ai-sdlc/verdicts/$TASK_ID_LOWER.json.
 AISDLC-398: primary filename content-addressed via git patch-id.
 AISDLC-471: per-patch-id transcript-leaves committed alongside envelope.
 
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>" >&2
+Co-Authored-By: GitHub Copilot <copilot@github.com>" >&2
 ) || {
   echo "[attestation-sign] ERROR: git add/commit of attestation failed; aborting push" >&2
   exit 2

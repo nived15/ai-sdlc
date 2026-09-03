@@ -5,7 +5,7 @@
  * Wraps the budget-exhaustion classifier from
  * `../classifier/budget-classifier.ts` so the `report` job in
  * `.github/workflows/ai-sdlc-review.yml` can decide whether to suppress
- * CHANGES_REQUESTED on a uniform Anthropic API budget-exhaustion failure.
+ * CHANGES_REQUESTED on a uniform GitHub Models API budget-exhaustion failure.
  *
  * The workflow's bash glue captures per-reviewer stdout +
  * stderr at `/tmp/review-<type>.txt` + `/tmp/review-<type>-stderr.txt`. We

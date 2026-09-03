@@ -57,13 +57,13 @@ function fakeFrontier(ids: string[]): () => Array<{ id: string; title: string }>
  *
  * `alreadyInFlightOpts.detectSubprocess: false` — disables the live-subprocess
  * signal (c) of `checkAlreadyInFlight`. Without this override the filter runs
- * the real `ps -ax` command; when the test suite runs inside a Claude Code
+ * the real `ps -ax` command; when the test suite runs inside a GitHub Copilot CLI
  * session dispatching a task whose ID (e.g. AISDLC-283) contains the
  * synthetic candidate ID (e.g. AISDLC-2) as a prefix, the substring check
  * incorrectly fires and blocks the candidate for the remainder of the run.
  * The underlying production bug is also fixed in `findClaudeSubprocess`
  * (word-boundary lookahead), but belt-and-suspenders isolation here keeps
- * the test hermetic regardless of which Claude session is running.
+ * the test hermetic regardless of which GitHub Copilot session is running.
  *
  * `openPRExistsOpts.listOpenPRsByBranch: () => []` — short-circuits the real
  * `gh pr list` call that the OpenPullRequestExists filter (AISDLC-361) would
@@ -101,7 +101,7 @@ function hermeticFilterAdapters(): Pick<
     // Pointing at an absent path makes the DoR filter return PASS by
     // construction (per its module-level docstring's no-log default).
     calibrationLogPath: '/nonexistent-phase1-tests-bypass.jsonl',
-    // Disable live-subprocess detection so a parent Claude Code session's
+    // Disable live-subprocess detection so a parent Copilot CLI session's
     // own process table doesn't pollute filter outcomes for synthetic task IDs.
     alreadyInFlightOpts: {
       detectSubprocess: false,

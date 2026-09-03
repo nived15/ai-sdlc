@@ -9,7 +9,7 @@
 # licenseKey: "your-license-key-here"
 
 # ── HTTP Audit Hook (SIEM integration) ─────────────────────────────
-# Sends every Claude Code tool event to your audit endpoint.
+# Sends every GitHub Copilot CLI tool event to your audit endpoint.
 # audit:
 #   endpoint: "https://governance.company.com/api/v1/audit"
 #   tokenEnvVar: "AI_SDLC_AUDIT_TOKEN"  # env var holding the auth token
@@ -36,6 +36,6 @@
 #   tokenEnvVar: "SPLUNK_HEC_TOKEN"
 
 # ── Managed Settings Generator ──────────────────────────────────────
-# Generates Claude Code managed settings files for enterprise deployment.
+# Generates GitHub Copilot CLI managed settings files for enterprise deployment.
 # Enabled automatically — no configuration needed.
 # Use: ai-sdlc-enterprise managed-settings generate --format json

@@ -41,7 +41,7 @@ const approved: AggregatedVerdict = {
   verdicts: [
     {
       agentId: 'code-reviewer',
-      harness: 'claude-code',
+      harness: 'copilot',
       approved: true,
       findings: [],
       summary: 'lgtm',

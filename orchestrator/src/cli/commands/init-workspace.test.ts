@@ -101,8 +101,8 @@ let consoleSpy: {
 beforeEach(() => {
   tmpDir = mkdtempSync(join(tmpdir(), 'init-ws-'));
   prevCwd = process.cwd();
-  // Pin HOME to the tmpdir so Cursor user-global detection does not pull
-  // in the real ~/.cursor on a developer laptop and contaminate output.
+  // Pin HOME to the tmpdir so host-detection does not pull in a developer
+  // laptop's real home directory and contaminate output.
   prevHome = process.env.HOME;
   process.env.HOME = tmpDir;
   // AISDLC-134: defense-in-depth against host-repo origin bleed when these
@@ -172,7 +172,7 @@ async function runInit(argv: string[], projectDir: string = tmpDir): Promise<voi
   // can't leak in via Commander's stateful option store.
   initCommand.setOptionValue('dryRun', undefined);
   initCommand.setOptionValue('role', undefined);
-  initCommand.setOptionValue('cursor', undefined);
+  initCommand.setOptionValue('copilot', undefined);
   initCommand.setOptionValue('skipMcp', undefined);
   // AISDLC-143 wizard flags
   initCommand.setOptionValue('yes', undefined);
@@ -414,9 +414,9 @@ describe('init — AISDLC-143 wizard scaffolding', () => {
     // Classifier
     expect(existsSync(join(tmpDir, '.ai-sdlc', 'review-classifier.yaml'))).toBe(true);
 
-    // CLAUDE.md pointer
-    expect(existsSync(join(tmpDir, 'CLAUDE.md'))).toBe(true);
-    const claudeMd = readFileSync(join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    // .github/copilot-instructions.md pointer
+    expect(existsSync(join(tmpDir, '.github/copilot-instructions.md'))).toBe(true);
+    const claudeMd = readFileSync(join(tmpDir, '.github/copilot-instructions.md'), 'utf-8');
     expect(claudeMd).toContain('<!-- ai-sdlc:recommendation-pointer -->');
     expect(claudeMd).toContain('ai-sdlc/pr-ready');
   });

@@ -1515,7 +1515,7 @@ describe('AQ2 proxy lifecycle — runSandboxAndReview via sandbox-run subcommand
     // (import from the module — we just restore to the module-level default)
     vi.unstubAllEnvs();
     delete process.env['AI_SDLC_SANDBOX_INTEGRATION_TESTS'];
-    delete process.env['ANTHROPIC_API_KEY'];
+    delete process.env['GITHUB_MODELS_TOKEN'];
     delete process.env['INFERENCE_PROXY_HOST'];
     delete process.env['INFERENCE_PROXY_PORT'];
     delete process.env['INFERENCE_PROXY_SESSION'];
@@ -1524,7 +1524,7 @@ describe('AQ2 proxy lifecycle — runSandboxAndReview via sandbox-run subcommand
   it('(1) integration-mode-with-credential: proxy started, env vars set, runSandbox gets proxy env, proxy.stop called in finally', async () => {
     // Set integration mode + credential so the AQ2 proxy block fires
     vi.stubEnv('AI_SDLC_SANDBOX_INTEGRATION_TESTS', '1');
-    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-credential-1234');
+    vi.stubEnv('GITHUB_MODELS_TOKEN', 'ghp-test-credential-1234');
 
     const mockStop = vi.fn().mockResolvedValue(undefined);
     const mockProxy = { stop: mockStop };
@@ -1574,7 +1574,7 @@ describe('AQ2 proxy lifecycle — runSandboxAndReview via sandbox-run subcommand
     expect(_ucvgSeams.inferenceProxyFactory).toHaveBeenCalledOnce();
     const factoryCall = vi.mocked(_ucvgSeams.inferenceProxyFactory).mock.calls[0][0];
     expect(factoryCall.prNumber).toBe(101);
-    expect(factoryCall.credential).toBe('sk-ant-test-credential-1234');
+    expect(factoryCall.credential).toBe('ghp-test-credential-1234');
     expect(factoryCall.bindAddress).toBe('0.0.0.0');
     expect(factoryCall.useHttp).toBe(true);
 
@@ -1583,7 +1583,7 @@ describe('AQ2 proxy lifecycle — runSandboxAndReview via sandbox-run subcommand
     expect(capturedSandboxEnv!['INFERENCE_PROXY_HOST']).toBe('inference.local');
     expect(capturedSandboxEnv!['INFERENCE_PROXY_PORT']).toBe('9876');
     expect(capturedSandboxEnv!['INFERENCE_PROXY_SESSION']).toBe('test-session-tok-abc');
-    expect(capturedSandboxEnv!['ANTHROPIC_API_KEY']).toBeUndefined();
+    expect(capturedSandboxEnv!['GITHUB_MODELS_TOKEN']).toBeUndefined();
 
     // (c) proxyHostArgs was set from buildProxyHostArg()
     expect(capturedProxyHostArgs).toBeDefined();
@@ -1601,7 +1601,7 @@ describe('AQ2 proxy lifecycle — runSandboxAndReview via sandbox-run subcommand
 
   it('(2) finally teardown: proxy.stop is called even when runSandbox throws', async () => {
     vi.stubEnv('AI_SDLC_SANDBOX_INTEGRATION_TESTS', '1');
-    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-credential-5678');
+    vi.stubEnv('GITHUB_MODELS_TOKEN', 'ghp-test-credential-5678');
 
     const mockStop = vi.fn().mockResolvedValue(undefined);
     const mockProxy = { stop: mockStop };
@@ -1643,7 +1643,7 @@ describe('AQ2 proxy lifecycle — runSandboxAndReview via sandbox-run subcommand
 
   it('(3) proxy factory throws: catch clears env vars, falls back gracefully (no proxy.stop)', async () => {
     vi.stubEnv('AI_SDLC_SANDBOX_INTEGRATION_TESTS', '1');
-    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-credential-proxy-fail');
+    vi.stubEnv('GITHUB_MODELS_TOKEN', 'ghp-test-credential-proxy-fail');
 
     // Factory throws — simulates port conflict / daemon not running
     _ucvgSeams.inferenceProxyFactory = vi
@@ -1698,7 +1698,7 @@ describe('AQ2 proxy lifecycle — runSandboxAndReview via sandbox-run subcommand
   it('(4) non-integration mode (AI_SDLC_SANDBOX_INTEGRATION_TESTS not set): proxy NOT started', async () => {
     // No integration flag — proxy block is skipped entirely
     delete process.env['AI_SDLC_SANDBOX_INTEGRATION_TESTS'];
-    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test-credential-no-integration');
+    vi.stubEnv('GITHUB_MODELS_TOKEN', 'ghp-test-credential-no-integration');
 
     const factorySpy = vi.fn().mockResolvedValue({
       proxy: { stop: vi.fn() },
@@ -1733,7 +1733,7 @@ describe('AQ2 proxy lifecycle — runSandboxAndReview via sandbox-run subcommand
 
   it('(5) integration mode but NO credential: proxy NOT started (both conditions required)', async () => {
     vi.stubEnv('AI_SDLC_SANDBOX_INTEGRATION_TESTS', '1');
-    delete process.env['ANTHROPIC_API_KEY'];
+    delete process.env['GITHUB_MODELS_TOKEN'];
 
     const factorySpy = vi.fn().mockResolvedValue({
       proxy: { stop: vi.fn() },
@@ -1767,7 +1767,7 @@ describe('AQ2 proxy lifecycle — runSandboxAndReview via sandbox-run subcommand
       tmpDir,
     ]);
 
-    // Factory must NOT have been called — no ANTHROPIC_API_KEY
+    // Factory must NOT have been called — no GITHUB_MODELS_TOKEN
     expect(factorySpy).not.toHaveBeenCalled();
     expect(io.stderrBuf()).not.toContain('AQ2 wiring');
   });

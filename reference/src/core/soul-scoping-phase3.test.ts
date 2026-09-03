@@ -272,7 +272,7 @@ describe('RFC-0009 Phase 3 — ProvenanceRecord soul-scoping (AC #3 + AC #5 + AC
   // AC #5: backwards-compat — omitting soul fields = platform-wide
   it('creates a ProvenanceRecord without soul-scoping fields (backward-compat)', () => {
     const prov = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'code-editor',
       promptHash: 'abc123',
     });
@@ -284,7 +284,7 @@ describe('RFC-0009 Phase 3 — ProvenanceRecord soul-scoping (AC #3 + AC #5 + AC
   // AC #7: soul-scoped scenario
   it('creates a soul-scoped ProvenanceRecord targeting two souls', () => {
     const prov = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'code-editor',
       promptHash: 'abc123',
       targetedSouls: ['did:platform-x:soul:soul-a', 'did:platform-x:soul:soul-b'],
@@ -301,7 +301,7 @@ describe('RFC-0009 Phase 3 — ProvenanceRecord soul-scoping (AC #3 + AC #5 + AC
   // AC #7: substrate-scoped scenario
   it('creates a substrate-scoped ProvenanceRecord (cross-soul substrate work)', () => {
     const prov = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'code-editor',
       promptHash: 'def456',
       substrateScoped: true,
@@ -315,7 +315,7 @@ describe('RFC-0009 Phase 3 — ProvenanceRecord soul-scoping (AC #3 + AC #5 + AC
   // AC #7: mixed-scope — substrate-scoped but also lists transitively-affected souls
   it('creates a mixed-scope ProvenanceRecord (substrate + transitive soul refs)', () => {
     const prov = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'code-editor',
       promptHash: 'ghi789',
       substrateScoped: true,
@@ -333,7 +333,7 @@ describe('RFC-0009 Phase 3 — ProvenanceRecord soul-scoping (AC #3 + AC #5 + AC
   // AC #3: round-trip annotation serialization — soul-scoping fields survive
   it('round-trips a soul-scoped ProvenanceRecord through annotations', () => {
     const original = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'code-editor',
       promptHash: 'abc123',
       timestamp: '2026-05-23T00:00:00Z',
@@ -357,7 +357,7 @@ describe('RFC-0009 Phase 3 — ProvenanceRecord soul-scoping (AC #3 + AC #5 + AC
   // AC #3: round-trip — substrate-scoped ProvenanceRecord
   it('round-trips a substrate-scoped ProvenanceRecord through annotations', () => {
     const original = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'code-editor',
       promptHash: 'def456',
       timestamp: '2026-05-23T00:00:00Z',
@@ -378,7 +378,7 @@ describe('RFC-0009 Phase 3 — ProvenanceRecord soul-scoping (AC #3 + AC #5 + AC
   // AC #5: backwards-compat round-trip — no soul fields survive cleanly
   it('round-trips a legacy (non-soul-scoped) ProvenanceRecord without adding soul fields', () => {
     const original = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'code-editor',
       promptHash: 'abc123',
       timestamp: '2026-05-23T00:00:00Z',
@@ -397,7 +397,7 @@ describe('RFC-0009 Phase 3 — ProvenanceRecord soul-scoping (AC #3 + AC #5 + AC
   // AC #3: single-soul targeted record
   it('round-trips a single-soul targeted ProvenanceRecord', () => {
     const original = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'terminal',
       promptHash: 'jkl012',
       timestamp: '2026-05-23T12:00:00Z',
@@ -614,7 +614,7 @@ describe('RFC-0009 Phase 3 — cross-resource integration (three-soul platform s
 
     // ProvenanceRecord: soul-a-targeted work item
     const soulAProvenance = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'code-editor',
       promptHash: 'soul-a-work-xyz',
       reviewDecision: 'approved',
@@ -707,7 +707,7 @@ describe('RFC-0009 Phase 3 — cross-resource integration (three-soul platform s
 
     // Platform-wide ProvenanceRecord (substrate-scoped)
     const substrateProvenance = createProvenance({
-      model: 'claude-sonnet-4-6',
+      model: 'balanced',
       tool: 'code-editor',
       promptHash: 'substrate-work-abc',
       substrateScoped: true,

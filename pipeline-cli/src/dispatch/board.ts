@@ -419,8 +419,8 @@ export function readHeartbeat(boardDir: string, taskId: string): InflightHeartbe
  * is moved to `failed/` with a `stale-heartbeat` diagnostic; its manifest +
  * state files are deleted from `inflight/`.
  *
- * This is the supervisor-side equivalent of the Anthropic 600s watchdog —
- * but our threshold is 30 min (matches ShellClaudePSpawner.DEFAULT_TIMEOUT_MS
+ * This is the supervisor-side equivalent of the GitHub Models 600s watchdog —
+ * but our threshold is 30 min (matches CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS
  * per RFC-0041 OQ-3).
  *
  * Returns the taskIds reaped (useful for tests + audit logging).
@@ -635,7 +635,7 @@ export function removeVerdict(
 /**
  * Conductor-side (RFC-0041 OQ-4): write a resume signal next to a still-
  * inflight manifest. The active Worker (in-session-agent) or its supervisor-
- * spawned successor (claude-p-shell) detects the signal on its next poll and
+ * spawned successor (copilot-p-shell) detects the signal on its next poll and
  * resumes its prior conversation with `feedback` prepended.
  *
  * Refuses (throws) when:

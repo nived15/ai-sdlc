@@ -10,7 +10,7 @@ Two CLI surfaces:
 
 For the canonical day-to-day path (an operator on their own machine driving
 backlog tasks under subscription billing), use `/ai-sdlc execute <task-id>`
-inside Claude Code — it spawns the developer + 3 reviewer subagents directly
+inside GitHub Copilot CLI — it spawns the developer + 3 reviewer subagents directly
 without going through either CLI above.
 
 ## `watch` CLI
@@ -26,13 +26,13 @@ pnpm --filter @ai-sdlc/dogfood watch --issue <id> [--issue <id> ...] \
   the full Step 0-13 pipeline sequentially against the same spawner.
 - `--spawner <kind>` (default `auto`) — selects the `SubagentSpawner` per
   RFC-0012 §8.3:
-  - `auto` — `defaultSpawner()` resolution: `ShellClaudePSpawner` when the
-    `claude` CLI is on `PATH`; falls back to `ClaudeCodeSDKSpawner` when
-    `ANTHROPIC_API_KEY` is set; throws otherwise.
-  - `shell` — force `ShellClaudePSpawner` (subscription billing via
-    operator's `claude` CLI).
-  - `sdk` — force `ClaudeCodeSDKSpawner` (API-key billing via the
-    `@anthropic-ai/claude-code` SDK).
+  - `auto` — `defaultSpawner()` resolution: `CopilotHarnessAdapter` when the
+    `copilot` CLI is on `PATH`; falls back to `CopilotHarnessAdapter` when
+    `GITHUB_MODELS_TOKEN` is set; throws otherwise.
+  - `shell` — force `CopilotHarnessAdapter` (subscription billing via
+    operator's `copilot` CLI).
+  - `sdk` — force `CopilotHarnessAdapter` (API-key billing via the
+    `@github-ai/copilot` SDK).
   - `mock` — `MockSpawner` from pipeline-cli with auto-approving fixtures.
     Intended for smoke tests + the watch CLI's own integration tests; does
     NOT produce real code changes.

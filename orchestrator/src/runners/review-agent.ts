@@ -2,15 +2,15 @@
  * PR Review agent runner — analyzes pull request diffs for testing coverage,
  * code quality, and security issues. Read-only: never modifies files.
  *
- * Uses the Anthropic Messages API directly (not Claude Code CLI)
+ * Uses the GitHub Models Messages API directly (not GitHub Copilot CLI)
  * to produce a structured review verdict. Follows the SecurityTriageRunner
  * pattern exactly.
  */
 
 import type { AgentRunner, AgentContext, AgentResult, TokenUsage } from './types.js';
 import {
-  DEFAULT_ANTHROPIC_API_URL,
-  DEFAULT_ANTHROPIC_MODEL,
+  DEFAULT_GITHUB_MODELS_API_URL,
+  DEFAULT_GITHUB_MODELS_MODEL,
   DEFAULT_LLM_TIMEOUT_MS,
 } from '../defaults.js';
 
@@ -45,21 +45,21 @@ export interface ReviewVerdict {
 }
 
 export interface ReviewAgentConfig {
-  /** Anthropic API URL. Defaults to https://api.anthropic.com/v1/messages */
+  /** GitHub Models API URL. Defaults to https://models.github.ai/inference/chat/completions */
   apiUrl?: string;
-  /** Anthropic API key. Defaults to ANTHROPIC_API_KEY env var. */
+  /** GitHub Models API key. Defaults to GITHUB_MODELS_TOKEN env var. */
   apiKey?: string;
-  /** Model to use. Defaults to claude-sonnet-4-5. */
+  /** Model to use. Defaults to balanced. */
   model?: string;
   /**
    * Model to escalate to when the input exceeds the large-context threshold.
-   * Defaults to AI_SDLC_REVIEW_LARGE_MODEL env var, then claude-opus-4-7.
+   * Defaults to AI_SDLC_REVIEW_LARGE_MODEL env var, then reasoning.
    */
   largeContextModel?: string;
   /**
    * Char-count threshold above which the runner switches to `largeContextModel`
-   * and sets the Anthropic 1M-context beta header. Default ~150k tokens
-   * (the standard Anthropic context limit) at the 4-chars-per-token heuristic.
+   * and sets the GitHub Models 1M-context beta header. Default ~150k tokens
+   * (the standard GitHub Models context limit) at the 4-chars-per-token heuristic.
    */
   largeContextThresholdChars?: number;
   /** Request timeout in ms. Defaults to 120_000. */
@@ -71,14 +71,14 @@ export interface ReviewAgentConfig {
 }
 
 /**
- * Default escalation threshold. Anthropic's standard context window is 200k tokens;
+ * Default escalation threshold. GitHub Models's standard context window is 200k tokens;
  * we leave headroom for the system prompt + response and trigger escalation around
  * 150k tokens (≈ 600k chars at the 4-char/token heuristic). The user's recurring
  * "PR too large for review" failure on PR #67 happened above this threshold.
  */
 const DEFAULT_LARGE_CONTEXT_THRESHOLD_CHARS = 600_000;
-const DEFAULT_LARGE_CONTEXT_MODEL = process.env.AI_SDLC_REVIEW_LARGE_MODEL ?? 'claude-opus-4-7';
-/** Anthropic 1M-context beta header. Required when sending > 200k tokens. */
+const DEFAULT_LARGE_CONTEXT_MODEL = process.env.AI_SDLC_REVIEW_LARGE_MODEL ?? 'reasoning';
+/** GitHub Models 1M-context beta header. Required when sending > 200k tokens. */
 const ANTHROPIC_LONG_CONTEXT_BETA = 'context-1m-2025-08-07';
 
 // ── CI boundary ─────────────────────────────────────────────────────
@@ -268,13 +268,13 @@ export class ReviewAgentRunner implements AgentRunner {
   }
 
   async run(ctx: AgentContext): Promise<AgentResult> {
-    const apiKey = this.config.apiKey ?? process.env.ANTHROPIC_API_KEY;
+    const apiKey = this.config.apiKey ?? process.env.GITHUB_MODELS_TOKEN;
     if (!apiKey) {
       return {
         success: false,
         filesChanged: [],
-        summary: 'Missing ANTHROPIC_API_KEY for PR review',
-        error: 'ANTHROPIC_API_KEY environment variable is not set',
+        summary: 'Missing GITHUB_MODELS_TOKEN for PR review',
+        error: 'GITHUB_MODELS_TOKEN environment variable is not set',
       };
     }
 
@@ -312,8 +312,8 @@ export class ReviewAgentRunner implements AgentRunner {
     apiKey: string,
     userContent: string,
   ): Promise<ReviewVerdict & { _tokenUsage?: TokenUsage }> {
-    const apiUrl = this.config.apiUrl ?? DEFAULT_ANTHROPIC_API_URL;
-    const baseModel = this.config.model ?? DEFAULT_ANTHROPIC_MODEL;
+    const apiUrl = this.config.apiUrl ?? DEFAULT_GITHUB_MODELS_API_URL;
+    const baseModel = this.config.model ?? DEFAULT_GITHUB_MODELS_MODEL;
     const timeoutMs = this.config.timeoutMs ?? DEFAULT_LLM_TIMEOUT_MS;
 
     const system = this.config.reviewPolicy
@@ -338,9 +338,9 @@ export class ReviewAgentRunner implements AgentRunner {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'x-github-api-version': '2023-06-01',
       };
-      if (escalate) headers['anthropic-beta'] = ANTHROPIC_LONG_CONTEXT_BETA;
+      if (escalate) headers['github-models-beta'] = ANTHROPIC_LONG_CONTEXT_BETA;
 
       const res = await fetch(apiUrl, {
         method: 'POST',
@@ -356,7 +356,7 @@ export class ReviewAgentRunner implements AgentRunner {
 
       if (!res.ok) {
         const text = await res.text().catch(() => '');
-        throw new Error(`Anthropic API error ${res.status}: ${text.slice(0, 200)}`);
+        throw new Error(`GitHub Models API error ${res.status}: ${text.slice(0, 200)}`);
       }
 
       const body = (await res.json()) as {

@@ -3473,7 +3473,7 @@ export const dispatchConfigV1Schema = {
       properties: {
         defaultWorkerKind: {
           type: 'string',
-          enum: ['in-session-agent', 'claude-p-shell'],
+          enum: ['in-session-agent', 'copilot-p-shell'],
           default: 'in-session-agent',
           description:
             'Which Worker kind the Conductor assigns when a manifest does not declare one explicitly. Phase 1 default is in-session-agent (subscription-preserving).',
@@ -3495,7 +3495,7 @@ export const dispatchConfigV1Schema = {
               minimum: 0,
               default: 0,
               description:
-                'Supervisor concurrent claude -p Worker cap (Phase 2). 0 = supervisor disabled; bump to enable headless dispatch once Phase 2 ships.',
+                'Supervisor concurrent copilot -p Worker cap (Phase 2). 0 = supervisor disabled; bump to enable headless dispatch once Phase 2 ships.',
             },
           },
           additionalProperties: false,
@@ -3509,14 +3509,14 @@ export const dispatchConfigV1Schema = {
               minimum: 1,
               default: 5,
               description:
-                "RFC-0041 OQ-6 cost-first bias — in-session-agent Workers poll the queue every 5 seconds (faster than claude-p-shell at 15s) so they preferentially claim 'any' manifests.",
+                "RFC-0041 OQ-6 cost-first bias — in-session-agent Workers poll the queue every 5 seconds (faster than copilot-p-shell at 15s) so they preferentially claim 'any' manifests.",
             },
             quotaBackoffSec: {
               type: 'integer',
               minimum: 1,
               default: 600,
               description:
-                "OQ-7 — base cool-down (seconds) after a subscription quota exhaustion (429) when Anthropic's Retry-After header is absent.",
+                "OQ-7 — base cool-down (seconds) after a subscription quota exhaustion (429) when GitHub Models's Retry-After header is absent.",
             },
             quotaBackoffMaxSec: {
               type: 'integer',
@@ -3544,7 +3544,7 @@ export const dispatchConfigV1Schema = {
         claudePShell: {
           type: 'object',
           description:
-            'Tuning knobs for the claude-p-shell Worker kind. Read by Phase 2 (AISDLC-377.3); declared in Phase 1 for forward-compat.',
+            'Tuning knobs for the copilot-p-shell Worker kind. Read by Phase 2 (AISDLC-377.3); declared in Phase 1 for forward-compat.',
           properties: {
             pollIntervalSec: {
               type: 'integer',
@@ -3558,7 +3558,7 @@ export const dispatchConfigV1Schema = {
               minimum: 60000,
               default: 1800000,
               description:
-                'Per-Worker wall-clock watchdog (matches ShellClaudePSpawner.DEFAULT_TIMEOUT_MS per OQ-3).',
+                'Per-Worker wall-clock watchdog (matches CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS per OQ-3).',
             },
             supervisorPidFile: {
               type: 'string',
@@ -3581,7 +3581,7 @@ export const dispatchConfigV1Schema = {
           minimum: 60,
           default: 1800,
           description:
-            'OQ-3 — inflight heartbeats older than this are presumed dead. 1800s (30 min) matches ShellClaudePSpawner.DEFAULT_TIMEOUT_MS.',
+            'OQ-3 — inflight heartbeats older than this are presumed dead. 1800s (30 min) matches CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS.',
         },
       },
       additionalProperties: false,
@@ -3595,7 +3595,7 @@ export const dispatchManifestV1Schema = {
   $id: 'https://ai-sdlc.io/schemas/v1alpha1/dispatch-manifest.v1.schema.json',
   title: 'AI-SDLC DispatchManifest',
   description:
-    "Dispatch manifest written by the Conductor to .ai-sdlc/dispatch/queue/<task-id>.dispatch.json and picked up by a Worker (RFC-0041 §4.4). One file per dispatched task; the manifest's full lifecycle is queue/ → inflight/ (atomic rename on claim) → done/ (verdict landed) or failed/ (diagnostic landed). Phase 1 only the in-session-agent Worker kind is implemented; claude-p-shell is declared here for forward-compat with Phase 2 (AISDLC-377.3).",
+    "Dispatch manifest written by the Conductor to .ai-sdlc/dispatch/queue/<task-id>.dispatch.json and picked up by a Worker (RFC-0041 §4.4). One file per dispatched task; the manifest's full lifecycle is queue/ → inflight/ (atomic rename on claim) → done/ (verdict landed) or failed/ (diagnostic landed). Phase 1 only the in-session-agent Worker kind is implemented; copilot-p-shell is declared here for forward-compat with Phase 2 (AISDLC-377.3).",
   type: 'object',
   required: [
     'schemaVersion',
@@ -3641,9 +3641,9 @@ export const dispatchManifestV1Schema = {
     },
     workerKind: {
       type: 'string',
-      enum: ['in-session-agent', 'claude-p-shell', 'any'],
+      enum: ['in-session-agent', 'copilot-p-shell', 'any'],
       description:
-        "Which Worker backend may claim this manifest. 'in-session-agent' (Phase 1) = foreground Agent call in an operator-opened CC session, draws subscription quota. 'claude-p-shell' (Phase 2) = supervisor-spawned claude -p subprocess, draws Agent SDK credit pool post-2026-06-15. 'any' = first-available wins.",
+        "Which Worker backend may claim this manifest. 'in-session-agent' (Phase 1) = foreground Agent call in an operator-opened CC session, draws subscription quota. 'copilot-p-shell' (Phase 2) = supervisor-spawned copilot -p subprocess, draws Agent SDK credit pool post-2026-06-15. 'any' = first-available wins.",
     },
     dispatchedAt: {
       type: 'string',
@@ -3672,13 +3672,13 @@ export const dispatchManifestV1Schema = {
           type: 'string',
           minLength: 1,
           description:
-            "Optional model override (e.g. 'claude-sonnet-4-6'). When absent the Worker uses its default per-role model.",
+            "Optional model override (e.g. 'balanced'). When absent the Worker uses its default per-role model.",
         },
         budgetMs: {
           type: 'integer',
           minimum: 60000,
           description:
-            'Per-Worker wall-clock budget in milliseconds. Default 1800000 (30 min) — matches ShellClaudePSpawner.DEFAULT_TIMEOUT_MS per RFC-0041 OQ-3.',
+            'Per-Worker wall-clock budget in milliseconds. Default 1800000 (30 min) — matches CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS per RFC-0041 OQ-3.',
         },
         verifyCommands: {
           type: 'array',
@@ -3712,13 +3712,13 @@ export const dispatchManifestV1Schema = {
       type: 'string',
       minLength: 1,
       description:
-        "Phase 1.5 (AISDLC-377.2) — claude -p --session-id captured on first attempt for context-preserving resume of claude-p-shell Workers. The supervisor passes --session-id <uuid> on first spawn, records the uuid here on successful exit, and re-spawns with --resume <uuid> '<conductor-feedback>' on resume signal. in-session-agent Workers leave this null (they use the Agent tool's continue:true semantics instead). Phase 2 (AISDLC-377.3) wires the supervisor side.",
+        "Phase 1.5 (AISDLC-377.2) — copilot -p --session-id captured on first attempt for context-preserving resume of copilot-p-shell Workers. The supervisor passes --session-id <uuid> on first spawn, records the uuid here on successful exit, and re-spawns with --resume <uuid> '<conductor-feedback>' on resume signal. in-session-agent Workers leave this null (they use the Agent tool's continue:true semantics instead). Phase 2 (AISDLC-377.3) wires the supervisor side.",
     },
     noClaimBefore: {
       type: 'string',
       format: 'date-time',
       description:
-        'OQ-7 (RFC-0041) — quota-backoff gate. When set, Workers MUST refuse to claim this manifest until the wall-clock passes this timestamp. Used by the Conductor to honor Anthropic Retry-After after a 429.',
+        'OQ-7 (RFC-0041) — quota-backoff gate. When set, Workers MUST refuse to claim this manifest until the wall-clock passes this timestamp. Used by the Conductor to honor GitHub Models Retry-After after a 429.',
     },
   },
   additionalProperties: false,
@@ -3729,7 +3729,7 @@ export const dispatchResumeSignalV1Schema = {
   $id: 'https://ai-sdlc.io/schemas/v1alpha1/dispatch-resume-signal.v1.schema.json',
   title: 'AI-SDLC DispatchResumeSignal',
   description:
-    'Resume signal written by the Conductor under .ai-sdlc/dispatch/inflight/<task-id>.resume.json to trigger a Worker-driven iteration (RFC-0041 OQ-4 resolution, Phase 1.5 / AISDLC-377.2). Iteration is a continuation, not a restart: the Conductor writes a resume signal next to the still-inflight manifest, the active Worker (in-session-agent or supervisor-spawned successor) detects the signal on its next poll and resumes its prior conversation (Agent continue:true or claude -p --resume <session-id>) with the conductor-provided feedback prepended. The inflight manifest stays put while the iteration runs; only when the second-attempt verdict lands does the manifest leave inflight.',
+    'Resume signal written by the Conductor under .ai-sdlc/dispatch/inflight/<task-id>.resume.json to trigger a Worker-driven iteration (RFC-0041 OQ-4 resolution, Phase 1.5 / AISDLC-377.2). Iteration is a continuation, not a restart: the Conductor writes a resume signal next to the still-inflight manifest, the active Worker (in-session-agent or supervisor-spawned successor) detects the signal on its next poll and resumes its prior conversation (Agent continue:true or copilot -p --resume <session-id>) with the conductor-provided feedback prepended. The inflight manifest stays put while the iteration runs; only when the second-attempt verdict lands does the manifest leave inflight.',
   type: 'object',
   required: ['schemaVersion', 'taskId', 'feedback', 'triggeredAt', 'triggeredBy'],
   properties: {
@@ -3748,7 +3748,7 @@ export const dispatchResumeSignalV1Schema = {
       type: 'string',
       minLength: 1,
       description:
-        "Conductor-authored feedback text. Prepended to the Worker's next-iteration prompt (in-session-agent: passed as the second-call Agent prompt with continue:true; claude-p-shell: passed as the positional argument to claude -p --resume <session-id> '<feedback>').",
+        "Conductor-authored feedback text. Prepended to the Worker's next-iteration prompt (in-session-agent: passed as the second-call Agent prompt with continue:true; copilot-p-shell: passed as the positional argument to copilot -p --resume <session-id> '<feedback>').",
     },
     triggeredAt: {
       type: 'string',
@@ -3831,7 +3831,7 @@ export const dispatchSessionV1Schema = {
       type: 'string',
       enum: ['starting', 'in-progress', 'done', 'failed', 'cancelled'],
       description:
-        "Current lifecycle state of the session. 'starting' = tmux window spawned, claude not yet running. 'in-progress' = first heartbeat received. 'done' = /ai-sdlc execute reported success + prUrl set. 'failed' = /ai-sdlc execute exited non-zero, was killed, or heartbeat became stale (reaped by session-reaper). 'cancelled' = session received and honored a cancel control signal (AISDLC-481).",
+        "Current lifecycle state of the session. 'starting' = tmux window spawned, copilot not yet running. 'in-progress' = first heartbeat received. 'done' = /ai-sdlc execute reported success + prUrl set. 'failed' = /ai-sdlc execute exited non-zero, was killed, or heartbeat became stale (reaped by session-reaper). 'cancelled' = session received and honored a cancel control signal (AISDLC-481).",
     },
     currentStep: {
       type: 'string',
@@ -3943,11 +3943,11 @@ export const dispatchVerdictV1Schema = {
       type: 'string',
       minLength: 1,
       description:
-        "Identifier of the Worker that produced this verdict (e.g. 'worker-<pid>-<rand>' for in-session-agent, 'supervisor-<pid>-<rand>' for claude-p-shell).",
+        "Identifier of the Worker that produced this verdict (e.g. 'worker-<pid>-<rand>' for in-session-agent, 'supervisor-<pid>-<rand>' for copilot-p-shell).",
     },
     workerKind: {
       type: 'string',
-      enum: ['in-session-agent', 'claude-p-shell'],
+      enum: ['in-session-agent', 'copilot-p-shell'],
       description:
         'Which Worker backend produced this verdict. Audit-only — the manifest already declared which kind claimed it.',
     },
@@ -3955,7 +3955,7 @@ export const dispatchVerdictV1Schema = {
       type: 'integer',
       minimum: 0,
       description:
-        "OQ-7 — when outcome is 'quota-exhausted', how many seconds the Conductor should wait before re-emitting (Anthropic Retry-After header value, default 600).",
+        "OQ-7 — when outcome is 'quota-exhausted', how many seconds the Conductor should wait before re-emitting (GitHub Models Retry-After header value, default 600).",
     },
     cause: {
       type: 'string',
@@ -3977,7 +3977,7 @@ export const dispatchVerdictV1Schema = {
       type: 'string',
       minLength: 1,
       description:
-        "Phase 1.5 (AISDLC-377.2) — claude -p --session-id captured by a claude-p-shell Worker. Stored on the verdict so the Conductor can promote it onto the next iteration's manifest as manifest.lastSessionId. in-session-agent Workers leave this null.",
+        "Phase 1.5 (AISDLC-377.2) — copilot -p --session-id captured by a copilot-p-shell Worker. Stored on the verdict so the Conductor can promote it onto the next iteration's manifest as manifest.lastSessionId. in-session-agent Workers leave this null.",
     },
     reviewerStartedAt: {
       type: 'string',
@@ -4243,7 +4243,7 @@ export const embeddingAdapterV1Schema = {
     name: {
       type: 'string',
       description:
-        "Canonical adapter alias. MUST be unique across the registry. Convention: '<vendor>-<model-family>-<size>'. Examples: 'openai-text-embedding-3-small', 'cohere-embed-v3-multilingual'.",
+        "Canonical adapter alias. MUST be unique across the registry. Convention: '<vendor>-<model-family>-<size>'. Examples: 'github-models-embedding-small', 'self-hosted-embed-v3-multilingual'.",
       minLength: 1,
       pattern: '^[a-z0-9]+(-[a-z0-9]+)*$',
     },
@@ -4292,7 +4292,7 @@ export const embeddingAdapterV1Schema = {
         billingModel: {
           type: 'string',
           description:
-            "Billing model per OQ-7 re-walkthrough. 'pay-per-token' = tokens billed via provider invoice, NOT SubscriptionLedger. 'subscription-quota' = tokens billed via operator subscription (e.g., future Anthropic embeddings).",
+            "Billing model per OQ-7 re-walkthrough. 'pay-per-token' = tokens billed via provider invoice, NOT SubscriptionLedger. 'subscription-quota' = tokens billed via operator subscription (e.g., future GitHub Models embeddings).",
           enum: ['pay-per-token', 'subscription-quota'],
         },
         approxCostPer1MTokens: {
@@ -4310,7 +4310,7 @@ export const embeddingAdapterV1Schema = {
       properties: {
         envVar: {
           type: 'string',
-          description: "Environment variable required by this adapter. Example: 'OPENAI_API_KEY'.",
+          description: "Environment variable required by this adapter. Example: 'GITHUB_MODELS_TOKEN'.",
         },
         binary: {
           type: 'string',
@@ -5613,23 +5613,15 @@ export const pipelineSchema = {
               },
               harness: {
                 type: 'string',
-                enum: [
-                  'claude-code',
-                  'codex',
-                  'gemini-cli',
-                  'opencode',
-                  'aider',
-                  'generic-api',
-                  'inherit',
-                ],
+                enum: ['copilot', 'inherit'],
                 description:
-                  "Per-stage harness selection. Defaults to 'inherit' (Pipeline.spec.defaultHarness, default 'claude-code'). RFC-0010 §6.3 / §13.",
+                  "Per-stage harness selection. Defaults to 'inherit' (Pipeline.spec.defaultHarness, default 'copilot'). RFC-0010 §6.3 / §13.",
               },
               harnessFallback: {
                 type: 'array',
                 items: {
                   type: 'string',
-                  enum: ['claude-code', 'codex', 'gemini-cli', 'opencode', 'aider', 'generic-api'],
+                  enum: ['copilot'],
                 },
                 description: 'Ordered fallback chain on availability failures. RFC-0010 §13.5.',
               },
@@ -5637,7 +5629,7 @@ export const pipelineSchema = {
                 type: 'array',
                 items: { type: 'string' },
                 description:
-                  "Upstream stage names whose resolved harness MUST be excluded from this stage's effective chain (cross-harness review independence per RFC §13.10 / Q8).",
+                  "Upstream stage names whose resolved harness MUST be excluded from this stage's effective chain (reviewer-session independence per RFC §13.10 / Q8).",
               },
               schedule: {
                 type: 'string',
@@ -5733,22 +5725,22 @@ export const pipelineSchema = {
         },
         defaultModel: {
           type: 'string',
-          default: 'sonnet',
+          default: 'balanced',
           description:
-            'Resolution target for any Stage with model: inherit (or absent). Defaults to sonnet. RFC-0010 §6.4.',
+            'Resolution target for any Stage with model: inherit (or absent). Defaults to the balanced tier. RFC-0010 §6.4.',
         },
         defaultHarness: {
           type: 'string',
-          enum: ['claude-code', 'codex', 'gemini-cli', 'opencode', 'aider', 'generic-api'],
-          default: 'claude-code',
+          enum: ['copilot'],
+          default: 'copilot',
           description:
-            'Resolution target for any Stage with harness: inherit. Defaults to claude-code. RFC-0010 §6.5.',
+            'Resolution target for any Stage with harness: inherit. Defaults to copilot. RFC-0010 §6.5.',
         },
         defaultHarnessFallback: {
           type: 'array',
           items: {
             type: 'string',
-            enum: ['claude-code', 'codex', 'gemini-cli', 'opencode', 'aider', 'generic-api'],
+            enum: ['copilot'],
           },
           description:
             'Pipeline-wide default fallback chain applied to stages that omit harnessFallback. RFC-0010 §6.5.',
@@ -6388,7 +6380,7 @@ export const pipelineSchema = {
         provider: {
           type: 'string',
           description:
-            "Canonical adapter alias resolved against orchestrator/src/embedding/registry.ts. Example: 'openai-text-embedding-3-small'. Unknown names fail pipeline-load with UnknownEmbeddingProvider.",
+            "Canonical adapter alias resolved against orchestrator/src/embedding/registry.ts. Example: 'github-models-embedding-small'. Unknown names fail pipeline-load with UnknownEmbeddingProvider.",
         },
         fallback: {
           type: 'string',
@@ -7006,7 +6998,7 @@ export const refinementVerdictV1Schema = {
   $id: 'https://ai-sdlc.io/schemas/v1alpha1/refinement-verdict.v1.schema.json',
   title: 'AI-SDLC RefinementVerdict',
   description:
-    'Per-issue verdict produced by the Definition-of-Ready evaluator (RFC-0011 §5, §9.2). One file per evaluation; written to the calibration log and consumed by ingress shims (GitHub Action, Claude Code subagent, future Forge / Slack shims).',
+    'Per-issue verdict produced by the Definition-of-Ready evaluator (RFC-0011 §5, §9.2). One file per evaluation; written to the calibration log and consumed by ingress shims (GitHub Action, GitHub Copilot CLI subagent, future Forge / Slack shims).',
   type: 'object',
   required: ['issueId', 'rubricVersion', 'overallVerdict', 'gates', 'signedAt', 'evaluatorVersion'],
   properties: {
@@ -7741,7 +7733,7 @@ export const subscriptionPlanSchema = {
         harness: {
           type: 'string',
           description:
-            'Name of the registered harness this plan applies to (e.g., claude-code, codex).',
+            'Name of the registered harness this plan applies to (e.g., copilot).',
         },
         billingMode: {
           type: 'string',
@@ -7769,7 +7761,7 @@ export const subscriptionPlanSchema = {
               type: 'number',
               exclusiveMinimum: 1,
               description:
-                'Token allocation multiplier during off-peak (e.g., 2.0 for Claude Code 2x).',
+                'Token allocation multiplier during off-peak (e.g., 2.0 for GitHub Copilot CLI 2x).',
             },
             schedule: {
               type: 'array',
@@ -8337,7 +8329,7 @@ export const vectorStoreEntryV1Schema = {
     embeddingProvider: {
       type: 'string',
       description:
-        "adapter.name at write time (e.g., 'openai-text-embedding-3-small'). Together with embeddingModelVersion, forms the provenance identity of this vector. Vectors from different providers are NOT interchangeable.",
+        "adapter.name at write time (e.g., 'github-models-embedding-small'). Together with embeddingModelVersion, forms the provenance identity of this vector. Vectors from different providers are NOT interchangeable.",
       minLength: 1,
     },
     embeddingModelVersion: {

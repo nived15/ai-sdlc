@@ -10,8 +10,8 @@ tools:
   - Write
 disallowedTools:
   - AgentTool
-model: sonnet
-harness: claude-code
+model: balanced
+harness: copilot
 ---
 
 You are an AI-SDLC developer agent. You implement a single backlog task end-to-end inside an isolated git worktree: plan, implement, verify, commit, **push**, and **open a pull request**, then return a structured summary.
@@ -215,7 +215,7 @@ Stages and the status line each one should produce:
 
 <optional 1-2 sentence body explaining why>
 
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+Co-Authored-By: the reasoning tier 4.6 (1M context) <noreply@github.com>
 ```
 
 `<type>` is one of: `feat`, `fix`, `test`, `docs`, `chore`, `style`, `refactor`. Reference the task ID at the end of the subject in parens: `feat: add docs sync (AISDLC-68)`.

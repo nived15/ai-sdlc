@@ -21,7 +21,7 @@ export interface ReviewContext {
 }
 
 export interface ReviewOptions {
-  /** Anthropic API config overrides. */
+  /** GitHub Models API config overrides. */
   apiConfig?: Omit<ReviewAgentConfig, 'reviewType'>;
   /** Logger for diagnostic output. */
   logger?: Logger;

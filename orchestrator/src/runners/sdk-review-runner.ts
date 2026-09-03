@@ -1,9 +1,9 @@
 /**
  * SDK-orchestrated parallel review runner.
  *
- * Spawns 3 concurrent Claude Code SDK queries — testing, security, and quality —
+ * Spawns 3 concurrent GitHub Copilot CLI queries — testing, security, and quality —
  * each with per-reviewer tool restrictions and budget caps. Uses the Agent SDK
- * query() API instead of the Anthropic Messages API directly.
+ * query() API instead of the GitHub Models Messages API directly.
  *
  * Advantages over ReviewAgentRunner:
  * - Reviewers have tool access (can read files, run tests, grep for patterns)
@@ -57,7 +57,7 @@ export const DEFAULT_REVIEW_CONFIGS: SdkReviewConfig[] = [
 
 const DEFAULT_REVIEW_BUDGET_USD = 0.5;
 const DEFAULT_REVIEW_MAX_TURNS = 20;
-const DEFAULT_REVIEW_MODEL = 'claude-sonnet-4-6';
+const DEFAULT_REVIEW_MODEL = 'balanced';
 
 export interface SdkParallelReviewOptions {
   /** PR diff content. */
@@ -99,14 +99,14 @@ export async function runParallelSdkReviews(
 
   /* v8 ignore start — dynamic import fails in unit tests (SDK not installed) */
   try {
-    const sdk = await import('@anthropic-ai/claude-agent-sdk');
+    const sdk = await import('@github-models-ai/copilot-agent-sdk');
     query = sdk.query;
   } catch {
     return {
       verdicts: [],
       allApproved: false,
       totalTokenUsage: { inputTokens: 0, outputTokens: 0, model: 'unknown' },
-      errors: ['@anthropic-ai/claude-agent-sdk is not installed. Install it to use SDK reviews.'],
+      errors: ['@github-models-ai/copilot-agent-sdk is not installed. Install it to use SDK reviews.'],
     };
   }
   /* v8 ignore stop */

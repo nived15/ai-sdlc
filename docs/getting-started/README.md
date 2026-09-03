@@ -17,7 +17,7 @@ AI-SDLC is a **Decision Engine** for autonomous AI software development. It's th
 
 - **Decision Engine substrate** — operator-as-decision-steward; every architectural / quality / autonomy decision routes through the [Decision Catalog (RFC-0035)](../../spec/rfcs/RFC-0035-decision-catalog-operator-routing.md)
 - **Spec-kit bridge** — `cli-import-spec` / `/ai-sdlc import-spec` consumes spec-kit `tasks.md`, runs the DoR Gate at import, and lands governed backlog tasks ready for dispatch (RFC-0036). **Recommended adopter authoring path.**
-- **Agent-agnostic orchestration** — works with Claude Code, GitHub Copilot, Cursor, OpenAI Codex, or any LLM API
+- **Agent-agnostic orchestration** — works with GitHub Copilot CLI, GitHub Copilot, GitHub Copilot, GitHub Copilot GitHub Copilot, or any LLM API
 - **Structured pipelines** that route tasks through defined stages based on complexity
 - **Quality gates** with three-tier enforcement (advisory, soft-mandatory, hard-mandatory)
 - **Progressive autonomy** where agents earn trust through demonstrated reliability
@@ -43,7 +43,7 @@ spec-kit  ──────►  cli-import-spec  ──────►  AI-SDLC
 The bridge is **the seam** between authoring and execution. Each side evolves independently:
 
 - **Front of funnel** (your choice): spec-kit, an adopter RFC scaffold, Linear, Notion, plain markdown. As long as the output is translatable to spec-kit-style `tasks.md`, AI-SDLC consumes it. Spec-kit is recommended because its mature integrations and `/speckit.analyze` cross-artifact consistency check compose cleanly with the DoR Gate.
-- **Back of funnel** (always AI-SDLC): DoR Gate → PPA → execute → cross-harness review → attest → merge.
+- **Back of funnel** (always AI-SDLC): DoR Gate → PPA → execute → independent parallel review → attest → merge.
 
 **Start here:** [Tutorial 10 — Spec-Kit Bridge end-to-end walkthrough](../tutorials/10-spec-kit-bridge.md). Authors a feature in spec-kit, imports it, walks through DoR-at-import + analyze auto-resolution + the upstream-clarification feedback loop, dispatches, and ships. Use this if you want the recommended adopter authoring path end-to-end.
 
@@ -97,18 +97,18 @@ ai-sdlc run --issue 42
 The orchestrator auto-discovers available runners from environment variables:
 
 ```bash
-# Claude Code (always available as default runner)
+# GitHub Copilot CLI (always available as default runner)
 # Copilot — set GH_TOKEN or GITHUB_TOKEN
 export GH_TOKEN=ghp_...
 
-# Cursor — set CURSOR_API_KEY
-export CURSOR_API_KEY=cur_...
+# GitHub Copilot — set COPILOT_SPAWN_AGENT_BIN
+export COPILOT_SPAWN_AGENT_BIN=cur_...
 
-# Codex — set CODEX_API_KEY
-export CODEX_API_KEY=cdx_...
+# GitHub Copilot — set COPILOT_SPAWN_AGENT_BIN
+export COPILOT_SPAWN_AGENT_BIN=cdx_...
 
-# Any OpenAI-compatible API — set OPENAI_API_KEY or LLM_API_KEY + LLM_API_URL
-export OPENAI_API_KEY=sk-...
+# Any GitHub Copilot-compatible-shapedible API — set GITHUB_MODELS_TOKEN or LLM_API_KEY + LLM_API_URL
+export GITHUB_MODELS_TOKEN=sk-...
 ```
 
 ### For SDK users

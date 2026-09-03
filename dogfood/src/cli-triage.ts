@@ -8,14 +8,14 @@
  *             Outputs verdict JSON to stdout (no tracker needed).
  *
  * Billing path (--via):
- *   --via cli  → invoke `claude` CLI subscription (Pro/Max). Default for AISDLC-* issues
+ *   --via cli  → invoke `copilot` CLI subscription (Pro/Max). Default for AISDLC-* issues
  *                or whenever ANTHROPIC_API_KEY is unset.
- *   --via api  → call Anthropic Messages API directly with ANTHROPIC_API_KEY. Default
+ *   --via api  → call GitHub Messages API directly with ANTHROPIC_API_KEY. Default
  *                for numeric (GitHub) issues when the env var is set.
  */
 
 import { readFileSync } from 'node:fs';
-import { executeTriage, ClaudeCodeAdapter } from '@ai-sdlc/orchestrator';
+import { executeTriage, CopilotAdapter } from '@ai-sdlc/orchestrator';
 import { resolveRepoRoot } from '@ai-sdlc/orchestrator';
 import type { SecurityTriageConfig } from '@ai-sdlc/orchestrator';
 
@@ -77,7 +77,7 @@ function resolveVia(args: TriageArgs): Via {
 
 function buildTriageConfig(via: Via): SecurityTriageConfig | undefined {
   if (via !== 'cli') return undefined;
-  return { harness: new ClaudeCodeAdapter() };
+  return { harness: new CopilotAdapter() };
 }
 
 async function main(): Promise<void> {

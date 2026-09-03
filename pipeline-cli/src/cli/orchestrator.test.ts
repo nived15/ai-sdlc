@@ -18,6 +18,7 @@ import {
   emitBillingSafetyWarnings,
   BILLING_SAFETY_WARNING_LINES,
   FALLBACK_BILLING_WARNING_LINES,
+  THIRD_PARTY_KEY_ENV_VARS,
 } from './orchestrator.js';
 import { ORCHESTRATOR_FLAG, type OrchestratorAdapters } from '../orchestrator/index.js';
 import type { PipelineResult, PipelineLogger } from '../types.js';
@@ -150,13 +151,13 @@ describe('cli-orchestrator router', () => {
       expect(out.ticksRun).toBe(2);
     }, 30000);
 
-    it('threads --spawner codex into start umbrella dispatch', async () => {
+    it('threads --spawner mock into start umbrella dispatch', async () => {
       process.env[ORCHESTRATOR_FLAG] = 'experimental';
       const calls: string[] = [];
       const adapters: OrchestratorAdapters = {
         logger: silentLogger(),
         sleep: () => Promise.resolve(),
-        frontier: () => [{ id: 'AISDLC-START-CODEX', title: 'AISDLC-START-CODEX' }],
+        frontier: () => [{ id: 'AISDLC-START-MOCK', title: 'AISDLC-START-MOCK' }],
         escalate: async () => {},
         umbrellaExecutor: async (taskId, spawnerKind) => {
           calls.push(`${taskId}:${spawnerKind}`);
@@ -180,12 +181,12 @@ describe('cli-orchestrator router', () => {
         '--max-concurrent',
         '1',
         '--spawner',
-        'codex',
+        'mock',
       );
 
       await buildOrchestratorCli(adapters).parseAsync();
 
-      expect(calls).toEqual(['AISDLC-START-CODEX:codex']);
+      expect(calls).toEqual(['AISDLC-START-MOCK:mock']);
       const out = stdoutJson() as { ok: boolean; mode: string; ticksRun: number };
       expect(out.ok).toBe(true);
       expect(out.mode).toBe('start');
@@ -213,13 +214,13 @@ describe('cli-orchestrator router', () => {
       expect(out.tick.dispatched).toEqual(['AISDLC-Z']);
     });
 
-    it('threads --spawner codex into tick umbrella dispatch', async () => {
+    it('threads --spawner mock into tick umbrella dispatch', async () => {
       process.env[ORCHESTRATOR_FLAG] = 'experimental';
       const calls: string[] = [];
       const adapters: OrchestratorAdapters = {
         logger: silentLogger(),
         sleep: () => Promise.resolve(),
-        frontier: () => [{ id: 'AISDLC-TICK-CODEX', title: 'AISDLC-TICK-CODEX' }],
+        frontier: () => [{ id: 'AISDLC-TICK-MOCK', title: 'AISDLC-TICK-MOCK' }],
         escalate: async () => {},
         umbrellaExecutor: async (taskId, spawnerKind) => {
           calls.push(`${taskId}:${spawnerKind}`);
@@ -234,15 +235,15 @@ describe('cli-orchestrator router', () => {
         // AISDLC-363 — skip the parent-branch guard in tests (no real git state).
         parentBranchGuard: async () => {},
       };
-      setArgv('tick', '--max-concurrent', '1', '--spawner', 'codex');
+      setArgv('tick', '--max-concurrent', '1', '--spawner', 'mock');
 
       await buildOrchestratorCli(adapters).parseAsync();
 
-      expect(calls).toEqual(['AISDLC-TICK-CODEX:codex']);
+      expect(calls).toEqual(['AISDLC-TICK-MOCK:mock']);
       const out = stdoutJson() as { ok: boolean; mode: string; tick: { dispatched: string[] } };
       expect(out.ok).toBe(true);
       expect(out.mode).toBe('tick');
-      expect(out.tick.dispatched).toEqual(['AISDLC-TICK-CODEX']);
+      expect(out.tick.dispatched).toEqual(['AISDLC-TICK-MOCK']);
     });
 
     it('honors --dry-run by reporting candidates without dispatching', async () => {
@@ -541,91 +542,79 @@ describe('cli-orchestrator tick --continue-from-result (AISDLC-225)', () => {
 
 // ── AISDLC-352: billing-safety warnings ──────────────────────────────────
 
-describe('emitBillingSafetyWarnings (AISDLC-352)', () => {
-  it('emits BILLING_SAFETY_WARNING when spawner=claude AND ANTHROPIC_API_KEY is set', () => {
+describe('emitBillingSafetyWarnings (AISDLC-429.3)', () => {
+  it('emits BILLING_SAFETY_WARNING when spawner=copilot AND a third-party API key is set', () => {
     const lines: string[] = [];
-    emitBillingSafetyWarnings('claude', { ANTHROPIC_API_KEY: 'sk-ant-test' }, (msg) =>
+    emitBillingSafetyWarnings('copilot', { ANTHROPIC_API_KEY: 'sk-test' }, (msg) =>
       lines.push(msg),
     );
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toContain('[orchestrator] warning: ANTHROPIC_API_KEY is set');
-    expect(lines[0]).toContain('--spawner claude is requested');
+    expect(lines[0]).toContain('third-party inference API key is set');
+    expect(lines[0]).toContain('--spawner copilot');
   });
 
-  it('does NOT emit BILLING_SAFETY_WARNING when spawner=claude AND ANTHROPIC_API_KEY is unset', () => {
+  it('fires for any of the known third-party key env vars', () => {
+    for (const name of THIRD_PARTY_KEY_ENV_VARS) {
+      const lines: string[] = [];
+      emitBillingSafetyWarnings('copilot', { [name]: 'x' }, (msg) => lines.push(msg));
+      expect(lines).toHaveLength(1);
+    }
+  });
+
+  it('does NOT emit BILLING_SAFETY_WARNING when spawner=copilot AND the env is clean', () => {
     const lines: string[] = [];
-    emitBillingSafetyWarnings('claude', {}, (msg) => lines.push(msg));
+    emitBillingSafetyWarnings('copilot', {}, (msg) => lines.push(msg));
     expect(lines).toHaveLength(0);
   });
 
-  it('does NOT emit BILLING_SAFETY_WARNING when spawner=api-key even if ANTHROPIC_API_KEY is set', () => {
+  it('does NOT emit BILLING_SAFETY_WARNING when spawner=mock even if a key is set', () => {
     const lines: string[] = [];
-    emitBillingSafetyWarnings('api-key', { ANTHROPIC_API_KEY: 'sk-ant-test' }, (msg) =>
-      lines.push(msg),
-    );
+    emitBillingSafetyWarnings('mock', { ANTHROPIC_API_KEY: 'sk-test' }, (msg) => lines.push(msg));
     expect(lines).toHaveLength(0);
   });
 
-  it('does NOT emit BILLING_SAFETY_WARNING when spawner=mock even if ANTHROPIC_API_KEY is set', () => {
-    const lines: string[] = [];
-    emitBillingSafetyWarnings('mock', { ANTHROPIC_API_KEY: 'sk-ant-test' }, (msg) =>
-      lines.push(msg),
-    );
-    expect(lines).toHaveLength(0);
-  });
-
-  it('emits FALLBACK_BILLING_WARNING when AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key AND spawner != api-key', () => {
+  it('emits FALLBACK_BILLING_WARNING when a stale AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK is set', () => {
     const lines: string[] = [];
     emitBillingSafetyWarnings(
-      'claude',
+      'copilot',
       { AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK: 'api-key' },
       (msg) => lines.push(msg),
     );
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toContain('AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key');
+    expect(lines[0]).toContain('AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK is set');
   });
 
-  it('does NOT emit FALLBACK_BILLING_WARNING when spawner=api-key', () => {
+  it('emits BOTH warnings when a third-party key AND a stale fallback are set', () => {
     const lines: string[] = [];
     emitBillingSafetyWarnings(
-      'api-key',
-      { AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK: 'api-key' },
-      (msg) => lines.push(msg),
-    );
-    expect(lines).toHaveLength(0);
-  });
-
-  it('emits BOTH warnings when ANTHROPIC_API_KEY set + SPAWNER_FALLBACK=api-key + spawner=claude', () => {
-    const lines: string[] = [];
-    emitBillingSafetyWarnings(
-      'claude',
-      { ANTHROPIC_API_KEY: 'sk-ant-test', AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK: 'api-key' },
+      'copilot',
+      { OPENAI_API_KEY: 'sk-test', AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK: 'api-key' },
       (msg) => lines.push(msg),
     );
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toContain('[orchestrator] warning: ANTHROPIC_API_KEY is set');
-    expect(lines[1]).toContain('AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key');
+    expect(lines[0]).toContain('third-party inference API key is set');
+    expect(lines[1]).toContain('AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK is set');
   });
 
   it('does NOT fire any warning in a clean env (no API key, no fallback)', () => {
     const lines: string[] = [];
-    emitBillingSafetyWarnings('claude', {}, (msg) => lines.push(msg));
+    emitBillingSafetyWarnings('copilot', {}, (msg) => lines.push(msg));
     expect(lines).toHaveLength(0);
   });
 
   it('exports the exact warning line arrays for downstream assertions', () => {
     // Ensure exported constants are the canonical text (not copied strings)
-    expect(BILLING_SAFETY_WARNING_LINES[0]).toContain('[orchestrator] warning: ANTHROPIC_API_KEY');
+    expect(BILLING_SAFETY_WARNING_LINES[0]).toContain('third-party inference API key is set');
     expect(FALLBACK_BILLING_WARNING_LINES[0]).toContain(
-      'AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key',
+      'AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK is set',
     );
   });
 });
 
-// ── AISDLC-352: default spawner = claude ──────────────────────────────────
+// ── AISDLC-429.3: default spawner = copilot ──────────────────────────────
 
-describe('cli-orchestrator tick default spawner (AISDLC-352)', () => {
-  it('defaults spawner to claude when no --spawner flag is passed', async () => {
+describe('cli-orchestrator tick default spawner (AISDLC-429.3)', () => {
+  it('defaults spawner to copilot when no --spawner flag is passed', async () => {
     process.env[ORCHESTRATOR_FLAG] = 'experimental';
     const spawnerKinds: string[] = [];
     const adapters: OrchestratorAdapters = {
@@ -645,9 +634,9 @@ describe('cli-orchestrator tick default spawner (AISDLC-352)', () => {
     setArgv('tick', '--max-concurrent', '1');
     await buildOrchestratorCli(adapters).parseAsync();
 
-    // Empty frontier → no dispatch, but buildAdapters should have set claude
+    // Empty frontier → no dispatch, but buildAdapters should have set copilot
     // as the umbrellaSpawnerKind default. Verify via the warn helper that was
-    // called with 'claude' (no ANTHROPIC_API_KEY in savedEnv → no warning).
+    // called with 'copilot' (clean savedEnv → no warning).
     const out = stdoutJson() as { ok: boolean; mode: string };
     expect(out.ok).toBe(true);
     expect(out.mode).toBe('tick');
@@ -850,10 +839,10 @@ describe('cli-orchestrator tick --task-from-file (AISDLC-373)', () => {
       '1',
       '--task-from-file',
       taskFile,
-      // Default spawner is `claude`; pass `codex` so we don't trip the
-      // ANTHROPIC_API_KEY billing-safety warning emit path.
+      // Default spawner is `copilot`; pass `mock` so we don't trip the
+      // billing-safety warning emit path.
       '--spawner',
-      'codex',
+        'mock',
     );
 
     await buildOrchestratorCli(adapters).parseAsync();

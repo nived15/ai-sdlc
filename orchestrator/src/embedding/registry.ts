@@ -12,10 +12,10 @@
 
 import type { EmbeddingAdapter } from './types.js';
 import { UnknownEmbeddingProvider } from './errors.js';
-import { OpenAITextEmbedding3Small } from './adapters/openai-text-embedding-3-small.js';
+import { GitHubModelsEmbeddingSmall } from './adapters/github-models-embedding-small.js';
 
 const EMBEDDING_ADAPTERS = new Map<string, EmbeddingAdapter>([
-  ['openai-text-embedding-3-small', new OpenAITextEmbedding3Small()],
+  ['github-models-embedding-small', new GitHubModelsEmbeddingSmall()],
 ]);
 
 /**
@@ -25,7 +25,7 @@ const EMBEDDING_ADAPTERS = new Map<string, EmbeddingAdapter>([
  * Pipeline-load MUST fail with this error so operator typos are caught
  * at load time, not silently at the first embed() call site.
  *
- * @param name - Canonical adapter alias (e.g., 'openai-text-embedding-3-small').
+ * @param name - Canonical adapter alias (e.g., 'github-models-embedding-small').
  */
 export function getEmbeddingAdapter(name: string): EmbeddingAdapter {
   const adapter = EMBEDDING_ADAPTERS.get(name);
@@ -40,7 +40,7 @@ export function getEmbeddingAdapter(name: string): EmbeddingAdapter {
  * to extend the built-in registry with their own adapter implementations.
  *
  * Overwrites any existing adapter with the same name — intentional to support
- * adopter forks that want to replace the default OpenAI adapter.
+ * adopter forks that want to replace the default GitHub Copilot adapter.
  *
  * @param adapter - Adapter instance implementing EmbeddingAdapter.
  */

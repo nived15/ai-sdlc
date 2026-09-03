@@ -98,7 +98,7 @@ export function severityForPolicy(policy: StaleVectorPolicy): StaleVectorDecisio
  * Inputs describing a single stale-vector encounter.
  */
 export interface StaleVectorContext {
-  /** Provider on the stored entry (e.g., 'openai-text-embedding-ada-002'). */
+  /** Provider on the stored entry (e.g., 'github-copilot-text-embedding-ada-002'). */
   storedProvider: string;
   /** Model version on the stored entry. */
   storedModelVersion: string;

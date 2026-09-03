@@ -1,7 +1,7 @@
 /**
  * Tests for `.github/workflows/ai-sdlc-review.yml` — AISDLC-147 cost-savers.
  *
- * Patch 1 (attestation precheck) and patch 2 (Anthropic API budget circuit
+ * Patch 1 (attestation precheck) and patch 2 (GitHub Copilot quota circuit
  * breaker) both modify the workflow's job graph. These tests lock in the
  * load-bearing structural details so a future restructuring can't silently
  * regress the cost-saver behaviour:

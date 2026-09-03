@@ -100,7 +100,7 @@ This means:
 
 ### Step 2: Update the feature flag documentation
 
-Update `CLAUDE.md` to reflect the new default:
+Update `.github/copilot-instructions.md` to reflect the new default:
 
 ```markdown
 - **`AI_SDLC_UNTRUSTED_PR_GATE`** (RFC-0043): gates the UCVG pipeline. **On by default since AISDLC-NNN (YYYY-MM-DD, operator authorization).** Opt out via `AI_SDLC_UNTRUSTED_PR_GATE=off` (or `0`/`false`/`no`, case-insensitive).
@@ -123,7 +123,7 @@ lifecycle: Implemented
 ```bash
 git add \
   .github/workflows/untrusted-pr-gate.yml \
-  CLAUDE.md \
+  .github/copilot-instructions.md \
   docs/operations/init.md \
   spec/rfcs/RFC-0043-untrusted-contributor-pr-verification.md
 
@@ -132,7 +132,7 @@ git commit -m "feat: promote AI_SDLC_UNTRUSTED_PR_GATE to default-on (AISDLC-NNN
 Corpus soak evidence met all promotion thresholds. Operator authorized
 via Decision Catalog. Flag fallback changed from 'off' to 'on'.
 
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
+Co-Authored-By: the reasoning tier 4.8 <noreply@github-models.com>"
 ```
 
 ---

@@ -17,7 +17,7 @@ requiresDocs: []
 
 **Status:** Implemented (AISDLC-115 umbrella + all 9 phases 115.1–115.9 shipped; `evaluationMode: enforce` live in dogfood since 2026-05-03)
 **Lifecycle:** Implemented (lifecycle audit 2026-05-13 promoted from Signed Off)
-**Author:** Dominique Legault (with Claude assist)
+**Author:** Dominique Legault (with GitHub Copilot assist)
 **Created:** 2026-04-30
 **Updated:** 2026-05-13
 **Target Spec Version:** v1alpha1
@@ -244,7 +244,7 @@ The rubric is implemented as a **single library function** with a stable input/o
 │  • GitHub Action       (.github/workflows/dor-gate.yml)  │
 │    triggered on issues:opened / issues:edited            │
 │                                                          │
-│  • Claude Code subagent (refinement-reviewer)            │
+│  • GitHub Copilot CLI subagent (refinement-reviewer)            │
 │    invoked from /ai-sdlc execute when a backlog task is  │
 │    created via mcp__backlog__task_create                 │
 │                                                          │
@@ -260,9 +260,9 @@ The rubric is implemented as a **single library function** with a stable input/o
 │                        ↓ if Stage A passes               │
 │  ┌────────────────────────────────────────────────────┐  │
 │  │  Stage B — LLM via harness adapter (RFC-0010 §13)  │  │
-│  │  Default harness = claude-code, fallback = codex   │  │
+│  │  Default harness = copilot, fallback = copilot   │  │
 │  │  In subagent context: runs as refinement-reviewer  │  │
-│  │  In GitHub Action context: runs via `claude` CLI   │  │
+│  │  In GitHub Action context: runs via `copilot` CLI   │  │
 │  └────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -302,7 +302,7 @@ export interface RefinementVerdict {
 
 export async function evaluateIssue(
   input: IssueInput,
-  opts?: { harness?: 'claude-code' | 'codex'; skipStageB?: boolean }
+  opts?: { harness?: 'copilot' | 'copilot'; skipStageB?: boolean }
 ): Promise<RefinementVerdict>;
 ```
 
@@ -319,7 +319,7 @@ Each ingress point is a thin wrapper around `evaluateIssue()`:
 - Posts comment via `gh issue comment` if `verdict === 'needs-clarification'`
 - Sets issue label `status:needs-clarification` (the GitHub representation of the new status)
 
-**Claude Code subagent shim (`refinement-reviewer` plugin agent):**
+**GitHub Copilot CLI subagent shim (`refinement-reviewer` plugin agent):**
 - Spawned from `/ai-sdlc execute` when a new backlog task is created in-session
 - Reads task file directly (no `gh` required)
 - Calls `evaluateIssue({ source: 'backlog', ... })`
@@ -330,9 +330,9 @@ Each ingress point is a thin wrapper around `evaluateIssue()`:
 
 The shims share a common testing harness — fixture issue → expected verdict → assert match. Adding a new ingress doesn't require re-implementing the rubric; it just requires implementing the shim's I/O.
 
-### 5.3 The Claude Code subagent (one of the ingress contexts)
+### 5.3 The GitHub Copilot CLI subagent (one of the ingress contexts)
 
-The plugin agent type `refinement-reviewer` is the Claude Code subagent ingress. Its frontmatter:
+The plugin agent type `refinement-reviewer` is the GitHub Copilot CLI subagent ingress. Its frontmatter:
 
 ```yaml
 ---
@@ -349,7 +349,7 @@ disallowedTools:
   - Write
   - AgentTool
 model: inherit
-harness: claude-code
+harness: copilot
 ---
 ```
 
@@ -394,7 +394,7 @@ A `RefinementVerdict` JSON:
 
 - The agent runs read-only — it has `Read`, `Grep`, `Glob`, `Bash` (for `gh issue view` and similar), and `mcp__backlog__task_view`.
 - It explicitly disallows `Edit`, `Write`, and `AgentTool` (no recursive subagent spawning).
-- Harness defaults to `claude-code` for v1; can be ported to other harnesses (Codex, etc.) via the harness adapter framework (RFC-0010 §13). The agent's behavior is harness-agnostic — it scores against text and references.
+- Harness defaults to `copilot` for v1; can be ported to other harnesses (GitHub Copilot, etc.) via the harness adapter framework (RFC-0010 §13). The agent's behavior is harness-agnostic — it scores against text and references.
 
 ### 5.5 Confidence and calibration
 
@@ -761,7 +761,7 @@ Total wall-clock: ~6-9 weeks depending on Phase 7 soak duration.
 
 These need decisions before Phase 2 ships:
 
-1. **Q1: Where does the agent run?** ✅ **RESOLVED (2026-04-30)** — wrong question. The rubric is implemented as a single library function `evaluateIssue()` (Section 5.1) called from multiple ingress shims (Section 5.2). v1 ships with two shims: GitHub Action (for `issues:opened`/`edited` and PR-touching `backlog/tasks/*.md`) and Claude Code subagent (`refinement-reviewer`, invoked from `/ai-sdlc execute` when a backlog task is created in-session). Future ingress channels (Forge UI / Slack / customer portal) just add a shim — the rubric library is unchanged. Aligns with the existing IssueTracker abstraction pattern in the codebase. Aligns with RFC-0010 §13 harness adapters for the Stage B LLM call.
+1. **Q1: Where does the agent run?** ✅ **RESOLVED (2026-04-30)** — wrong question. The rubric is implemented as a single library function `evaluateIssue()` (Section 5.1) called from multiple ingress shims (Section 5.2). v1 ships with two shims: GitHub Action (for `issues:opened`/`edited` and PR-touching `backlog/tasks/*.md`) and GitHub Copilot CLI subagent (`refinement-reviewer`, invoked from `/ai-sdlc execute` when a backlog task is created in-session). Future ingress channels (Forge UI / Slack / customer portal) just add a shim — the rubric library is unchanged. Aligns with the existing IssueTracker abstraction pattern in the codebase. Aligns with RFC-0010 §13 harness adapters for the Stage B LLM call.
 2. **Q2: How does the agent pull cross-references for Gate 3?** ✅ **RESOLVED (2026-04-30)** — pluggable resolver registry. The rubric calls `resolveReference(ref)` which dispatches to a registered resolver based on the reference's shape: `#NN` → github-issue resolver, `LINEAR-1234` → linear-issue resolver, `RFC-NNNN` → file-existence resolver, `https://...` → URL HEAD resolver, `AISDLC-NN` → backlog file-existence resolver, etc. v1 ships with 3 resolvers (github-issue, file-existence, URL-HEAD) covering ~95% of references in our current corpus. Adding Linear / Forge later is one new resolver, no rubric change. Same pattern as RFC-0010 §13 harness adapters and the existing IssueTracker abstraction — separate *what to look up* from *how to look it up*.
 3. **Q3: What happens to existing issues in `Draft` when the gate ships?** ✅ **RESOLVED (2026-04-30)** — re-check on next status change. DoR runs when an issue transitions out of `Draft` for the first time after the gate ships. Issues already in `To Do`/`In Progress`/`Done` are grandfathered. The natural moment to evaluate an issue is when it enters the pipeline (`Draft` → `To Do`). Pre-existing `Draft` issues weren't going through the pipeline at the time they were written; they only matter when an author decides to publish them — and at that moment, they should pass the same gate as new issues. In-flight work is left alone because applying DoR retroactively serves no purpose; the work already happened. Matches feature-flag rollout convention: new behavior applies at the next decision point, not retroactively.
 4. **Q4: Should the agent's confidence score affect blocking behavior?** ✅ **RESOLVED (2026-04-30)** — three tiers. **High** → act on verdict directly (admit-or-block). **Medium** → act on verdict AND silently flag for the weekly calibration spot-check (data feeds rubric tuning per Section 7.4). **Low** → don't auto-act; escalate to human triager via the same path as Section 6.3's 3-round escalation. Refusing to act on medium would create a flood of escalations and defeat the gate's automation value, since medium is the bulk of real-world verdicts. The spot-check flag gives the calibration loop the data it needs without burdening the human in real time. Composes naturally with the bypass mechanism (Section 7.4): if a maintainer routinely overrides medium-confidence blocks, that's a signal the rubric is too aggressive at medium for this project.

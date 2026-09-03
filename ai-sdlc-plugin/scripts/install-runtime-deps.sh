@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # AISDLC-272 / AISDLC-441: Install runtime dependencies into the plugin cache directory.
 #
-# The Claude Code local marketplace installer copies plugin files to
-# ~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/ but does NOT
+# The GitHub Copilot CLI local marketplace installer copies plugin files to
+# ~/.copilot/plugins/cache/<marketplace>/<plugin>/<version>/ but does NOT
 # run `npm install` in that directory — so runtimeDependencies declared in
 # plugin.json are never installed for local marketplace setups.
 #
@@ -18,20 +18,20 @@
 #     whether the cache dir has a package.json.
 #
 # Usage:
-#   bash scripts/install-runtime-deps.sh            # from within CLAUDE_PLUGIN_ROOT
+#   bash scripts/install-runtime-deps.sh            # from within COPILOT_PLUGIN_ROOT
 #   bash scripts/install-runtime-deps.sh /path/to/plugin-dir
 #
 # Environment:
-#   CLAUDE_PLUGIN_ROOT — set by Claude Code; used when no explicit arg given.
+#   COPILOT_PLUGIN_ROOT — set by GitHub Copilot CLI; used when no explicit arg given.
 #
 # Exits 0 on success, 1 on failure. Prints a one-line status to stderr.
 
 set -euo pipefail
 
-PLUGIN_DIR="${1:-${CLAUDE_PLUGIN_ROOT:-}}"
+PLUGIN_DIR="${1:-${COPILOT_PLUGIN_ROOT:-}}"
 
 if [ -z "$PLUGIN_DIR" ]; then
-  echo "install-runtime-deps.sh: CLAUDE_PLUGIN_ROOT is unset and no argument given — cannot determine plugin directory" >&2
+  echo "install-runtime-deps.sh: COPILOT_PLUGIN_ROOT is unset and no argument given — cannot determine plugin directory" >&2
   exit 1
 fi
 
@@ -44,13 +44,13 @@ fi
 #
 # AISDLC-385: @ai-sdlc/plugin-mcp-server is now a runtimeDependency (replaces
 # the in-tree dist/bin.js that was previously committed to git). The MCP server
-# binary is resolved at ${CLAUDE_PLUGIN_ROOT}/node_modules/@ai-sdlc/plugin-mcp-server/dist/bin.js.
+# binary is resolved at ${COPILOT_PLUGIN_ROOT}/node_modules/@ai-sdlc/plugin-mcp-server/dist/bin.js.
 #
 # Dogfood topology 2 (local checkout): when ${PLUGIN_DIR}/mcp-server/dist/bin.js
 # exists (built by `pnpm --filter @ai-sdlc/plugin-mcp-server build`), it takes
-# priority — the mcpServers config will resolve ${CLAUDE_PLUGIN_ROOT}/node_modules/...
-# which doesn't exist in a plain monorepo checkout, causing Claude Code to fall
-# back to the sibling path or requiring explicit CLAUDE_PLUGIN_ROOT override.
+# priority — the mcpServers config will resolve ${COPILOT_PLUGIN_ROOT}/node_modules/...
+# which doesn't exist in a plain monorepo checkout, causing GitHub Copilot CLI to fall
+# back to the sibling path or requiring explicit COPILOT_PLUGIN_ROOT override.
 # For dogfood use, build the local dist first: `pnpm --filter @ai-sdlc/plugin-mcp-server build`.
 PIPELINE_CLI_OK=0
 MCP_SERVER_OK=0

@@ -32,7 +32,7 @@ describe('Step 5 — buildDeveloperPrompt', () => {
     expect(r.prompt).toContain('../sib/');
     expect(r.prompt).toContain('ai-sdlc/aisdlc-1-demo');
     expect(r.prompt).toContain('/tmp/wt');
-    expect(r.prompt).toContain('Co-Authored-By: Claude Opus');
+    expect(r.prompt).toContain('Co-Authored-By: the reasoning tier');
   });
 
   it('omits feedback section on iteration 1', async () => {

@@ -200,7 +200,7 @@ Writes:
 
 Then feed to the bridge:
   cli-import-spec --from .specify/specs/<feature-slug>/
-  # or, inside Claude Code:
+  # or, inside GitHub Copilot CLI:
   /ai-sdlc import-spec --from .specify/specs/<feature-slug>/
 
 See docs/concepts/adopter-translators.md for the full BYO translator pattern.

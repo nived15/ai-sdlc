@@ -32,7 +32,7 @@ export function createPipelineProvenance(opts: {
 
   return createProvenance({
     model: opts.model ?? DEFAULT_MODEL,
-    tool: opts.tool ?? 'claude-code',
+    tool: opts.tool ?? 'copilot',
     promptHash,
     humanReviewer: opts.humanReviewer,
     cost: opts.cost,

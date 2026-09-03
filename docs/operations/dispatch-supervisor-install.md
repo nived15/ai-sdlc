@@ -1,19 +1,19 @@
 # Dispatch Supervisor — installation + operations runbook
 
 **Audience**: operators running the AI-SDLC autonomous loop who want the
-**`claude-p-shell`** Worker kind (RFC-0041 §4.3.2) — i.e. the headless /
-CI / cron-driven path that does NOT require an open Claude Code session
+**`copilot-p-shell`** Worker kind (RFC-0041 §4.3.2) — i.e. the headless /
+CI / cron-driven path that does NOT require an open Copilot CLI session
 per parallel worker.
 
 This runbook covers Phase 2 of RFC-0041 (AISDLC-377.3). If you are using
 only the `in-session-agent` Worker kind (RFC §4.3.1 — the
 subscription-quota path), you do NOT need a supervisor at all.
 
-> **Cost reminder.** Each `claude -p` invocation the supervisor spawns
+> **Cost reminder.** Each `copilot -p` invocation the supervisor spawns
 > draws from the per-plan **Agent SDK credit pool** (~$200/mo on
 > Max-20x) post-2026-06-15, with overflow billed at API-token rates.
 > The Conductor prints a one-line `[dispatch-cost]` notice on the first
-> `claude-p-shell` manifest of each session. Suppress with
+> `copilot-p-shell` manifest of each session. Suppress with
 > `suppressCostWarning: true` in `.ai-sdlc/dispatch-config.yaml` if you
 > have explicitly accepted the cost model.
 
@@ -23,7 +23,7 @@ subscription-quota path), you do NOT need a supervisor at all.
 
 You need the supervisor when at least one of the following is true:
 
-1. You want autonomous dispatch to keep draining work **while no Claude
+1. You want autonomous dispatch to keep draining work **while no GitHub Copilot
    Code session is open** (overnight catch-up, CI-triggered batch).
 2. You run AI-SDLC on a headless server with no interactive operator.
 3. You want to scale beyond the practical ~6-8 in-session-agent
@@ -31,7 +31,7 @@ You need the supervisor when at least one of the following is true:
 
 You do **NOT** need the supervisor when:
 
-- Your operator opens N Claude Code sessions and runs
+- Your operator opens N Copilot CLI sessions and runs
   `/ai-sdlc dispatch-worker` in each. That's the AISDLC-353 path — pure
   subscription quota, no Agent SDK credit draw.
 - You execute single tasks via `/ai-sdlc execute <task-id>` (which never
@@ -47,16 +47,16 @@ A small Node daemon (~190 LOC in `pipeline-cli/src/dispatch/supervisor.ts`,
 1. Polls `.ai-sdlc/dispatch/queue/` every `claudePShell.pollIntervalSec`
    (default 15s — biased slower than in-session-agent's 5s per RFC-0041
    OQ-6 so subscription Workers preferentially win `any` races).
-2. For each manifest matching `workerKind ∈ {claude-p-shell, any}`:
+2. For each manifest matching `workerKind ∈ {copilot-p-shell, any}`:
    atomically `rename`s it to `.ai-sdlc/dispatch/inflight/`, then spawns
-   `env -u CLAUDECODE claude -p ...` in the manifest's `worktree`
-   (RFC §4.4 — the `CLAUDECODE` env var must be unset; Claude Code's
+   `env -u COPILOT_CLI_SESSION copilot -p ...` in the manifest's `worktree`
+   (RFC §4.4 — the `COPILOT_CLI_SESSION` env var must be unset; GitHub Copilot CLI's
    startup guard refuses to launch otherwise).
 3. Enforces the concurrency cap from
    `parallelism.claudePShellMaxConcurrent` in `.ai-sdlc/dispatch-config.yaml`.
 4. Sweeps stale inflight heartbeats every tick. Any worker with
    `lastHeartbeat > 30 min ago` (RFC §4.4 + OQ-3, matching
-   `ShellClaudePSpawner.DEFAULT_TIMEOUT_MS`) gets a `SIGTERM`, its
+   `CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS`) gets a `SIGTERM`, its
    manifest moves to `failed/` with `cause: stale-heartbeat`, and the
    PID is dropped from the inflight set.
 5. Records its own PID in `.ai-sdlc/dispatch/.supervisor.pid`. Refuses
@@ -103,7 +103,7 @@ Create `~/Library/LaunchAgents/io.ai-sdlc.dispatch-supervisor.plist`:
   <string>/Users/YOUR_USER/path/to/ai-sdlc/.ai-sdlc/dispatch/supervisor.err.log</string>
 
   <!-- Inherit operator env (OQ-2). The PATH below must include
-       wherever `claude` is installed (typically ~/.local/bin or
+       wherever `copilot` is installed (typically ~/.local/bin or
        /usr/local/bin via the official installer). -->
   <key>EnvironmentVariables</key>
   <dict>
@@ -155,8 +155,8 @@ ExecStart=/usr/bin/node pipeline-cli/bin/cli-dispatch-supervisor.mjs start --max
 Restart=on-failure
 RestartSec=10
 
-# Inherit operator env so ~/.claude/credentials etc. work (OQ-2).
-PassEnvironment=PATH HOME ANTHROPIC_API_KEY
+# Inherit operator env so ~/.copilot/credentials etc. work (OQ-2).
+PassEnvironment=PATH HOME GITHUB_MODELS_TOKEN
 
 StandardOutput=append:%h/path/to/ai-sdlc/.ai-sdlc/dispatch/supervisor.out.log
 StandardError=append:%h/path/to/ai-sdlc/.ai-sdlc/dispatch/supervisor.err.log
@@ -224,13 +224,13 @@ fields:
 apiVersion: ai-sdlc.io/v1alpha1
 kind: DispatchConfig
 spec:
-  # Set to 'claude-p-shell' to flip the autonomous loop's default to
+  # Set to 'copilot-p-shell' to flip the autonomous loop's default to
   # the headless path. Most operators leave this as 'in-session-agent'
-  # and tag specific manifests with workerKind: claude-p-shell instead.
+  # and tag specific manifests with workerKind: copilot-p-shell instead.
   defaultWorkerKind: in-session-agent
 
   parallelism:
-    # Concurrent claude -p Workers under one supervisor. 0 disables.
+    # Concurrent copilot -p Workers under one supervisor. 0 disables.
     # Sized against your Agent SDK credit budget — at ~$0.20/task and
     # ~$200/mo, 1000 tasks/mo is the practical ceiling; 2-4 concurrent
     # is a typical operator setting.
@@ -280,8 +280,8 @@ If `alive: false` or `pid` missing, start it. If it's running but no
 spawns happen:
 
 1. Check `.ai-sdlc/dispatch/supervisor.err.log` for spawn-rejected
-   errors (e.g. `ENOENT: claude binary missing` → install Claude Code).
-2. Check the manifests have `workerKind: claude-p-shell` or
+   errors (e.g. `ENOENT: copilot binary missing` → install GitHub Copilot CLI).
+2. Check the manifests have `workerKind: copilot-p-shell` or
    `workerKind: any`. The supervisor ignores `in-session-agent`
    manifests.
 3. Check `.ai-sdlc/dispatch-config.yaml`'s `claudePShellMaxConcurrent`
@@ -360,7 +360,7 @@ silently runs the old code.
 | Mode | Detection | Owner | Remediation |
 |---|---|---|---|
 | `WorkerSupervisorMissing` | Manifests stuck in `queue/`, supervisor PID absent or dead | Conductor | `AskUserQuestion` to operator — restart supervisor |
-| `WorkerSpawnRefused` | `claude -p` exits immediately non-zero (no auth, ENOENT) | Supervisor | Writes `failed/<id>.diagnostic.json` with `cause: spawn-rejected`; operator inspects + restarts |
+| `WorkerSpawnRefused` | `copilot -p` exits immediately non-zero (no auth, ENOENT) | Supervisor | Writes `failed/<id>.diagnostic.json` with `cause: spawn-rejected`; operator inspects + restarts |
 | `WorkerStaleHeartbeat` | `inflight/<id>.state.json.lastHeartbeat > 30 min ago` | Supervisor | Reaped via sweep; manifest moved to `failed/` with `cause: stale-heartbeat`; Conductor retries (budget 1) or escalates |
 | `DispatchBoardCorruption` | Manifest JSON parse fails | Supervisor + Conductor | Manifest moved to `failed/` with `cause: schema-violation`; Conductor surfaces |
 
@@ -371,7 +371,7 @@ silently runs the old code.
 The hermetic test in `pipeline-cli/src/dispatch/supervisor.test.ts`
 covers the spawn protocol with a mock subprocess. The end-to-end
 acceptance (AC #9) — supervisor running in a tmux pane + Conductor in
-a separate CC session + a real `claude -p` Worker draining a real
+a separate CC session + a real `copilot -p` Worker draining a real
 manifest to a merged PR — is **operator-verified post-merge**. The
 acceptance signal is: a real PR landed by the autonomous loop with no
 in-session-agent session open at any point of its execution. File a

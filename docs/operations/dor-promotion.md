@@ -148,7 +148,7 @@ Once `evaluationMode: enforce` is live in `.ai-sdlc/dor-config.yaml`:
 
 - The `/ai-sdlc execute` path REFUSES to start work on a backlog task
   whose verdict is `needs-clarification` (per
-  `pipeline-cli/src/dor/ingress-claude.ts` `shouldRefuseExecution`).
+  `pipeline-cli/src/dor/ingress.ts` `shouldRefuseExecution`).
 - The PPA admission flow rejects `needs-clarification` issues at the
   intake layer (per RFC-0011 §7.1).
 - The `dor-bypass` label remains the maintainer escape hatch (RFC §7.4)

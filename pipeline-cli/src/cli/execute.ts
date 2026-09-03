@@ -6,17 +6,12 @@
  *
  * Until this subcommand existed there was no way for a non-slash-command
  * caller (e.g. an AI assistant working alongside the operator in the main
- * Claude Code session, a cron job, or a webhook handler) to invoke the full
- * Step 0-13 pipeline in a single call WITHOUT either:
- *
- *   1. Manually composing the per-step subcommands AND remembering to write
- *      the verdict file at the right point so the pre-push hook auto-signs
- *      the DSSE envelope (the failure mode that triggered AISDLC-182 — ~10
- *      PRs shipped to main without reviewer verdicts because the assistant
- *      skipped Steps 7/8/10), OR
- *   2. Switching to the API-key-billed `pnpm --filter @ai-sdlc/dogfood watch`
- *      flow, which uses paid Anthropic API instead of the operator's
- *      subscription.
+ * Copilot CLI session, a cron job, or a webhook handler) to invoke the full
+ * Step 0-13 pipeline in a single call WITHOUT manually composing the per-step
+ * subcommands AND remembering to write the verdict file at the right point so
+ * the pre-push hook auto-signs the DSSE envelope (the failure mode that
+ * triggered AISDLC-182 — ~10 PRs shipped to main without reviewer verdicts
+ * because the assistant skipped Steps 7/8/10).
  *
  * This subcommand is a thin wrapper around the existing `executePipeline()`
  * library function (RFC-0012 §7.1) — it does NOT re-implement Step 0-13
@@ -36,33 +31,11 @@
  *
  *   - `mock`       — `MockSpawner` with hard-coded approval fixtures.
  *                    For dry-run plumbing checks + integration tests only.
- *                    Default in v1 because the real spawners (`api-key`,
- *                    `claude`, `codex`) carry billing / cross-session
+ *                    Default in v1 because the real spawner carries billing
  *                    implications that need explicit operator opt-in.
  *                    `--run --spawner mock` refuses before filesystem mutation.
- *   - `api-key`    — `defaultSpawner()`'s SDK path (uses `ANTHROPIC_API_KEY`).
- *                    Burns API credits per dispatch — same billing model as
- *                    `pnpm dogfood watch`. Documented for AI-assistant /
- *                    unattended use when subscription auth is unavailable.
- *   - `claude`     — `ShellClaudePSpawner` (AISDLC-349, default for the
- *                    autonomous orchestrator since AISDLC-352). Shells out to
- *                    the operator's installed `claude -p` for each dispatch.
- *                    Uses subscription auth (Agent SDK credit pool post-
- *                    2026-06-15). The recommended path for cron / daemon /
- *                    sidecar invocations.
- *   - `codex`      — `CodexHarnessAdapter` over the Codex `spawn_agent` host
- *                    tool (AISDLC-202.2, Phase 2). The CLI resolver constructs
- *                    the adapter with a subprocess bridge whose path is read
- *                    from `CODEX_SPAWN_AGENT_BIN` (the operator's wrapper
- *                    around Codex's `spawn_agent`). When that env var is
- *                    absent the resolver fails with a clear configuration
- *                    message rather than silently dispatching to nothing.
- *                    Programmatic callers can bypass the env var by
- *                    constructing `CodexHarnessAdapter` directly with a
- *                    custom `CodexSpawnAgentFn` injection.
- *                    Design map: `docs/operations/codex-execution-path.md`.
- *   - `copilot`    — `CopilotHarnessAdapter` over the Copilot `spawn_agent`
- *                    host tool (AISDLC-429.2, Phase 2). The CLI resolver
+ *   - `copilot`    — `CopilotHarnessAdapter` over the GitHub Copilot CLI
+ *                    `spawn_agent` host tool (AISDLC-429.2). The CLI resolver
  *                    constructs the adapter with a subprocess bridge whose
  *                    path is read from `COPILOT_SPAWN_AGENT_BIN`. When
  *                    that env var is absent the resolver fails with a clear
@@ -70,6 +43,7 @@
  *                    Programmatic callers can bypass the env var by
  *                    constructing `CopilotHarnessAdapter` directly with a
  *                    custom `CopilotSpawnAgentFn` injection.
+ *                    Runbook: `docs/operations/copilot-spawner.md`.
  *
  * # Hard rules honored
  *
@@ -95,13 +69,7 @@ import type { Argv, CommandModule } from 'yargs';
 import { executePipeline } from '../execute-pipeline.js';
 import { computeBranchName } from '../steps/02-compute-branch.js';
 import { validateTask } from '../steps/01-validate.js';
-import { defaultSpawner } from '../runtime/default-spawner.js';
 import { MockSpawner } from '../runtime/subagent-spawner.js';
-import { ShellClaudePSpawner } from '../runtime/shell-claude-p-spawner.js';
-import {
-  CodexHarnessAdapter,
-  subprocessCodexSpawnAgent,
-} from '../runtime/spawners/codex-harness.js';
 import {
   CopilotHarnessAdapter,
   subprocessCopilotSpawnAgent,
@@ -121,37 +89,39 @@ import {
 } from '../types.js';
 
 /** Spawner identifiers accepted by `--spawner`. */
-export type SpawnerKind = 'mock' | 'api-key' | 'claude' | 'codex' | 'copilot';
+export type SpawnerKind = 'mock' | 'copilot';
 
-export const SPAWNER_KINDS: readonly SpawnerKind[] = [
-  'mock',
-  'api-key',
-  'claude',
-  'codex',
-  'copilot',
-] as const;
+export const SPAWNER_KINDS: readonly SpawnerKind[] = ['mock', 'copilot'] as const;
 
 /**
- * Operator-facing error message printed when `--spawner claude-cli` is passed
- * after RFC-0041 Phase 3.3 removal (AISDLC-377.6).
+ * Operator-facing error message printed when a retired third-party spawner
+ * kind is passed (`api-key`, `claude`, `claude-cli`, `codex`, `cursor`, …).
  *
- * The `claude-cli` spawner (`ClaudeCliInlineSpawner`, AISDLC-198) emitted a
- * dispatch manifest to `$ARTIFACTS_DIR/_orchestrator/dispatch-manifest.json`
- * which the calling slash command body consumed via the `Agent` tool. The
- * deprecation window (AISDLC-377.4) elapsed; the code path and its co-located
- * tests were deleted in AISDLC-377.6.
+ * AI-SDLC dispatches every subagent through the GitHub Copilot CLI. The
+ * yargs `choices: SPAWNER_KINDS` constraint rejects unknown kinds at parse
+ * time, but callers that bypass yargs (e.g. programmatic callers, stale
+ * shell aliases, or an old `AI_SDLC_ORCHESTRATOR_SPAWNER` export) may still
+ * pass a legacy literal — this message tells them exactly what to use.
  *
  * Exported so the orchestrator CLI + tests can surface a uniform message.
  */
-export const CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE =
-  'The `claude-cli` spawner was removed in RFC-0041 Phase 3.3 (AISDLC-377.6).\n' +
-  'Migrate to one of the supported spawner kinds:\n' +
-  '  --spawner claude              (default; subscription billing via `claude -p`)\n' +
-  '  --spawner api-key             (ANTHROPIC_API_KEY required)\n' +
-  '  --spawner codex               (Codex CLI host-bridge dispatch)\n' +
-  'For autonomous parallel drain, use the Dispatch Board model:\n' +
-  '  /ai-sdlc orchestrator-tick    (Conductor) + /ai-sdlc dispatch-worker (Worker sessions)\n' +
-  'Migration guide: docs/operations/claude-cli-spawner-removed.md';
+export const UNSUPPORTED_SPAWNER_MESSAGE =
+  'Unsupported spawner kind. AI-SDLC dispatches subagents through the GitHub Copilot CLI.\n' +
+  'Supported spawner kinds:\n' +
+  '  --spawner copilot             (default; GitHub Copilot CLI host-bridge dispatch,\n' +
+  '                                 requires COPILOT_SPAWN_AGENT_BIN)\n' +
+  '  --spawner mock                (dry-run plumbing fixtures only)\n' +
+  'Runbook: docs/operations/copilot-spawner.md';
+
+/** Legacy spawner literals that predate the Copilot-only dispatch model. */
+export const RETIRED_SPAWNER_KINDS: readonly string[] = [
+  'api-key',
+  'copilot',
+  'copilot-cli',
+  'copilot',
+  'copilot',
+  'generic-llm',
+] as const;
 
 /**
  * Build a `MockSpawner` whose fixtures unconditionally APPROVE. Used by
@@ -202,65 +172,27 @@ export function buildApprovingMockSpawner(): MockSpawner {
 }
 
 /**
- * Resolve a spawner from the `--spawner` flag. Async because `defaultSpawner()`
- * is async (it probes PATH for `claude` and reads env).
+ * Resolve a spawner from the `--spawner` flag. Async because the Copilot
+ * bridge factory is resolved lazily.
  *
- * `claude-cli` was removed in RFC-0041 Phase 3.3 (AISDLC-377.6); the yargs
- * `choices: SPAWNER_KINDS` constraint rejects it at parse time, but callers
- * that bypass yargs (e.g. programmatic) may still pass the literal string —
- * the default case throws `CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE` when it does.
+ * Legacy third-party kinds (`api-key`, `copilot`, `copilot`, …) are rejected
+ * with `UNSUPPORTED_SPAWNER_MESSAGE`; the yargs `choices: SPAWNER_KINDS`
+ * constraint already gates them at parse time, but callers that bypass yargs
+ * (programmatic callers, stale env exports) may still pass the literal.
  */
 export async function resolveSpawner(kind: SpawnerKind): Promise<SubagentSpawner> {
-  // Defense-in-depth: programmatic callers may still pass the removed kind as
+  // Defense-in-depth: programmatic callers may still pass a retired kind as
   // a string. Convert it to a clear migration error before the exhaustiveness
   // check below would emit a less actionable "unknown spawner kind" message.
-  if ((kind as string) === 'claude-cli') {
-    throw new Error(CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE);
+  if (RETIRED_SPAWNER_KINDS.includes(kind as string)) {
+    throw new Error(UNSUPPORTED_SPAWNER_MESSAGE);
   }
 
   switch (kind) {
     case 'mock':
       return buildApprovingMockSpawner();
-    case 'api-key': {
-      // `defaultSpawner()` prefers `claude` CLI on PATH; pass an env-only
-      // override so we deterministically construct the API-key SDK spawner
-      // even on machines where `claude` happens to be installed (the
-      // operator explicitly asked for `--spawner api-key`).
-      const apiKey = process.env.ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        throw new Error(
-          '`--spawner api-key` requires ANTHROPIC_API_KEY in the environment ' +
-            '(uses @anthropic-ai/claude-code SDK; same billing model as `pnpm dogfood watch`).',
-        );
-      }
-      return defaultSpawner({
-        which: async () => false, // skip the `claude` CLI probe so SDK path wins
-        env: () => apiKey,
-      });
-    }
-    case 'claude':
-      // AISDLC-349: real `claude -p` shell-out spawner. Use this from a
-      // shell-driven `cli-orchestrator tick` (cron/daemon/sidecar context).
-      // Uses the operator's logged-in subscription auth — no API tokens
-      // consumed; cost lands on the same Claude Code Max plan that backs
-      // `/ai-sdlc execute`. Same `ShellClaudePSpawner` implementation that
-      // `executePipeline()` falls back to in Tier 2 (RFC-0012 §8.2).
-      return new ShellClaudePSpawner();
-    case 'codex': {
-      // AISDLC-202.2 — Phase 2 of the Codex execution path. The
-      // `CodexHarnessAdapter` is callback-driven (host-agnostic); the CLI
-      // resolver wires the default subprocess bridge that shells out to
-      // `$CODEX_SPAWN_AGENT_BIN`. `subprocessCodexSpawnAgent()` throws
-      // synchronously when that env var is unset so the operator sees a
-      // clear "configure CODEX_SPAWN_AGENT_BIN" message before any
-      // pipeline mutation. Programmatic callers can construct
-      // `CodexHarnessAdapter` directly with their own `CodexSpawnAgentFn`
-      // injection (e.g. an in-process bridge to Codex's host tools).
-      const spawnAgent = subprocessCodexSpawnAgent();
-      return new CodexHarnessAdapter({ spawnAgent });
-    }
     case 'copilot': {
-      // AISDLC-429.2 — Phase 2 of the Copilot execution path. The
+      // AISDLC-429.2 — the GitHub Copilot execution path. The
       // `CopilotHarnessAdapter` is callback-driven (host-agnostic); the CLI
       // resolver wires the default subprocess bridge that shells out to
       // `$COPILOT_SPAWN_AGENT_BIN`. `subprocessCopilotSpawnAgent()` throws
@@ -276,7 +208,8 @@ export async function resolveSpawner(kind: SpawnerKind): Promise<SubagentSpawner
       // Exhaustiveness — yargs `choices: SPAWNER_KINDS` already gates this,
       // but TypeScript doesn't know about yargs's runtime narrowing.
       const _exhaustive: never = kind;
-      throw new Error(`unknown spawner kind: ${String(_exhaustive)}`);
+      void _exhaustive;
+      throw new Error(UNSUPPORTED_SPAWNER_MESSAGE);
     }
   }
 }
@@ -442,7 +375,7 @@ export interface ExecuteCommandResult {
  * Safe default: unless `run=true`, this only validates and computes the
  * branch/worktree plan. It must not resolve a spawner, call `executePipeline`,
  * create a worktree, flip task status, or push commits. `run=true` +
- * `--spawner api-key` is the real-money path that the operator opts into
+ * `--spawner copilot` is the real-dispatch path that the operator opts into
  * explicitly. `run=true` + `--spawner mock` refuses before validation or any
  * filesystem mutation because mock is only a plumbing fixture.
  */
@@ -501,7 +434,7 @@ export async function runExecuteCommand(
       return {
         ok: false,
         reason:
-          '`--resume-from-draft` requires a real spawner (--spawner api-key, claude, or codex).',
+          '`--resume-from-draft` requires a real spawner (--spawner copilot).',
       };
     }
     let spawner: SubagentSpawner;
@@ -532,7 +465,7 @@ export async function runExecuteCommand(
     if (opts.spawnerKind === 'mock') {
       return {
         ok: false,
-        reason: '`--rework-pr` requires a real spawner (--spawner api-key, claude, or codex).',
+        reason: '`--rework-pr` requires a real spawner (--spawner copilot).',
       };
     }
     let spawner: SubagentSpawner;
@@ -561,7 +494,7 @@ export async function runExecuteCommand(
     return {
       ok: false,
       reason:
-        '`--spawner mock` is dry-run/plumbing only. Omit `--run` for a safe plan, or pass `--run --spawner api-key` for a real execution.',
+        '`--spawner mock` is dry-run/plumbing only. Omit `--run` for a safe plan, or pass `--run --spawner copilot` for a real execution.',
     };
   }
 
@@ -793,14 +726,14 @@ export function executeCommand(): CommandModule {
         })
         .option('spawner', {
           describe:
-            'SubagentSpawner: mock (default; dry-run plumbing only) | api-key (paid Anthropic API) | claude (real `claude -p` shell-out for cron/daemon tick, AISDLC-349; default for cli-orchestrator) | codex (Codex CLI host-bridge dispatch via CodexHarnessAdapter, AISDLC-202.2; requires CODEX_SPAWN_AGENT_BIN) | copilot (Copilot CLI host-bridge dispatch via CopilotHarnessAdapter, AISDLC-429.2; requires COPILOT_SPAWN_AGENT_BIN). The legacy `claude-cli` inline-manifest spawner was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) — see docs/operations/claude-cli-spawner-removed.md. See pipeline-cli/README.md.',
+            'SubagentSpawner: mock (default; dry-run plumbing only) | copilot (GitHub Copilot CLI host-bridge dispatch via CopilotHarnessAdapter, AISDLC-429.2; requires COPILOT_SPAWN_AGENT_BIN). See pipeline-cli/README.md and docs/operations/copilot-spawner.md.',
           type: 'string',
           choices: SPAWNER_KINDS as unknown as string[],
           default: 'mock' as SpawnerKind,
         })
         .option('run', {
           describe:
-            'Explicitly allow filesystem/network mutation. Required for real execution; use with --spawner api-key.',
+            'Explicitly allow filesystem/network mutation. Required for real execution; use with --spawner copilot.',
           type: 'boolean',
           default: false,
         })
@@ -814,7 +747,7 @@ export function executeCommand(): CommandModule {
           describe:
             'AISDLC-273 — Recovery path: detect existing draft PR + branch + worktree and ' +
             'resume from the first incomplete step (reviewers, attestation, or ready-promotion). ' +
-            'Does NOT re-dispatch the developer. Use with --spawner api-key.',
+            'Does NOT re-dispatch the developer. Use with --spawner copilot.',
           type: 'boolean',
           default: false,
         })
@@ -822,7 +755,7 @@ export function executeCommand(): CommandModule {
           describe:
             'AISDLC-273 — Rework path: re-dispatch the developer on top of the existing PR branch ' +
             'to fix reviewer findings, then re-run Steps 5-13. Provide the PR number as the value. ' +
-            'Use with --spawner api-key. Example: --rework-pr 42',
+            'Use with --spawner copilot. Example: --rework-pr 42',
           type: 'number',
         }),
     handler: async (argv) => {

@@ -18,9 +18,9 @@ describe('checkProviderCompatibility', () => {
   it('AC#7: same provider + same version → compatible', () => {
     expect(
       checkProviderCompatibility(
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
       ),
     ).toBe('compatible');
@@ -29,9 +29,9 @@ describe('checkProviderCompatibility', () => {
   it('AC#7: same provider, different version → cross-version (delegates to staleVectorPolicy)', () => {
     expect(
       checkProviderCompatibility(
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2025-01-25',
       ),
     ).toBe('cross-version');
@@ -40,9 +40,9 @@ describe('checkProviderCompatibility', () => {
   it('AC#6: different provider, same version → cross-provider (ALWAYS refuse)', () => {
     expect(
       checkProviderCompatibility(
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
-        'cohere-embed-v3',
+        'self-hosted-embed-v3',
         '2024-01-25',
       ),
     ).toBe('cross-provider');
@@ -53,9 +53,9 @@ describe('checkProviderCompatibility', () => {
     // irrelevant once the provider differs.
     expect(
       checkProviderCompatibility(
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2024-01-25',
-        'cohere-embed-v3',
+        'self-hosted-embed-v3',
         '2025-06-01',
       ),
     ).toBe('cross-provider');
@@ -65,21 +65,21 @@ describe('checkProviderCompatibility', () => {
 describe('CrossProviderComparisonError', () => {
   it('AC#6: error message names both providers and the migration command', () => {
     const err = new CrossProviderComparisonError(
-      'openai-text-embedding-3-small',
-      'cohere-embed-v3',
+      'github-models-embedding-small',
+      'self-hosted-embed-v3',
       'hash-789',
     );
     expect(err.name).toBe('CrossProviderComparisonError');
-    expect(err.message).toContain('openai-text-embedding-3-small');
-    expect(err.message).toContain('cohere-embed-v3');
-    expect(err.message).toContain('cli-embedding-bump --to cohere-embed-v3');
+    expect(err.message).toContain('github-models-embedding-small');
+    expect(err.message).toContain('self-hosted-embed-v3');
+    expect(err.message).toContain('cli-embedding-bump --to self-hosted-embed-v3');
     expect(err.message).toContain('hash-789');
   });
 
   it('omits the textHash hint when not provided', () => {
     const err = new CrossProviderComparisonError(
-      'openai-text-embedding-3-small',
-      'cohere-embed-v3',
+      'github-models-embedding-small',
+      'self-hosted-embed-v3',
     );
     expect(err.message).not.toContain('offending textHash');
   });
@@ -88,14 +88,14 @@ describe('CrossProviderComparisonError', () => {
 describe('buildCrossProviderDecisionPayload', () => {
   it('AC#6: payload carries severity high + auto-action emit-migration-task', () => {
     const payload = buildCrossProviderDecisionPayload(
-      'openai-text-embedding-3-small',
-      'cohere-embed-v3',
+      'github-models-embedding-small',
+      'self-hosted-embed-v3',
     );
     expect(payload.severity).toBe('high');
     expect(payload.autoAction).toBe('emit-migration-task');
-    expect(payload.migrationCommand).toBe('cli-embedding-bump --to cohere-embed-v3');
-    expect(payload.summary).toContain('openai-text-embedding-3-small');
-    expect(payload.summary).toContain('cohere-embed-v3');
+    expect(payload.migrationCommand).toBe('cli-embedding-bump --to self-hosted-embed-v3');
+    expect(payload.summary).toContain('github-models-embedding-small');
+    expect(payload.summary).toContain('self-hosted-embed-v3');
     expect(payload.summary).toContain('Refused');
   });
 });

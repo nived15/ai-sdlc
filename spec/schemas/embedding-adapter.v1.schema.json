@@ -9,7 +9,7 @@
   "properties": {
     "name": {
       "type": "string",
-      "description": "Canonical adapter alias. MUST be unique across the registry. Convention: '<vendor>-<model-family>-<size>'. Examples: 'openai-text-embedding-3-small', 'cohere-embed-v3-multilingual'.",
+      "description": "Canonical adapter alias. MUST be unique across the registry. Convention: '<vendor>-<model-family>-<size>'. Examples: 'github-models-embedding-small', 'self-hosted-embed-v3-multilingual'.",
       "minLength": 1,
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
     },
@@ -60,7 +60,7 @@
         },
         "billingModel": {
           "type": "string",
-          "description": "Billing model per OQ-7 re-walkthrough. 'pay-per-token' = tokens billed via provider invoice, NOT SubscriptionLedger. 'subscription-quota' = tokens billed via operator subscription (e.g., future Anthropic embeddings).",
+          "description": "Billing model per OQ-7 re-walkthrough. 'pay-per-token' = tokens billed via provider invoice, NOT SubscriptionLedger. 'subscription-quota' = tokens billed via operator subscription (e.g., future GitHub Models embeddings).",
           "enum": ["pay-per-token", "subscription-quota"]
         },
         "approxCostPer1MTokens": {
@@ -77,7 +77,7 @@
       "properties": {
         "envVar": {
           "type": "string",
-          "description": "Environment variable required by this adapter. Example: 'OPENAI_API_KEY'."
+          "description": "Environment variable required by this adapter. Example: 'GITHUB_MODELS_TOKEN'."
         },
         "binary": {
           "type": "string",

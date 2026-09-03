@@ -74,11 +74,11 @@ spec:
     modelPricing:
       source: config
       models:
-        claude-sonnet-4-5-20250929:
+        the balanced tier:
           inputPerMTok: 3
           outputPerMTok: 15
           cacheReadPerMTok: 0.3
-        claude-haiku-3-5:
+        copilot-haiku-3-5:
           inputPerMTok: 0.25
           outputPerMTok: 1.25
 status:

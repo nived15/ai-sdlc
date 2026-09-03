@@ -66,7 +66,7 @@ echo "Removed worktree $WORKTREE_PATH (was on branch $BRANCH)."
 echo ""
 echo "The branch '$BRANCH' is still present locally and possibly on origin."
 echo "If you want to delete it: git branch -D '$BRANCH' && git push origin --delete '$BRANCH'"
-echo "(NOT done automatically — branch deletion is operator-controlled per CLAUDE.md.)"
+echo "(NOT done automatically — branch deletion is operator-controlled per .github/copilot-instructions.md.)"
 ```
 
 ## What this command DOES NOT do

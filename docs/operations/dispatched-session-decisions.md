@@ -4,7 +4,7 @@
 
 ## Background
 
-When a developer subagent runs in a dispatched (non-interactive) session — a background `Agent` call, a tmux pane, or a `claude -p` worker — it cannot prompt the operator interactively. Prior to AISDLC-480, a blocking decision point had two bad failure modes:
+When a developer subagent runs in a dispatched (non-interactive) session — a background `Agent` call, a tmux pane, or a `copilot -p` worker — it cannot prompt the operator interactively. Prior to AISDLC-480, a blocking decision point had two bad failure modes:
 
 1. **Dead-letter**: the subagent returned `prUrl: null` with a `notes` string that disappeared into a PR comment, invisible to `cli-decisions list`.
 2. **Hang**: a session that called AskUserQuestion in a non-TTY context would block indefinitely.
@@ -129,7 +129,7 @@ Each escalation record carries:
 
 - **Native background-Agent dispatch** (Pattern X v2, `/ai-sdlc orchestrator-tick`): the developer subagent calls the CLI directly from within its worktree.
 - **tmux execute-parallel**: each pane session calls the CLI; all writes go to the same `.ai-sdlc/_decisions/events.jsonl` log (append-only, no lock needed for single-writer per call).
-- **`claude -p` workers** (Pattern Y / claude-p-shell): workers call the CLI via shell; the event log path is resolved from `--work-dir` (defaults to `cwd` which is the worktree).
+- **`copilot -p` workers** (Pattern Y / copilot-p-shell): workers call the CLI via shell; the event log path is resolved from `--work-dir` (defaults to `cwd` which is the worktree).
 
 ## Related runbooks
 

@@ -213,7 +213,7 @@ describe('loadSubscriptionLedgerDir', () => {
       JSON.stringify({ windowStart: '2026-05-23T00:00:00Z', consumedTokens: 50_000 }),
     );
     writeFileSync(
-      join(ledgerDir, 'copilot-org1.json'),
+      join(ledgerDir, 'copilot-org2.json'),
       JSON.stringify({ windowStart: '2026-05-23T00:00:00Z', consumedTokens: 25_000 }),
     );
     writeFileSync(join(ledgerDir, 'README.md'), 'ignore me');

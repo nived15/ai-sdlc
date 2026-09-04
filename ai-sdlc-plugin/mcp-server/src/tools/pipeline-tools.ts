@@ -392,12 +392,12 @@ export function registerPipelineTools(server: McpServer, deps: PipelineToolDeps 
       branch: z.string(),
       worktreePath: z.string(),
       workDir: z.string(),
-      codexAvailable: z
+      copilotAvailable: z
         .boolean()
         .optional()
         .describe('Override the copilot-availability detection (test injection).'),
     },
-    async ({ taskId, task, branch, worktreePath, workDir, codexAvailable }) => {
+    async ({ taskId, task, branch, worktreePath, workDir, copilotAvailable }) => {
       try {
         const result = await runners.buildReviewPrompts({
           taskId,
@@ -405,7 +405,7 @@ export function registerPipelineTools(server: McpServer, deps: PipelineToolDeps 
           branch,
           worktreePath,
           workDir,
-          codexAvailable,
+          copilotAvailable,
         });
         return jsonResult(result);
       } catch (err) {

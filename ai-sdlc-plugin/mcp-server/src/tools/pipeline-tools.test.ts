@@ -416,10 +416,10 @@ describe('pipeline_step_7_build_review_prompts', () => {
       branch: 'b',
       worktreePath: '/tmp/wt',
       workDir: '/tmp/proj',
-      codexAvailable: false,
+      copilotAvailable: false,
     });
     expect(build).toHaveBeenCalledWith(
-      expect.objectContaining({ codexAvailable: false, taskId: 'AISDLC-100.3' }),
+      expect.objectContaining({ copilotAvailable: false, taskId: 'AISDLC-100.3' }),
     );
   });
 });

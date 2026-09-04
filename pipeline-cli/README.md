@@ -503,24 +503,20 @@ interface SubagentSpawner {
 }
 ```
 
-Production spawners (Phase 2 — AISDLC-100.2):
+Production spawner (Phase 2 — AISDLC-100.2):
 
-- **`CopilotHarnessAdapter`** (subscription billing) — shells out to the
-  operator's installed `copilot` CLI with
+- **`CopilotHarnessAdapter`** — dispatches through the GitHub Copilot CLI via
+  the bridge at `COPILOT_SPAWN_AGENT_BIN`, invoking
   `copilot --print --output-format json --permission-mode bypassPermissions --agent <type> <prompt>`.
-  No API tokens consumed; reuses the operator's logged-in Copilot CLI session.
-  RFC §8.2's sketch said `--subagent <type>` but the actual flag is
-  **`--agent <type>`** (verified empirically against the installed CLI on
+  No third-party API tokens consumed; reuses the operator's logged-in Copilot
+  CLI session. RFC §8.2's sketch said `--subagent <type>` but the actual flag
+  is **`--agent <type>`** (verified empirically against the installed CLI on
   2026-04-30). See [`docs/spawner.md`](./docs/spawner.md#q5-rfc-15-resolution--agent-type-not---subagent-type)
   for the full Q5 (RFC §15) resolution.
-- **`CopilotHarnessAdapter`** (API-key billing) — uses `@github/copilot`
-  programmatically. The SDK is **lazy-imported** (NOT a hard dependency of
-  `pipeline-cli`) so subscription-only consumers don't have to install ~50MB
-  of SDK code they'll never use; install it with
-  `pnpm add @github/copilot` only when you need API-key billing.
-- **`defaultSpawner()`** — convenience resolver: prefers `copilot` CLI on PATH
-  (subscription), falls back to `GITHUB_MODELS_TOKEN` (API key), throws with an
-  instructional error if neither is available.
+- **`defaultSpawner()`** — convenience resolver: constructs a
+  `CopilotHarnessAdapter` over `COPILOT_SPAWN_AGENT_BIN`, or throws with an
+  instructional error when that env var is unset. It does not fall back to any
+  paid API path.
 
 `MockSpawner` (shipped here for tests) accepts either fixed results per
 subagent type or a callback per type so iteration N>1 can return different

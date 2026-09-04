@@ -17,7 +17,7 @@ without going through either CLI above.
 
 ```sh
 pnpm --filter @ai-sdlc/dogfood watch --issue <id> [--issue <id> ...] \
-  [--spawner auto|shell|sdk|mock]
+  [--spawner auto|copilot|mock]
 ```
 
 ### Flags
@@ -26,13 +26,10 @@ pnpm --filter @ai-sdlc/dogfood watch --issue <id> [--issue <id> ...] \
   the full Step 0-13 pipeline sequentially against the same spawner.
 - `--spawner <kind>` (default `auto`) — selects the `SubagentSpawner` per
   RFC-0012 §8.3:
-  - `auto` — `defaultSpawner()` resolution: `CopilotHarnessAdapter` when the
-    `copilot` CLI is on `PATH`; falls back to `CopilotHarnessAdapter` when
-    `GITHUB_MODELS_TOKEN` is set; throws otherwise.
-  - `shell` — force `CopilotHarnessAdapter` (subscription billing via
-    operator's `copilot` CLI).
-  - `sdk` — force `CopilotHarnessAdapter` (API-key billing via the
-    `@github/copilot` SDK).
+  - `auto` / `copilot` — `defaultSpawner()` resolution: a
+    `CopilotHarnessAdapter` over the bridge at `COPILOT_SPAWN_AGENT_BIN`.
+    Throws an actionable configuration error when that env var is unset.
+    Billing: the operator's GitHub Copilot subscription.
   - `mock` — `MockSpawner` from pipeline-cli with auto-approving fixtures.
     Intended for smoke tests + the watch CLI's own integration tests; does
     NOT produce real code changes.

@@ -549,10 +549,11 @@ if [ "$ARG_FORM" = "gh-issue" ]; then
       const spec = cached.spec;
       const issueNumber = cached.issueNumber;
       // FINDING 2 fix: refuse API-key fallback. The shell-side pre-flight
-      // already verified \`copilot\` is on PATH, so passing \`env: () => undefined\`
-      // (i.e. pretend GITHUB_MODELS_TOKEN is unset) keeps the resolution chain
-      // honest: CopilotHarnessAdapter wins, or defaultSpawner throws.
-      const spawner = await defaultSpawner({ env: () => undefined });
+      // already verified the Copilot CLI is available, so resolve the spawner
+      // from the real environment: defaultSpawner() reads
+      // COPILOT_SPAWN_AGENT_BIN and throws an actionable configuration error
+      // when it is unset rather than falling back to any paid API path.
+      const spawner = await defaultSpawner();
       const result = await executePipeline({
         taskId: spec.id,
         workDir: process.cwd(),

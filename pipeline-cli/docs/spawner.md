@@ -250,57 +250,48 @@ const spawner = new CopilotHarnessAdapter({
 
 ### `defaultSpawner()` — convenience resolver
 
-Picks the right `SubagentSpawner` for the current environment:
+Constructs the `SubagentSpawner` for the current environment:
 
 ```ts
 import { defaultSpawner } from '@ai-sdlc/pipeline-cli';
 
 const spawner = await defaultSpawner({
-  // optional: forwarded to CopilotHarnessAdapter when CLI detection wins
-  shell: { defaultTimeoutMs: 60 * 60 * 1000 },
-  // optional: forwarded to CopilotHarnessAdapter when env detection wins
-  sdk: { model: 'the reasoning tier' },
+  // optional: forwarded to subprocessCopilotSpawnAgent()
+  bridge: { defaultTimeoutMs: 60 * 60 * 1000 },
+  // optional: forwarded to the constructed CopilotHarnessAdapter
+  copilot: { model: 'the reasoning tier' },
 });
 ```
 
 #### Resolution order
 
-1. **`copilot` CLI on PATH?** → `CopilotHarnessAdapter` (subscription billing,
-   preferred by default per RFC §2.4 — no tokens spent).
-2. **`GITHUB_MODELS_TOKEN` in env?** → `CopilotHarnessAdapter` (API-key billing
-   for environments without a logged-in Copilot CLI session).
-3. **Neither?** → throws:
-   `"No GitHub Copilot CLI runtime available — install the 'copilot' CLI ... for
-   subscription billing, or set GITHUB_MODELS_TOKEN for API-key billing via
-   @github-models-ai/copilot SDK."`
+The framework dispatches every subagent through the GitHub Copilot CLI, so
+resolution is a single branch:
+
+1. **`COPILOT_SPAWN_AGENT_BIN` set?** → `CopilotHarnessAdapter` over the
+   subprocess bridge at that path. Billing: the operator's GitHub Copilot
+   subscription.
+2. **Unset?** → throws `NO_COPILOT_RUNTIME_MESSAGE`, which names the env var
+   and points at `docs/operations/copilot-spawner.md`. It deliberately does
+   NOT fall back to any paid API path.
 
 #### Detection mechanics
 
-- **CLI detection** uses POSIX `which` / Windows `where` via `child_process.execFile`.
-  Both are wired through an injectable `which` callback so tests can deterministically
-  script "copilot is on PATH" / "copilot is not on PATH" without touching the real shell.
-- **API key detection** is a literal `process.env.GITHUB_MODELS_TOKEN` truthy check.
-  We deliberately do NOT pre-validate the key against the API (that would burn
-  tokens just to construct a spawner) — invalid keys fail at first `spawn()`
-  call with a clear SDK error.
+Bridge detection is a literal `process.env.COPILOT_SPAWN_AGENT_BIN` truthy
+check. We deliberately do NOT pre-validate the bridge by executing it (that
+would burn a Copilot request just to construct a spawner) — a broken bridge
+fails at the first `spawn()` call with a clear error.
 
-#### Forcing a specific spawner
-
-`defaultSpawner` resolves CLI before env. If both are present and you want the
-SDK path anyway, instantiate `CopilotHarnessAdapter` directly:
+The `env` option overrides the read, so tests can script "bridge configured" /
+"bridge missing" without mutating the real `process.env`:
 
 ```ts
-import { CopilotHarnessAdapter } from '@ai-sdlc/pipeline-cli';
-const spawner = new CopilotHarnessAdapter({ apiKey: process.env.GITHUB_MODELS_TOKEN });
+// Force the error branch.
+await defaultSpawner({ env: () => undefined });
 ```
 
-Or override the detection callback to bypass the CLI probe entirely:
-
-```ts
-const spawner = await defaultSpawner({
-  which: async () => false, // force fall-through to env check
-});
-```
+`bin/copilot-spawn-agent-bridge.mjs` ships in this repo as the canonical
+bridge; see [`docs/operations/copilot-spawner.md`](../../docs/operations/copilot-spawner.md).
 
 ## Q5 (RFC §15) resolution — `--agent <type>`, NOT `--subagent <type>`
 

@@ -24,9 +24,9 @@ describe('ModelRegistry', () => {
     it('returns modelId and an ok event for an active alias', () => {
       const reg = new ModelRegistry();
       const r = reg.resolve('balanced');
-      expect(r.modelId).toBe('balanced');
+      expect(r.modelId).toBe('gpt-5');
       expect(r.events).toHaveLength(1);
-      expect(r.events[0]).toEqual({ type: 'ok', alias: 'balanced', modelId: 'balanced' });
+      expect(r.events[0]).toEqual({ type: 'ok', alias: 'balanced', modelId: 'gpt-5' });
     });
 
     it('throws UnknownAliasError on unrecognized alias', () => {
@@ -113,8 +113,8 @@ describe('ModelRegistry', () => {
         { stage: 'implement', alias: 'reasoning[1m]' },
       ]);
       expect(result.get('triage')?.modelId).toBe('gpt-5-mini');
-      expect(result.get('plan')?.modelId).toBe('balanced');
-      expect(result.get('implement')?.modelId).toBe('reasoning[1m]');
+      expect(result.get('plan')?.modelId).toBe('gpt-5');
+      expect(result.get('implement')?.modelId).toBe('gpt-5[reasoning=high,context=1m]');
     });
 
     it('throws on first unknown alias', () => {

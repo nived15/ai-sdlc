@@ -334,7 +334,7 @@ describe('runParallelSdkReviews', () => {
 
     expect(result.allApproved).toBe(false);
     expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toContain('copilot-agent-sdk');
+    expect(result.errors[0]).toContain('@github/copilot');
   });
 
   it('returns zero token usage when SDK is not installed', async () => {

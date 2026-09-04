@@ -441,7 +441,7 @@ describe('ReviewAgentRunner — large-context escalation', () => {
     const runner = new ReviewAgentRunner({ reviewType: 'critic' });
     await runner.run(makeContext({ issueBody: 'small diff' }));
     const parsed = JSON.parse(captured.body);
-    expect(parsed.model).toBe('balanced');
+    expect(parsed.model).toBe('gpt-5');
     expect(captured.headers['github-models-beta']).toBeUndefined();
   });
 
@@ -468,8 +468,8 @@ describe('ReviewAgentRunner — large-context escalation', () => {
     });
     await runner.run(makeContext({ issueBody: 'x'.repeat(2000) }));
     const parsed = JSON.parse(captured.body);
-    // Default falls back to env var or 'reasoning'
-    expect(parsed.model).not.toBe('balanced');
+    // Default falls back to env var or the reasoning tier
+    expect(parsed.model).not.toBe('gpt-5');
     expect(captured.headers['github-models-beta']).toBe('context-1m-2025-08-07');
   });
 

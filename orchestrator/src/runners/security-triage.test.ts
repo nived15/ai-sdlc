@@ -407,7 +407,7 @@ describe('SecurityTriageRunner — harness path', () => {
     const call = harness.invoke.mock.calls[0]![0] as HarnessInput;
     expect(call.prompt).toContain(TRIAGE_SYSTEM_PROMPT);
     expect(call.prompt).toContain('real issue body');
-    expect(call.model).toBe('balanced');
+    expect(call.model).toBe('gpt-5');
     expect(result.success).toBe(true);
     const verdict = JSON.parse(result.summary) as TriageVerdict;
     expect(verdict.safe).toBe(true);

@@ -99,14 +99,14 @@ export async function runParallelSdkReviews(
 
   /* v8 ignore start — dynamic import fails in unit tests (SDK not installed) */
   try {
-    const sdk = await import('@github-models-ai/copilot-agent-sdk');
+    const sdk = await import('@github/copilot');
     query = sdk.query;
   } catch {
     return {
       verdicts: [],
       allApproved: false,
       totalTokenUsage: { inputTokens: 0, outputTokens: 0, model: 'unknown' },
-      errors: ['@github-models-ai/copilot-agent-sdk is not installed. Install it to use SDK reviews.'],
+      errors: ['@github/copilot is not installed. Install it to use SDK reviews.'],
     };
   }
   /* v8 ignore stop */

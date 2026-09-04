@@ -195,4 +195,3 @@ export function parseTokenUsage(stderr: string, model: string): TokenUsage | und
 
   return undefined;
 }
-

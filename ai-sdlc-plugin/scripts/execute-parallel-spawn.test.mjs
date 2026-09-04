@@ -438,8 +438,7 @@ describe('execute-parallel spawn logic', () => {
 function extractSpawnCmdBlock() {
   const md = readFileSync(EXECUTE_PARALLEL_MD, 'utf8');
   // Assert the opt-in branch includes the permission-skip flag
-  const optInLine =
-    'COPILOT_SPAWN_CMD="copilot --allow-all-tools /ai-sdlc execute $TASK_ID"';
+  const optInLine = 'COPILOT_SPAWN_CMD="copilot --allow-all-tools /ai-sdlc execute $TASK_ID"';
   // Assert the non-opt-in branch is the bare command (no flag)
   const optOutLine = 'COPILOT_SPAWN_CMD="copilot /ai-sdlc execute $TASK_ID"';
   return { md, optInLine, optOutLine };

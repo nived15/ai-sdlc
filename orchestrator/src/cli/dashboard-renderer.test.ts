@@ -67,7 +67,7 @@ describe('dashboard-renderer', () => {
       avgCostPerRun: 0.833,
       avgTokensPerRun: 100000,
       costByAgent: { 'code-agent': 10.0, 'review-agent': 2.5 },
-      costByModel: { 'balanced': 12.5 },
+      costByModel: { balanced: 12.5 },
     },
     budgetStatus: {
       budgetUsd: 500,

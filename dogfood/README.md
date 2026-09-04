@@ -32,7 +32,7 @@ pnpm --filter @ai-sdlc/dogfood watch --issue <id> [--issue <id> ...] \
   - `shell` — force `CopilotHarnessAdapter` (subscription billing via
     operator's `copilot` CLI).
   - `sdk` — force `CopilotHarnessAdapter` (API-key billing via the
-    `@github-ai/copilot` SDK).
+    `@github/copilot` SDK).
   - `mock` — `MockSpawner` from pipeline-cli with auto-approving fixtures.
     Intended for smoke tests + the watch CLI's own integration tests; does
     NOT produce real code changes.

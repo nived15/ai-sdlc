@@ -67,7 +67,7 @@ jobs:
 
       - name: Install GitHub Copilot CLI
         if: steps.pr.outputs.number
-        run: npm install -g @github-ai/copilot
+        run: npm install -g @github/copilot
 
       - name: Configure git
         if: steps.pr.outputs.number

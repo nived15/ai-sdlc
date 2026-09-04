@@ -842,7 +842,7 @@ describe('cli-orchestrator tick --task-from-file (AISDLC-373)', () => {
       // Default spawner is `copilot`; pass `mock` so we don't trip the
       // billing-safety warning emit path.
       '--spawner',
-        'mock',
+      'mock',
     );
 
     await buildOrchestratorCli(adapters).parseAsync();

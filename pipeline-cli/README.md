@@ -30,7 +30,7 @@ The pipeline ships in two tiers (RFC-0012 §2):
 - **Tier 2 — `executePipeline()` composite.** A single `import` + one async
   call drives Step 0-13 end-to-end. The two LLM dispatch boundaries go through
   an injected `SubagentSpawner` (subscription via `copilot --print`, API key via
-  `@github-ai/copilot` SDK, or `MockSpawner` for tests). Designed for
+  `@github/copilot` SDK, or `MockSpawner` for tests). Designed for
   unattended programmatic use: CLI invocation, GitHub Actions, webhooks, cron,
   and the existing `pnpm watch` flow once Phase 5 (AISDLC-100.5) migrates
   `dogfood/src/watch.ts` to call it.
@@ -146,10 +146,10 @@ whether the simpler form can be reintroduced.
 ```bash
 pnpm add @ai-sdlc/pipeline-cli
 # Optional: only when using the API-key-billed CopilotHarnessAdapter.
-pnpm add @github-ai/copilot
+pnpm add @github/copilot
 ```
 
-The `@github-ai/copilot` SDK is a **lazy import** (NOT a hard
+The `@github/copilot` SDK is a **lazy import** (NOT a hard
 dependency) so subscription-only consumers don't pay for ~50MB of SDK code
 they'll never use. See [`docs/spawner.md`](./docs/spawner.md#the-lazy-sdk-import--why-and-how)
 for the lazy-import rationale and how the failure surfaces when the SDK isn't
@@ -438,7 +438,7 @@ pipeline-cli/
     │   ├── exec.ts                                                   # Runner abstraction over child_process.execFile
     │   ├── subagent-spawner.ts                                       # SubagentSpawner interface + MockSpawner
     │   ├── shell-copilot-p-spawner.ts                                 # Tier 2 default — `copilot --print --agent <type>` shell-out (subscription)
-    │   ├── copilot-spawner.ts                                # Tier 2 alternative — @github-ai/copilot SDK (API key)
+    │   ├── copilot-spawner.ts                                # Tier 2 alternative — @github/copilot SDK (API key)
     │   └── default-spawner.ts                                        # `defaultSpawner()` resolver: which→shell, env→sdk, else throw
     ├── steps/                      # each step.ts has a colocated step.test.ts
     │   ├── index.ts                # barrel
@@ -513,11 +513,11 @@ Production spawners (Phase 2 — AISDLC-100.2):
   **`--agent <type>`** (verified empirically against the installed CLI on
   2026-04-30). See [`docs/spawner.md`](./docs/spawner.md#q5-rfc-15-resolution--agent-type-not---subagent-type)
   for the full Q5 (RFC §15) resolution.
-- **`CopilotHarnessAdapter`** (API-key billing) — uses `@github-ai/copilot`
+- **`CopilotHarnessAdapter`** (API-key billing) — uses `@github/copilot`
   programmatically. The SDK is **lazy-imported** (NOT a hard dependency of
   `pipeline-cli`) so subscription-only consumers don't have to install ~50MB
   of SDK code they'll never use; install it with
-  `pnpm add @github-ai/copilot` only when you need API-key billing.
+  `pnpm add @github/copilot` only when you need API-key billing.
 - **`defaultSpawner()`** — convenience resolver: prefers `copilot` CLI on PATH
   (subscription), falls back to `GITHUB_MODELS_TOKEN` (API key), throws with an
   instructional error if neither is available.

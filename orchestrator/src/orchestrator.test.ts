@@ -188,7 +188,7 @@ function makeCostSummary(overrides?: Partial<CostSummary>): CostSummary {
     entryCount: 5,
     avgCostPerRun: 2,
     avgTokensPerRun: 1000,
-    costByAgent: { 'copilot': 10 },
+    costByAgent: { copilot: 10 },
     costByModel: { 'gpt-5': 10 },
     ...overrides,
   };

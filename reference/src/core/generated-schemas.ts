@@ -4310,7 +4310,8 @@ export const embeddingAdapterV1Schema = {
       properties: {
         envVar: {
           type: 'string',
-          description: "Environment variable required by this adapter. Example: 'GITHUB_MODELS_TOKEN'.",
+          description:
+            "Environment variable required by this adapter. Example: 'GITHUB_MODELS_TOKEN'.",
         },
         binary: {
           type: 'string',
@@ -7732,8 +7733,7 @@ export const subscriptionPlanSchema = {
       properties: {
         harness: {
           type: 'string',
-          description:
-            'Name of the registered harness this plan applies to (e.g., copilot).',
+          description: 'Name of the registered harness this plan applies to (e.g., copilot).',
         },
         billingMode: {
           type: 'string',

@@ -895,13 +895,18 @@ describe('ensureCopilotInstructionsPointer', () => {
     const { state, adapters } = makeStub();
     ensureCopilotInstructionsPointer('/proj', adapters, false);
     expect(state.files.has('/proj/.github/copilot-instructions.md')).toBe(true);
-    expect(state.files.get('/proj/.github/copilot-instructions.md')).toContain(COPILOT_INSTRUCTIONS_SENTINEL);
+    expect(state.files.get('/proj/.github/copilot-instructions.md')).toContain(
+      COPILOT_INSTRUCTIONS_SENTINEL,
+    );
     expect(state.files.get('/proj/.github/copilot-instructions.md')).toContain('ai-sdlc/pr-ready');
   });
 
   it('AC #4: appends pointer to existing .github/copilot-instructions.md without clobbering user content', () => {
     const { state, adapters } = makeStub();
-    state.files.set('/proj/.github/copilot-instructions.md', '# My project\n\nUser content here.\n');
+    state.files.set(
+      '/proj/.github/copilot-instructions.md',
+      '# My project\n\nUser content here.\n',
+    );
     ensureCopilotInstructionsPointer('/proj', adapters, false);
     const result = state.files.get('/proj/.github/copilot-instructions.md')!;
     expect(result).toContain('User content here.');
@@ -910,11 +915,16 @@ describe('ensureCopilotInstructionsPointer', () => {
 
   it('AC #4: idempotent — re-run on file with pointer already present is a no-op', () => {
     const { state, adapters } = makeStub();
-    state.files.set('/proj/.github/copilot-instructions.md', `# Existing\n${COPILOT_INSTRUCTIONS_POINTER}`);
+    state.files.set(
+      '/proj/.github/copilot-instructions.md',
+      `# Existing\n${COPILOT_INSTRUCTIONS_POINTER}`,
+    );
     ensureCopilotInstructionsPointer('/proj', adapters, false);
     // Sentinel still appears exactly once.
     const occurrences = (
-      state.files.get('/proj/.github/copilot-instructions.md')!.match(new RegExp(COPILOT_INSTRUCTIONS_SENTINEL, 'g')) ?? []
+      state.files
+        .get('/proj/.github/copilot-instructions.md')!
+        .match(new RegExp(COPILOT_INSTRUCTIONS_SENTINEL, 'g')) ?? []
     ).length;
     expect(occurrences).toBe(1);
   });

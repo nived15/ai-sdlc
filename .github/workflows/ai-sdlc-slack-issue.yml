@@ -27,7 +27,7 @@ jobs:
       - run: pnpm build
 
       - name: Install GitHub Copilot CLI
-        run: npm install -g @github-ai/copilot
+        run: npm install -g @github/copilot
 
       - name: Write Slack context to file
         env:

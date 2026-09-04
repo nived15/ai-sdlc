@@ -14,7 +14,9 @@ describe('CopilotAdapter', () => {
   });
 
   it('derives a one-way account id from GH_TOKEN', async () => {
-    const adapter = new CopilotAdapter({ env: { GH_TOKEN: 'ghp-test-token' } as NodeJS.ProcessEnv });
+    const adapter = new CopilotAdapter({
+      env: { GH_TOKEN: 'ghp-test-token' } as NodeJS.ProcessEnv,
+    });
     const id = await adapter.getAccountId();
     expect(id).toMatch(/^[0-9a-f]{16}$/);
     expect(id).not.toContain('ghp-test-token');

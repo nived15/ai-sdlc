@@ -98,7 +98,8 @@ export function loadDispatchConfig(workDir: string): DispatchConfigSnapshot | un
   if (parallelism === null || typeof parallelism !== 'object' || Array.isArray(parallelism)) {
     return { copilotPShellMaxConcurrent: 0, inSessionAgentMaxSessions: undefined };
   }
-  const raw_n = (parallelism as { copilotPShellMaxConcurrent?: unknown }).copilotPShellMaxConcurrent;
+  const raw_n = (parallelism as { copilotPShellMaxConcurrent?: unknown })
+    .copilotPShellMaxConcurrent;
   const n = typeof raw_n === 'number' && Number.isFinite(raw_n) && raw_n >= 0 ? raw_n : 0;
   // inSessionAgentMaxSessions — distinct semantics from copilotPShellMaxConcurrent:
   // missing yields `undefined` (caller decides default), not 0 (which would

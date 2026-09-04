@@ -2875,9 +2875,7 @@ export function runVerifier({ headSha, baseSha, repoRoot = process.cwd() }) {
     const harnessLine = safeVersion ? `${safeName}@${safeVersion}` : safeName;
     console.log(`[ai-sdlc/attestation] harness: ${harnessLine}`);
   } else {
-    console.log(
-      `[ai-sdlc/attestation] harness: <unknown> (legacy envelope)`,
-    );
+    console.log(`[ai-sdlc/attestation] harness: <unknown> (legacy envelope)`);
   }
 
   // --- Verify signature + schema (delegates to runtime) -----------------

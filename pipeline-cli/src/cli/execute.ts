@@ -440,8 +440,7 @@ export async function runExecuteCommand(
     if (opts.spawnerKind === 'mock') {
       return {
         ok: false,
-        reason:
-          '`--resume-from-draft` requires a real spawner (--spawner copilot).',
+        reason: '`--resume-from-draft` requires a real spawner (--spawner copilot).',
       };
     }
     let spawner: SubagentSpawner;

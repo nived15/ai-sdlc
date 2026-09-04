@@ -25,7 +25,9 @@ export interface ClassifierOutput {
   rationale: Record<string, string>;
   confident: boolean;
   confidence: number;
-  modelOverride?: Partial<Record<ReviewerName, 'fast' | 'balanced' | 'reasoning' | 'reasoning[1m]'>>;
+  modelOverride?: Partial<
+    Record<ReviewerName, 'fast' | 'balanced' | 'reasoning' | 'reasoning[1m]'>
+  >;
   harnessOverride?: Partial<Record<ReviewerName, string>>;
 }
 

@@ -83,20 +83,14 @@ describe('defaults — new constants', () => {
     expect(defaults.DEFAULT_COMMIT_CO_AUTHOR.length).toBeGreaterThan(0);
   });
 
-  it('DEFAULT_GITHUB_MODELS_API_URL is a valid URL', () => {
-    expect(defaults.DEFAULT_GITHUB_MODELS_API_URL).toBe('https://api.githubcopilot.com/chat/completions');
+  it('DEFAULT_GITHUB_MODELS_API_URL is the GitHub Models inference endpoint', () => {
+    expect(defaults.DEFAULT_GITHUB_MODELS_API_URL).toBe(
+      'https://models.github.ai/inference/chat/completions',
+    );
   });
 
   it('DEFAULT_GITHUB_MODELS_MODEL is gpt-5', () => {
     expect(defaults.DEFAULT_GITHUB_MODELS_MODEL).toBe('gpt-5');
-  });
-
-  it('DEFAULT_GITHUB_MODELS_API_URL is a valid URL', () => {
-    expect(defaults.DEFAULT_GITHUB_MODELS_API_URL).toBe('https://models.github.ai/inference/chat/completions');
-  });
-
-  it('DEFAULT_GITHUB_MODELS_MODEL is balanced', () => {
-    expect(defaults.DEFAULT_GITHUB_MODELS_MODEL).toBe('balanced');
   });
 
   it('DEFAULT_GENERIC_LLM_MODEL is "default"', () => {

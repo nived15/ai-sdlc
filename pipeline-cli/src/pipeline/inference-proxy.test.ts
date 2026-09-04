@@ -661,7 +661,9 @@ describe('SI-2: tool-use / non-review calls are refused', () => {
   });
 
   it('refuses a request with function_call field (422 — GitHub Copilot legacy)', async () => {
-    const { proxy, upstreamCalls, sessionToken } = await createTestProxy({ provider: 'github-copilot' });
+    const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
+      provider: 'github-copilot',
+    });
 
     const res = await simulateRequest(proxy, {
       url: '/chat/completions',
@@ -1451,7 +1453,9 @@ describe('upstream error handling', () => {
 
 describe('GitHub-specific header forwarding', () => {
   it('forwards x-github-api-version header to upstream when present', async () => {
-    const { proxy, upstreamCalls, sessionToken } = await createTestProxy({ provider: 'github-models' });
+    const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
+      provider: 'github-models',
+    });
 
     const req = makeMockRequest({
       method: 'POST',

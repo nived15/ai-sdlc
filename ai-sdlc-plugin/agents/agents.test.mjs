@@ -253,7 +253,6 @@ describe('agent definition tool restrictions', () => {
   });
 });
 
-
 describe('AISDLC-298: OQ-resolution prohibition reviewer gate', () => {
   // AISDLC-271 / RFC-0031 shipped with all 5 OQs resolved by the dev subagent
   // inline — architectural decisions made without operator walkthrough or

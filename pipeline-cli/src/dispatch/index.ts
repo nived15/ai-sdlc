@@ -160,8 +160,4 @@ export {
   REVIEWER_MODEL_TIER_ENV,
 } from './reviewer-harness.js';
 
-export type {
-  ResolvedReviewer,
-  ReviewerModelTier,
-  ReviewerRole,
-} from './reviewer-harness.js';
+export type { ResolvedReviewer, ReviewerModelTier, ReviewerRole } from './reviewer-harness.js';

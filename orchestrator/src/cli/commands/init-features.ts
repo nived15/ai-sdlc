@@ -2097,7 +2097,11 @@ export function ensureCopilotInstructionsPointer(
     return;
   }
 
-  const status = adapters.appendOnce(path, COPILOT_INSTRUCTIONS_POINTER, COPILOT_INSTRUCTIONS_SENTINEL);
+  const status = adapters.appendOnce(
+    path,
+    COPILOT_INSTRUCTIONS_POINTER,
+    COPILOT_INSTRUCTIONS_SENTINEL,
+  );
   if (status === 'appended') {
     adapters.log('  updated .github/copilot-instructions.md (recommendation pointer)');
   } else {

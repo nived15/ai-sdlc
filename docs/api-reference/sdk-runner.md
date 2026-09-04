@@ -157,10 +157,10 @@ if (result.allApproved) {
 
 ## Prerequisites
 
-The SDK runner requires `@github-models-ai/copilot-agent-sdk` as an optional peer
+The SDK runner requires `@github/copilot` as an optional peer
 dependency. If not installed, the runner returns an error with installation
 instructions.
 
 ```bash
-pnpm add @github-models-ai/copilot-agent-sdk
+pnpm add @github/copilot
 ```

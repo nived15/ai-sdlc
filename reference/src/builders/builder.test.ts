@@ -173,7 +173,7 @@ describe('PipelineBuilder', () => {
         modelPricing: {
           source: 'config',
           models: {
-            'balanced': { inputPerMTok: 3, outputPerMTok: 15 },
+            balanced: { inputPerMTok: 3, outputPerMTok: 15 },
           },
         },
       })
@@ -237,10 +237,7 @@ describe('AgentRoleBuilder', () => {
       .build();
     expect(role.spec.modelSelection?.rules).toHaveLength(3);
     expect(role.spec.modelSelection?.budgetPressure?.[0].above).toBe(0.8);
-    expect(role.spec.modelSelection?.fallbackChain).toEqual([
-      'balanced',
-      'gpt-5-mini',
-    ]);
+    expect(role.spec.modelSelection?.fallbackChain).toEqual(['balanced', 'gpt-5-mini']);
   });
 });
 

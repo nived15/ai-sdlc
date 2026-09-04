@@ -207,12 +207,6 @@ describe('orchestrator barrel exports', () => {
   it('exports DEFAULT_GITHUB_MODELS_MODEL', () => {
     expect(barrel.DEFAULT_GITHUB_MODELS_MODEL).toBeTypeOf('string');
   });
-  it('exports DEFAULT_GITHUB_MODELS_API_URL', () => {
-    expect(barrel.DEFAULT_GITHUB_MODELS_API_URL).toBeTypeOf('string');
-  });
-  it('exports DEFAULT_GITHUB_MODELS_MODEL', () => {
-    expect(barrel.DEFAULT_GITHUB_MODELS_MODEL).toBeTypeOf('string');
-  });
   it('exports DEFAULT_GENERIC_LLM_MODEL', () => {
     expect(barrel.DEFAULT_GENERIC_LLM_MODEL).toBeTypeOf('string');
   });

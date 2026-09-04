@@ -122,7 +122,7 @@ export interface CostLedgerEntry {
   runId: string;
   agentName: string;
   pipelineType: string;
-  /** Resolved physical model ID (e.g., 'balanced'). RFC-0010 §11.4. */
+  /** Resolved physical model ID (e.g., 'gpt-5'). RFC-0010 §11.4. */
   model?: string;
   /** Original alias used in pipeline YAML before resolution (e.g., 'balanced'). RFC-0010 §11.4. */
   modelAlias?: string;

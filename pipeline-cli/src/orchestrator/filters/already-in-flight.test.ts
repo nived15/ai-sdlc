@@ -226,7 +226,7 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
     });
   });
 
-  it('fails when ps output contains a copilot -p line with the task ID', () => {
+  it('fails when a differently-phrased copilot -p argv references the task ID', () => {
     const psOutput = [
       '  100 /usr/bin/bash',
       '  400 copilot -p "Run task AISDLC-202 end-to-end"',

@@ -4,8 +4,7 @@
  * Mirrors `execute-orchestrator.md` Step 9. Wraps Steps 5/5b/6/7/7b/8 and
  * loops until reviewers approve OR the iteration cap is hit. The LLM
  * dispatch (Steps 5b, 7b) goes through the `SubagentSpawner` interface,
- * which lets Tier 2 inject `CopilotHarnessAdapter` (subscription) /
- * `CopilotHarnessAdapter` (API key) / `MockSpawner` (tests).
+ * which lets Tier 2 inject `CopilotHarnessAdapter` or `MockSpawner` (tests).
  *
  * If the cap is hit and there are still critical/major findings, returns
  * with `needsHumanAttention: true` — Step 10 will then skip finalisation

@@ -478,34 +478,6 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
     }
   });
 
-  it('surfaces missing COPILOT_SPAWN_AGENT_BIN as spawner-unavailable before rollback work', async () => {
-    const taskId = 'AISDLC-326-COPILOT-MISSING-BRIDGE';
-    const umbrellaExecutor = async (): Promise<ExecuteCommandResult> => ({
-      ok: false,
-      reason:
-        '`--spawner copilot` requires COPILOT_SPAWN_AGENT_BIN in the environment before dispatch.',
-    });
-
-    const tick = await runOrchestratorTick(
-      config,
-      {
-        logger: silentLogger(),
-        frontier: fakeFrontier([taskId]),
-        umbrellaSpawnerKind: 'copilot',
-        umbrellaExecutor: umbrellaExecutor as unknown as OrchestratorAdapters['umbrellaExecutor'],
-        escalate: async () => {},
-        ...hermeticFilterAdapters(),
-      },
-      1,
-    );
-
-    expect(tick.dispatched).toEqual([taskId]);
-    const outcome = tick.outcomes[0];
-    expect(outcome.failure?.type).toBe('spawner-unavailable');
-    expect(outcome.failure?.message).toContain('COPILOT_SPAWN_AGENT_BIN');
-    expect(outcome.pipeline).toBeUndefined();
-  });
-
   // ── AISDLC-429.3 — Copilot CLI spawner kind ─────────────────────────────
   //
   // Phase 3 of AISDLC-429 wires `--spawner copilot` through the orchestrator

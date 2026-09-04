@@ -5,8 +5,4 @@ describe('runner barrel exports', () => {
   it('exports CopilotRunner', () => {
     expect(runner.CopilotRunner).toBeTypeOf('function');
   });
-
-  it('exports CopilotRunner', () => {
-    expect(runner.CopilotRunner).toBeTypeOf('function');
-  });
 });

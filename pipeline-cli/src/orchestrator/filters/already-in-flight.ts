@@ -18,7 +18,7 @@
  *     exists on disk. The pipeline writes this file in Step 4 (flip-status);
  *     its presence means a pipeline run is active right now. Always enabled.
  *
- * (c) **Live subprocess** — a `copilot -p` or `copilot -p` process with the
+ * (c) **Live subprocess** — a `copilot -p` process with the
  *     task ID in its argv is running. Best-effort: uses `ps -ax -o pid,command`
  *     (Darwin + Linux portable). Enabled when
  *     `AI_SDLC_ORCHESTRATOR_DETECT_SUBPROCESS` is truthy or when the `opts`

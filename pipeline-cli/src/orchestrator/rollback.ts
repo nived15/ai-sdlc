@@ -129,7 +129,7 @@ export function defaultReadProcessTable(): string {
 }
 
 /**
- * Scan the process table for a `copilot -p` or `copilot -p` subprocess
+ * Scan the process table for a `copilot -p` subprocess
  * whose argv contains the task ID. Returns the PID if found, null otherwise.
  *
  * Mirrors the logic in `filters/already-in-flight.ts` so both guards use

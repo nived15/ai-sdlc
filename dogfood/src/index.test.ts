@@ -256,10 +256,6 @@ describe('dogfood root barrel exports', () => {
     expect(index.CopilotRunner).toBeTypeOf('function');
   });
 
-  it('exports CopilotRunner', () => {
-    expect(index.CopilotRunner).toBeTypeOf('function');
-  });
-
   // Agent orchestration
   it('exports createPipelineOrchestration', () => {
     expect(index.createPipelineOrchestration).toBeTypeOf('function');

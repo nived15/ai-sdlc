@@ -17,7 +17,7 @@ function cleanup() {
 describe('writeArtifact', () => {
   it('writes file to correct path', () => {
     setup();
-    const result = writeArtifact(TEST_DIR, '.claude/commands/auto-test.md', '# Test');
+    const result = writeArtifact(TEST_DIR, '.github/commands/auto-test.md', '# Test');
 
     expect(result.success).toBe(true);
     expect(existsSync(result.filePath)).toBe(true);
@@ -27,10 +27,10 @@ describe('writeArtifact', () => {
 
   it('creates parent directories', () => {
     setup();
-    const result = writeArtifact(TEST_DIR, '.claude/skills/auto-build/SKILL.md', '# Skill');
+    const result = writeArtifact(TEST_DIR, '.github/skills/auto-build/SKILL.md', '# Skill');
 
     expect(result.success).toBe(true);
-    expect(existsSync(join(TEST_DIR, '.claude/skills/auto-build'))).toBe(true);
+    expect(existsSync(join(TEST_DIR, '.github/skills/auto-build'))).toBe(true);
     cleanup();
   });
 

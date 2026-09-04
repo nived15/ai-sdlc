@@ -24,7 +24,7 @@ model: inherit
 Run one in-session-agent **Worker** tick (RFC-0041 §4.3.1).
 
 This command is the Worker half of the Conductor / Worker process split.
-The operator opens **one or more** sibling Claude Code sessions and fires
+The operator opens **one or more** sibling Copilot CLI sessions and fires
 `/ai-sdlc dispatch-worker` in each. Each session loops:
 
 1. Claim one manifest from the Dispatch Board.
@@ -38,16 +38,16 @@ before re-polling — this avoids burning subscription tokens on busy-waits.
 
 ## Worker isolation rationale
 
-Workers run in their own Claude Code sessions and invoke `Agent` in
+Workers run in their own Copilot CLI sessions and invoke `Agent` in
 foreground. This isolation provides operator-controlled parallelism (N
 sessions = N workers), explicit subscription-quota visibility, and
 independence from the Conductor's session lifecycle.
 
-**Historical note (2026-05-21):** RFC-0041 §2.1 originally cited Anthropic's
+**Historical note (2026-05-21):** RFC-0041 §2.1 originally cited GitHub's
 "600s silent-stdout background-agent watchdog (~85% kill rate during pnpm
 test)" as the primary motivation for moving Workers out of the Conductor's
 session. That claim was a misdiagnosis — forensic re-measurement of 73 dev
-subagent transcripts via `python3 ~/.claude/skills/audit-subagent/audit.py`
+subagent transcripts via `python3 ~/.copilot/skills/audit-subagent/audit.py`
 found **0 watchdog-shape kills** and 80.8% clean completion (median 16 min,
 max 2.5 h). The 19.2% failures were operator-initiated interrupts, not
 system kills. The Dispatch Board pattern stands on the other rationales
@@ -66,8 +66,8 @@ above; the watchdog-avoidance framing has been removed.
 ## Path resolution
 
 ```bash
-if [ -n "${CLAUDE_PLUGIN_DIR:-}" ]; then
-  PIPELINE_CLI_BIN="$CLAUDE_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin"
+if [ -n "${COPILOT_PLUGIN_DIR:-}" ]; then
+  PIPELINE_CLI_BIN="$COPILOT_PLUGIN_DIR/node_modules/@ai-sdlc/pipeline-cli/bin"
 else
   PIPELINE_CLI_BIN="$(pwd)/pipeline-cli/bin"
 fi
@@ -297,7 +297,7 @@ node "$PIPELINE_CLI_BIN/cli-dispatch.mjs" remove-resume-signal \
 > **OQ-7 — quota exhaustion handling.** If the `Agent` tool returns a
 > rate-limit error or the dev subagent surfaces a 429, do NOT write a
 > normal verdict. Instead write a `quota-exhausted` diagnostic with
-> `retryAfter` = the Anthropic `Retry-After` header (default 600s if
+> `retryAfter` = the GitHub `Retry-After` header (default 600s if
 > absent). The Conductor will pause emitting new `in-session-agent`
 > manifests for that duration and re-enqueue this task with
 > `noClaimBefore: now + retryAfter`.
@@ -378,7 +378,7 @@ fi
 The 5s cadence (per `.ai-sdlc/dispatch-config.yaml`
 `spec.inSessionAgent.pollIntervalSec`) is RFC-0041 OQ-6's cost-first bias:
 in-session-agent Workers preferentially win `workerKind: any` manifests
-over claude-p-shell Workers (which poll at 15s per their config), keeping
+over copilot-p-shell Workers (which poll at 15s per their config), keeping
 work on the subscription-quota path.
 
 When the queue is empty (Step 2 `claimed: false`), the Worker uses the
@@ -389,7 +389,7 @@ the filesystem with empty polls.
 
 ## Why this lives in the slash command body (not a subagent)
 
-Plugin subagents cannot use the `Agent` tool — Claude Code filters it out
+Plugin subagents cannot use the `Agent` tool — GitHub Copilot CLI filters it out
 one level deep. The dev-subagent invocation must therefore happen in the
 slash command body, not inside a Worker subagent middleman.
 

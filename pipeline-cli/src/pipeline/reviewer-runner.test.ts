@@ -17,7 +17,7 @@
  *    model call failure → fail-closed verdict;
  *    injection in diff → merged into verdict regardless of model response
  *  - FakeModelClient: captures calls, fixed response, function-based response
- *  - InferenceProxyClient: injectable _httpRequest seam, parses Anthropic/OpenAI format
+ *  - InferenceProxyClient: injectable _httpRequest seam, parses GitHub Models/GitHub Copilot format
  *
  * All tests use mkdtempSync isolated dirs (none write to shared /tmp/.ai-sdlc).
  * No AISDLC-NNN tracker IDs in any adopter-facing string assertions.
@@ -748,10 +748,10 @@ describe('InferenceProxyClient — _httpRequest seam', () => {
     };
 
     await client.complete({ systemPrompt: 'sys', userMessage: 'user' });
-    expect(capturedUrls[0]).toBe('http://inference.local:8080/v1/messages');
+    expect(capturedUrls[0]).toBe('http://inference.local:8080/inference/chat/completions');
   });
 
-  it('parses Anthropic response format correctly', async () => {
+  it('parses GitHub Models response format correctly', async () => {
     const client = new InferenceProxyClient({
       host: '127.0.0.1',
       port: 9999,
@@ -759,27 +759,27 @@ describe('InferenceProxyClient — _httpRequest seam', () => {
     });
     client._httpRequest = async () =>
       JSON.stringify({
-        content: [{ type: 'text', text: 'parsed-anthropic-text' }],
+        content: [{ type: 'text', text: 'parsed-github-models-text' }],
       });
 
     const result = await client.complete({ systemPrompt: 'sys', userMessage: 'user' });
-    expect(result.content).toBe('parsed-anthropic-text');
+    expect(result.content).toBe('parsed-github-models-text');
   });
 
-  it('parses OpenAI response format correctly', async () => {
+  it('parses GitHub Copilot response format correctly', async () => {
     const client = new InferenceProxyClient({
       host: '127.0.0.1',
       port: 9999,
       sessionToken: 'tok',
-      provider: 'openai',
+      provider: 'github-copilot',
     });
     client._httpRequest = async () =>
       JSON.stringify({
-        choices: [{ message: { content: 'parsed-openai-text' } }],
+        choices: [{ message: { content: 'parsed-github-copilot-text' } }],
       });
 
     const result = await client.complete({ systemPrompt: 'sys', userMessage: 'user' });
-    expect(result.content).toBe('parsed-openai-text');
+    expect(result.content).toBe('parsed-github-copilot-text');
   });
 
   it('returns raw response body when response is not recognized JSON shape', async () => {
@@ -812,12 +812,12 @@ describe('InferenceProxyClient — _httpRequest seam', () => {
     expect(body['max_tokens']).toBe(2048);
   });
 
-  it('includes anthropic-version header for anthropic provider', async () => {
+  it('includes x-github-api-version header for github-models provider', async () => {
     const client = new InferenceProxyClient({
       host: '127.0.0.1',
       port: 9999,
       sessionToken: 'tok',
-      provider: 'anthropic',
+      provider: 'github-models',
     });
 
     const capturedHeaders: Record<string, string>[] = [];
@@ -827,7 +827,7 @@ describe('InferenceProxyClient — _httpRequest seam', () => {
     };
 
     await client.complete({ systemPrompt: 'sys', userMessage: 'user' });
-    expect(capturedHeaders[0]['anthropic-version']).toBeDefined();
+    expect(capturedHeaders[0]['x-github-api-version']).toBeDefined();
   });
 });
 
@@ -849,7 +849,7 @@ describe('InferenceProxyClient — AI_SDLC_REVIEWER_MODEL env var', () => {
   });
 
   it('uses AI_SDLC_REVIEWER_MODEL env var as the model when set', async () => {
-    process.env['AI_SDLC_REVIEWER_MODEL'] = 'claude-opus-4-9';
+    process.env['AI_SDLC_REVIEWER_MODEL'] = 'reasoning';
 
     const client = new InferenceProxyClient({
       host: '127.0.0.1',
@@ -865,10 +865,10 @@ describe('InferenceProxyClient — AI_SDLC_REVIEWER_MODEL env var', () => {
 
     await client.complete({ systemPrompt: 'sys', userMessage: 'user' });
     const body = JSON.parse(capturedBodies[0]) as Record<string, unknown>;
-    expect(body['model']).toBe('claude-opus-4-9');
+    expect(body['model']).toBe('reasoning');
   });
 
-  it('defaults to claude-sonnet-4-6 when AI_SDLC_REVIEWER_MODEL is not set', async () => {
+  it('defaults to balanced when AI_SDLC_REVIEWER_MODEL is not set', async () => {
     delete process.env['AI_SDLC_REVIEWER_MODEL'];
 
     const client = new InferenceProxyClient({
@@ -885,7 +885,7 @@ describe('InferenceProxyClient — AI_SDLC_REVIEWER_MODEL env var', () => {
 
     await client.complete({ systemPrompt: 'sys', userMessage: 'user' });
     const body = JSON.parse(capturedBodies[0]) as Record<string, unknown>;
-    expect(body['model']).toBe('claude-sonnet-4-6');
+    expect(body['model']).toBe('balanced');
   });
 });
 

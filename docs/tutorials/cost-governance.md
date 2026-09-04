@@ -123,7 +123,7 @@ The 60/80/100 split is RFC-0004's default recommendation:
 
 ## Step 4: Add cost-aware model selection
 
-Model pricing varies up to 300x between models — RFC-0004's motivation cites Claude Haiku at $0.25/MTok input vs Claude Opus at $15/MTok input. Letting every stage default to the most expensive model is the single biggest source of cost waste. The `modelSelection` field on `AgentRole` routes by complexity to the right price/performance point.
+Model pricing varies up to 300x between models — RFC-0004's motivation cites the fast tier at $0.25/MTok input vs the reasoning tier at $15/MTok input. Letting every stage default to the most expensive model is the single biggest source of cost waste. The `modelSelection` field on `AgentRole` routes by complexity to the right price/performance point.
 
 ```yaml
 apiVersion: ai-sdlc.io/v1alpha1
@@ -137,17 +137,17 @@ spec:
   modelSelection:
     rules:
       - complexity: [1, 3]
-        model: claude-haiku-4-5
+        model: copilot-haiku-4-5
         rationale: 'Simple tasks: fast, cheap, sufficient'
       - complexity: [4, 6]
-        model: claude-sonnet-4-5
+        model: the balanced tier
         rationale: 'Medium tasks: balanced cost/capability'
       - complexity: [7, 10]
-        model: claude-opus-4-6
+        model: the reasoning tier
         rationale: 'Complex tasks: maximum reasoning capability'
     fallbackChain:
-      - claude-sonnet-4-5
-      - claude-haiku-4-5
+      - the balanced tier
+      - copilot-haiku-4-5
 ```
 
 Per RFC-0004 §3, the orchestrator scores task complexity (typically from the issue body and history) and routes to the model whose `complexity` range covers the score. The `fallbackChain` handles transient outages — if the preferred model is rate-limited or unavailable, the orchestrator walks down the chain.
@@ -165,11 +165,11 @@ spec:
   modelSelection:
     rules:
       - complexity: [1, 3]
-        model: claude-haiku-4-5
+        model: copilot-haiku-4-5
       - complexity: [4, 6]
-        model: claude-sonnet-4-5
+        model: the balanced tier
       - complexity: [7, 10]
-        model: claude-opus-4-6
+        model: the reasoning tier
     budgetPressure:
       - above: 0.80 # at 80% budget consumed
         downshift: 1 # use one tier cheaper than the rule says
@@ -179,7 +179,7 @@ spec:
         notify: ['#engineering', '@tech-lead']
 ```
 
-How to read the worked example: a complexity-7 task at 50% budget would route to `claude-opus-4-6` (per the rules). The same complexity-7 task at 85% budget consumed would downshift one tier to `claude-sonnet-4-5`. At 96% consumed it would downshift two tiers to `claude-haiku-4-5`. The `notify` arrays make the downshift visible so the team can decide whether to raise the budget or accept the temporary quality reduction.
+How to read the worked example: a complexity-7 task at 50% budget would route to `the reasoning tier` (per the rules). The same complexity-7 task at 85% budget consumed would downshift one tier to `the balanced tier`. At 96% consumed it would downshift two tiers to `copilot-haiku-4-5`. The `notify` arrays make the downshift visible so the team can decide whether to raise the budget or accept the temporary quality reduction.
 
 ## Step 6: Verify the policy
 
@@ -200,7 +200,7 @@ Expected output includes the `provenance.cost` block:
 
 ```yaml
 provenance:
-  model: claude-sonnet-4-5
+  model: the balanced tier
   cost:
     totalCost: 2.34
     currency: USD

@@ -9,7 +9,7 @@ DSSE (Dead Simple Signing Envelope) attestation that signs the tarball's SHA-512
 The signed envelope is committed to `.ai-sdlc/attestations/mcp-server-<version>.dsse.json`
 so install-time verifiers can fetch it via `git pull` without external infrastructure.
 
-At every Claude Code SessionStart, `ai-sdlc-plugin/hooks/check-plugin-version.js`
+At every GitHub Copilot CLI SessionStart, `ai-sdlc-plugin/hooks/check-plugin-version.js`
 verifies the installed MCP server binary's signature against this envelope. If the
 signature is invalid or the SHA does not match, a red warning is printed to stderr.
 
@@ -108,11 +108,11 @@ node scripts/verify-mcp-tarball.mjs \
 `check-plugin-version.js` performs a fast local check on every SessionStart:
 
 1. Reads the installed MCP server version from
-   `$CLAUDE_PLUGIN_ROOT/node_modules/@ai-sdlc/plugin-mcp-server/package.json`.
+   `$COPILOT_PLUGIN_ROOT/node_modules/@ai-sdlc/plugin-mcp-server/package.json`.
 2. Loads the envelope from
-   `$CLAUDE_PLUGIN_ROOT/.ai-sdlc/attestations/mcp-server-<version>.dsse.json`.
+   `$COPILOT_PLUGIN_ROOT/.ai-sdlc/attestations/mcp-server-<version>.dsse.json`.
 3. Validates the DSSE signature against all pubkeys in
-   `$CLAUDE_PLUGIN_ROOT/.ai-sdlc/trusted-reviewers.yaml`.
+   `$COPILOT_PLUGIN_ROOT/.ai-sdlc/trusted-reviewers.yaml`.
 4. On success: silent (logs to stderr in debug mode only).
 5. On failure: prints a red operator-actionable error and hints at recovery.
 
@@ -128,13 +128,13 @@ node scripts/verify-mcp-tarball.mjs \
 ```
 ⚠ ai-sdlc: MCP server tarball attestation missing for v<VERSION>.
   Expected: .ai-sdlc/attestations/mcp-server-<VERSION>.dsse.json
-  Run: git -C "$CLAUDE_PLUGIN_ROOT" pull --ff-only  to refresh.
+  Run: git -C "$COPILOT_PLUGIN_ROOT" pull --ff-only  to refresh.
 ```
 
 The signed envelope was not committed. Recovery:
 
 ```bash
-git -C "$CLAUDE_PLUGIN_ROOT" pull --ff-only
+git -C "$COPILOT_PLUGIN_ROOT" pull --ff-only
 ```
 
 If still missing, run the manual sign step above.
@@ -177,7 +177,7 @@ The envelope was signed by a key not in `trusted-reviewers.yaml`. Recovery:
    ```
 2. If the key was rotated, fetch the new envelope signed by the current key:
    ```bash
-   git -C "$CLAUDE_PLUGIN_ROOT" pull --ff-only
+   git -C "$COPILOT_PLUGIN_ROOT" pull --ff-only
    ```
 3. If you believe this is a false positive, open an issue at
    https://github.com/ai-sdlc-framework/ai-sdlc/issues.

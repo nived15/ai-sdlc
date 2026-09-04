@@ -6,7 +6,7 @@
  *   - Per-task `estimatedTokens` from backlog frontmatter (RFC-0010 §6.5
  *     adapted to the backlog-task surface: `{ input: number, output: number }`
  *     — the sum is what we care about for the size signal).
- *   - DispatchConfig `claudePShellMaxConcurrent` from
+ *   - DispatchConfig `copilotPShellMaxConcurrent` from
  *     `<workDir>/.ai-sdlc/dispatch-config.yaml` (RFC-0041 §4.3.3). 0 or
  *     missing = headless dispatch unavailable.
  *   - Subscription quota utilization derived from
@@ -17,10 +17,10 @@
  *     as 0 (operator's quota is plentiful).
  *
  * Heuristic (matches AISDLC-377.5 §Scope):
- *   - `claude-p-shell` when big-AND-tight-AND-available:
+ *   - `copilot-p-shell` when big-AND-tight-AND-available:
  *       estimatedTokens > BIG_TOKEN_THRESHOLD
  *       AND quotaUtilization > TIGHT_QUOTA_THRESHOLD
- *       AND claudePShellMaxConcurrent > 0
+ *       AND copilotPShellMaxConcurrent > 0
  *   - `any` when no clear preference: missing estimatedTokens, OR
  *     plentiful quota AND no headless config — the Conductor + operator
  *     have full latitude.
@@ -45,10 +45,10 @@ export const TIGHT_QUOTA_THRESHOLD = 0.8;
 /** Subset of DispatchConfig fields the heuristic consumes. */
 export interface DispatchConfigSnapshot {
   /**
-   * `spec.parallelism.claudePShellMaxConcurrent` — 0 (or missing) means
+   * `spec.parallelism.copilotPShellMaxConcurrent` — 0 (or missing) means
    * the supervisor is not configured and headless dispatch is unavailable.
    */
-  claudePShellMaxConcurrent: number;
+  copilotPShellMaxConcurrent: number;
   /**
    * `spec.parallelism.inSessionAgentMaxSessions` — the Pattern X / AISDLC-396
    * concurrency cap for in-session background `Agent(developer)` dispatches.
@@ -66,7 +66,7 @@ export interface DispatchConfigSnapshot {
  * Load + minimally parse `<workDir>/.ai-sdlc/dispatch-config.yaml`. Returns
  * `undefined` when the file is missing (treated as "no supervisor
  * configured"). Returns an empty/zero snapshot when the file exists but
- * `claudePShellMaxConcurrent` is absent or non-numeric.
+ * `copilotPShellMaxConcurrent` is absent or non-numeric.
  *
  * We do NOT full-schema-validate here: the heuristic only depends on one
  * field. The cli-dispatch-supervisor CLI is the source of truth for
@@ -88,25 +88,26 @@ export function loadDispatchConfig(workDir: string): DispatchConfigSnapshot | un
     return undefined;
   }
   if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return { claudePShellMaxConcurrent: 0, inSessionAgentMaxSessions: undefined };
+    return { copilotPShellMaxConcurrent: 0, inSessionAgentMaxSessions: undefined };
   }
   const spec = (parsed as { spec?: unknown }).spec;
   if (spec === null || typeof spec !== 'object' || Array.isArray(spec)) {
-    return { claudePShellMaxConcurrent: 0, inSessionAgentMaxSessions: undefined };
+    return { copilotPShellMaxConcurrent: 0, inSessionAgentMaxSessions: undefined };
   }
   const parallelism = (spec as { parallelism?: unknown }).parallelism;
   if (parallelism === null || typeof parallelism !== 'object' || Array.isArray(parallelism)) {
-    return { claudePShellMaxConcurrent: 0, inSessionAgentMaxSessions: undefined };
+    return { copilotPShellMaxConcurrent: 0, inSessionAgentMaxSessions: undefined };
   }
-  const raw_n = (parallelism as { claudePShellMaxConcurrent?: unknown }).claudePShellMaxConcurrent;
+  const raw_n = (parallelism as { copilotPShellMaxConcurrent?: unknown })
+    .copilotPShellMaxConcurrent;
   const n = typeof raw_n === 'number' && Number.isFinite(raw_n) && raw_n >= 0 ? raw_n : 0;
-  // inSessionAgentMaxSessions — distinct semantics from claudePShellMaxConcurrent:
+  // inSessionAgentMaxSessions — distinct semantics from copilotPShellMaxConcurrent:
   // missing yields `undefined` (caller decides default), not 0 (which would
   // disable Pattern X entirely). A typo / non-numeric also yields undefined
   // so the CLI's built-in default applies; an explicit 0 is respected.
   const raw_s = (parallelism as { inSessionAgentMaxSessions?: unknown }).inSessionAgentMaxSessions;
   const s = typeof raw_s === 'number' && Number.isFinite(raw_s) && raw_s >= 0 ? raw_s : undefined;
-  return { claudePShellMaxConcurrent: n, inSessionAgentMaxSessions: s };
+  return { copilotPShellMaxConcurrent: n, inSessionAgentMaxSessions: s };
 }
 
 /**
@@ -216,32 +217,32 @@ export interface RecommendWorkerInput {
   estimatedTokens: number | undefined;
   /** Quota utilization in [0, 1]. `undefined` = no ledger present. */
   quotaUtilization: number | undefined;
-  /** `claudePShellMaxConcurrent` from DispatchConfig. 0 / missing = unavailable. */
-  claudePShellMaxConcurrent: number;
+  /** `copilotPShellMaxConcurrent` from DispatchConfig. 0 / missing = unavailable. */
+  copilotPShellMaxConcurrent: number;
 }
 
 /**
  * Pure decision function. See module doc for the heuristic.
  *
- *   - `claude-p-shell` when big-AND-tight-AND-available
+ *   - `copilot-p-shell` when big-AND-tight-AND-available
  *   - `in-session-agent` when small-OR-plentiful (cost-preferred default)
  *   - `any` when no signal at all (missing estimatedTokens)
  */
 export function recommendWorkerKind(input: RecommendWorkerInput): ManifestWorkerKind {
-  const { estimatedTokens, quotaUtilization, claudePShellMaxConcurrent } = input;
+  const { estimatedTokens, quotaUtilization, copilotPShellMaxConcurrent } = input;
 
   // No size signal → no preference. The Conductor + operator decide.
   if (estimatedTokens === undefined) return 'any';
 
   // Headless unavailable → fall back to in-session-agent regardless of size.
-  // AC #4 — when claudePShellMaxConcurrent is 0 or unset every entry must
+  // AC #4 — when copilotPShellMaxConcurrent is 0 or unset every entry must
   // recommend in-session-agent (not 'any'), because the operator has
   // explicitly opted out of headless dispatch.
-  if (claudePShellMaxConcurrent <= 0) return 'in-session-agent';
+  if (copilotPShellMaxConcurrent <= 0) return 'in-session-agent';
 
   const big = estimatedTokens > BIG_TOKEN_THRESHOLD;
   const tight = (quotaUtilization ?? 0) > TIGHT_QUOTA_THRESHOLD;
 
-  if (big && tight) return 'claude-p-shell';
+  if (big && tight) return 'copilot-p-shell';
   return 'in-session-agent';
 }

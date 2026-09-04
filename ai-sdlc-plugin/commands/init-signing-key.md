@@ -65,7 +65,7 @@ fi
 # Use Node's built-in crypto via the plugin's helper (no extra deps).
 # The helper writes BOTH the private key (mode 0600) and the public key
 # (mode 0644) and prints the trusted-reviewers entry to stdout.
-node "${CLAUDE_PLUGIN_ROOT}/scripts/init-signing-key.mjs" $FORCE_FLAG
+node "${COPILOT_PLUGIN_ROOT}/scripts/init-signing-key.mjs" $FORCE_FLAG
 ```
 
 When the helper exits cleanly, surface the printed onboarding-PR

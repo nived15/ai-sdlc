@@ -101,13 +101,13 @@ describe('buildDedupKey', () => {
   it('AC#9: same (type, adapter, deprecatedAt, milestone) → same key', () => {
     const k1 = buildDedupKey(
       'embedding-provider-deprecated',
-      'openai-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       30,
     );
     const k2 = buildDedupKey(
       'embedding-provider-deprecated',
-      'openai-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       30,
     );
@@ -117,13 +117,13 @@ describe('buildDedupKey', () => {
   it('AC#9: different milestones → different keys', () => {
     const k1 = buildDedupKey(
       'embedding-provider-deprecated',
-      'openai-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       89,
     );
     const k2 = buildDedupKey(
       'embedding-provider-deprecated',
-      'openai-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       30,
     );
@@ -133,11 +133,11 @@ describe('buildDedupKey', () => {
   it('AC#9: removed event uses null milestone', () => {
     const k = buildDedupKey(
       'embedding-provider-removed',
-      'openai-text-embedding-ada-002',
+      'github-models-embedding-legacy',
       '2026-06-01',
       null,
     );
-    expect(k).toMatch(/^embedding-provider-removed:openai-text-embedding-ada-002:2026-06-01$/);
+    expect(k).toMatch(/^embedding-provider-removed:github-models-embedding-legacy:2026-06-01$/);
   });
 });
 
@@ -147,7 +147,7 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#8: inactive phase when no lifecycle dates declared', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-3-small',
+      adapterName: 'github-models-embedding-small',
       today: TODAY,
     });
     expect(r.phase).toBe('inactive');
@@ -158,7 +158,7 @@ describe('evaluateDeprecationLifecycle', () => {
   it('AC#8: pre-warning phase when today is BEFORE the grace-period window', () => {
     // deprecatedAt is 200 days out; framework default 90d window not yet open.
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 200).toISOString().slice(0, 10),
       today: TODAY,
     });
@@ -169,26 +169,26 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#8 + AC#9: warning phase emits milestone event at 89d', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 89).toISOString().slice(0, 10),
-      replacementAlias: 'openai-text-embedding-3-small',
+      replacementAlias: 'github-models-embedding-small',
       today: TODAY,
     });
     expect(r.phase).toBe('warning');
     expect(r.decisionEvents).toHaveLength(1);
     expect(r.decisionEvents[0]!.milestoneDaysBefore).toBe(89);
     expect(r.decisionEvents[0]!.severity).toBe('info');
-    expect(r.decisionEvents[0]!.summary).toContain('openai-text-embedding-3-small');
+    expect(r.decisionEvents[0]!.summary).toContain('github-models-embedding-small');
   });
 
   it('AC#9: same milestone twice → same dedup key (caller stops second emission)', () => {
     const r1 = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       today: TODAY,
     });
     const r2 = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       today: TODAY,
     });
@@ -197,12 +197,12 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#9: different milestones (89 vs 60) → different dedup keys', () => {
     const at89 = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 89).toISOString().slice(0, 10),
       today: TODAY,
     });
     const at60 = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       today: TODAY,
     });
@@ -211,7 +211,7 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#8: deprecated phase (past deprecatedAt, before removedAt) emits info', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, -10).toISOString().slice(0, 10),
       removedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       today: TODAY,
@@ -223,7 +223,7 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#8: deprecated phase in strict mode emits HIGH severity', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, -10).toISOString().slice(0, 10),
       removedAt: daysFrom(TODAY, 60).toISOString().slice(0, 10),
       strictModeAtDeprecatedAt: true,
@@ -235,10 +235,10 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#10: removed phase emits migration task auto-action + HIGH severity', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-ada-002',
+      adapterName: 'github-models-embedding-legacy',
       deprecatedAt: daysFrom(TODAY, -60).toISOString().slice(0, 10),
       removedAt: daysFrom(TODAY, -1).toISOString().slice(0, 10),
-      replacementAlias: 'openai-text-embedding-3-small',
+      replacementAlias: 'github-models-embedding-small',
       today: TODAY,
     });
     expect(r.phase).toBe('removed');
@@ -246,13 +246,13 @@ describe('evaluateDeprecationLifecycle', () => {
     expect(r.decisionEvents[0]!.decisionType).toBe('embedding-provider-removed');
     expect(r.decisionEvents[0]!.severity).toBe('high');
     expect(r.decisionEvents[0]!.autoAction).toBe('emit-migration-task');
-    expect(r.decisionEvents[0]!.summary).toContain('openai-text-embedding-3-small');
+    expect(r.decisionEvents[0]!.summary).toContain('github-models-embedding-small');
   });
 
   it('AC#10: pipeline NEVER halts — evaluateDeprecationLifecycle does not throw on removed', () => {
     expect(() =>
       evaluateDeprecationLifecycle({
-        adapterName: 'openai-text-embedding-ada-002',
+        adapterName: 'github-models-embedding-legacy',
         removedAt: daysFrom(TODAY, -100).toISOString().slice(0, 10),
         today: TODAY,
       }),
@@ -263,7 +263,7 @@ describe('evaluateDeprecationLifecycle', () => {
     // At 75 days before deprecatedAt with adapterDefaultGracePeriodDays=60,
     // we are BEFORE the warning window → pre-warning.
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'cohere-embed-v3',
+      adapterName: 'self-hosted-embed-v3',
       deprecatedAt: daysFrom(TODAY, 75).toISOString().slice(0, 10),
       adapterDefaultGracePeriodDays: 60,
       today: TODAY,
@@ -274,7 +274,7 @@ describe('evaluateDeprecationLifecycle', () => {
 
   it('AC#8: org override 120d widens the window vs adapter 60d', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'cohere-embed-v3',
+      adapterName: 'self-hosted-embed-v3',
       deprecatedAt: daysFrom(TODAY, 100).toISOString().slice(0, 10),
       adapterDefaultGracePeriodDays: 60,
       orgGracePeriodDays: 120,
@@ -295,7 +295,7 @@ describe('evaluateDeprecationLifecycle', () => {
     // deprecatedAt is 100 days out, org window is 120 days → in warning phase
     // but daysToDeprecatedAt=100 > 89 milestone, so no milestone is "due".
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'cohere-embed-v3',
+      adapterName: 'self-hosted-embed-v3',
       deprecatedAt: daysFrom(TODAY, 100).toISOString().slice(0, 10),
       orgGracePeriodDays: 120,
       today: TODAY,

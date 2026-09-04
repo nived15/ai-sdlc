@@ -1,17 +1,11 @@
 /**
- * HarnessAdapter framework per RFC-0010 §13. Decouples the orchestrator from any single
- * coding-agent runtime. Each adapter declares static capabilities + binary requirements;
- * the orchestrator validates at pipeline-load and dispatches at runtime, with the
- * fallback chain handling availability failures.
+ * HarnessAdapter framework per RFC-0010 §13. Decouples the orchestrator from the
+ * concrete coding-agent runtime binary. The adapter declares static capabilities +
+ * binary requirements; the orchestrator validates at pipeline-load and dispatches
+ * at runtime, with the fallback chain handling availability failures.
  */
 
-export type HarnessName =
-  | 'claude-code'
-  | 'codex'
-  | 'gemini-cli'
-  | 'opencode'
-  | 'aider'
-  | 'generic-api';
+export type HarnessName = 'copilot';
 
 export interface HarnessCapabilities {
   /** Can spawn a clean session per invocation (no leaked context). */
@@ -112,9 +106,9 @@ export interface HarnessAdapter {
 
   /**
    * Stable identifier for the credential / account in scope. Used as the SubscriptionLedger
-   * key per RFC §14.12. MUST be a one-way derivation (e.g., SHA-256 of the API key).
-   * Returns null when the harness cannot derive an account identity (e.g., generic-api
-   * with no auth scheme).
+   * key per RFC §14.12. MUST be a one-way derivation (e.g., SHA-256 of the token).
+   * Returns null when the harness cannot derive an account identity (e.g., an
+   * unauthenticated CLI with no token in scope).
    */
   getAccountId(): Promise<string | null>;
 

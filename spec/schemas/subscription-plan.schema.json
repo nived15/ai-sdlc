@@ -22,7 +22,7 @@
       "properties": {
         "harness": {
           "type": "string",
-          "description": "Name of the registered harness this plan applies to (e.g., claude-code, codex)."
+          "description": "Name of the registered harness this plan applies to (e.g., copilot)."
         },
         "billingMode": {
           "type": "string",
@@ -47,7 +47,7 @@
             "multiplier": {
               "type": "number",
               "exclusiveMinimum": 1,
-              "description": "Token allocation multiplier during off-peak (e.g., 2.0 for Claude Code 2x)."
+              "description": "Token allocation multiplier during off-peak (e.g., 2.0 for GitHub Copilot CLI 2x)."
             },
             "schedule": {
               "type": "array",

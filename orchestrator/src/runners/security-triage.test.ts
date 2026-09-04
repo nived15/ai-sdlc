@@ -30,36 +30,36 @@ function makeApiResponse(
   return {
     content: [{ type: 'text', text: JSON.stringify(verdict) }],
     usage,
-    model: 'claude-sonnet-4-5-20250929',
+    model: 'balanced',
   };
 }
 
 describe('SecurityTriageRunner', () => {
-  const originalApiKey = process.env.ANTHROPIC_API_KEY;
+  const originalApiKey = process.env.GITHUB_MODELS_TOKEN;
 
   beforeEach(() => {
-    process.env.ANTHROPIC_API_KEY = 'test-api-key';
+    process.env.GITHUB_MODELS_TOKEN = 'test-api-key';
   });
 
   afterEach(() => {
     if (originalApiKey !== undefined) {
-      process.env.ANTHROPIC_API_KEY = originalApiKey;
+      process.env.GITHUB_MODELS_TOKEN = originalApiKey;
     } else {
-      delete process.env.ANTHROPIC_API_KEY;
+      delete process.env.GITHUB_MODELS_TOKEN;
     }
     vi.restoreAllMocks();
   });
 
-  it('returns error when ANTHROPIC_API_KEY is missing', async () => {
-    delete process.env.ANTHROPIC_API_KEY;
+  it('returns error when GITHUB_MODELS_TOKEN is missing', async () => {
+    delete process.env.GITHUB_MODELS_TOKEN;
     const runner = new SecurityTriageRunner();
     const result = await runner.run(makeContext());
     expect(result.success).toBe(false);
-    expect(result.error).toContain('ANTHROPIC_API_KEY');
+    expect(result.error).toContain('GITHUB_MODELS_TOKEN');
   });
 
   it('uses config apiKey over env var', async () => {
-    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.GITHUB_MODELS_TOKEN;
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify(
@@ -151,7 +151,7 @@ describe('SecurityTriageRunner', () => {
     const result = await runner.run(makeContext());
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Anthropic API error 500');
+    expect(result.error).toContain('GitHub Models API error 500');
   });
 
   it('handles network errors gracefully', async () => {
@@ -338,15 +338,15 @@ describe('SecurityTriageRunner', () => {
 });
 
 describe('SecurityTriageRunner — harness path', () => {
-  const originalApiKey = process.env.ANTHROPIC_API_KEY;
+  const originalApiKey = process.env.GITHUB_MODELS_TOKEN;
 
   beforeEach(() => {
-    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.GITHUB_MODELS_TOKEN;
   });
 
   afterEach(() => {
-    if (originalApiKey !== undefined) process.env.ANTHROPIC_API_KEY = originalApiKey;
-    else delete process.env.ANTHROPIC_API_KEY;
+    if (originalApiKey !== undefined) process.env.GITHUB_MODELS_TOKEN = originalApiKey;
+    else delete process.env.GITHUB_MODELS_TOKEN;
     vi.restoreAllMocks();
   });
 
@@ -368,7 +368,7 @@ describe('SecurityTriageRunner — harness path', () => {
       errorDetail: result.errorDetail,
     }));
     return {
-      name: 'claude-code',
+      name: 'copilot',
       capabilities: {
         freshContext: true,
         customTools: true,
@@ -379,7 +379,7 @@ describe('SecurityTriageRunner — harness path', () => {
         maxContextTokens: 1_000_000,
       },
       requires: {
-        binary: 'claude',
+        binary: 'copilot',
         versionRange: '>=2.0.0',
         versionProbe: { args: [], parse: () => '' },
       },
@@ -407,14 +407,14 @@ describe('SecurityTriageRunner — harness path', () => {
     const call = harness.invoke.mock.calls[0]![0] as HarnessInput;
     expect(call.prompt).toContain(TRIAGE_SYSTEM_PROMPT);
     expect(call.prompt).toContain('real issue body');
-    expect(call.model).toBe('claude-sonnet-4-5-20250929');
+    expect(call.model).toBe('gpt-5');
     expect(result.success).toBe(true);
     const verdict = JSON.parse(result.summary) as TriageVerdict;
     expect(verdict.safe).toBe(true);
     expect(verdict.riskScore).toBe(1);
   });
 
-  it('does NOT require ANTHROPIC_API_KEY when harness is configured', async () => {
+  it('does NOT require GITHUB_MODELS_TOKEN when harness is configured', async () => {
     const harness = makeHarness({
       outputText: JSON.stringify({
         safe: true,
@@ -433,7 +433,7 @@ describe('SecurityTriageRunner — harness path', () => {
   it('returns failure with helpful message when harness invoke fails', async () => {
     const harness = makeHarness({
       status: 'failure',
-      errorDetail: 'claude: not authenticated — run `claude login`',
+      errorDetail: 'copilot: not authenticated — run `copilot login`',
     });
     const runner = new SecurityTriageRunner({ harness });
     const result = await runner.run(makeContext());
@@ -474,7 +474,7 @@ describe('SecurityTriageRunner — harness path', () => {
     const runner = new SecurityTriageRunner();
     const result = await runner.run(makeContext());
     expect(result.success).toBe(false);
-    expect(result.error).toContain('ANTHROPIC_API_KEY is not set');
+    expect(result.error).toContain('GITHUB_MODELS_TOKEN is not set');
     expect(result.error).toContain('harness');
   });
 });

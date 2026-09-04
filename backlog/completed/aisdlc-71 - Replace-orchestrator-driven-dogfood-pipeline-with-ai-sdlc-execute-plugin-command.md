@@ -25,7 +25,7 @@ references:
   - ai-sdlc-plugin/hooks/enforce-blocked-actions.sh
   - ai-sdlc-plugin/plugin.json
   - scripts/check-task-moved.sh
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 priority: high
 ---
 

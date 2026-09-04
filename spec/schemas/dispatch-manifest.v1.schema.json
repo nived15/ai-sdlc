@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-sdlc.io/schemas/v1alpha1/dispatch-manifest.v1.schema.json",
   "title": "AI-SDLC DispatchManifest",
-  "description": "Dispatch manifest written by the Conductor to .ai-sdlc/dispatch/queue/<task-id>.dispatch.json and picked up by a Worker (RFC-0041 §4.4). One file per dispatched task; the manifest's full lifecycle is queue/ → inflight/ (atomic rename on claim) → done/ (verdict landed) or failed/ (diagnostic landed). Phase 1 only the in-session-agent Worker kind is implemented; claude-p-shell is declared here for forward-compat with Phase 2 (AISDLC-377.3).",
+  "description": "Dispatch manifest written by the Conductor to .ai-sdlc/dispatch/queue/<task-id>.dispatch.json and picked up by a Worker (RFC-0041 §4.4). One file per dispatched task; the manifest's full lifecycle is queue/ → inflight/ (atomic rename on claim) → done/ (verdict landed) or failed/ (diagnostic landed). Phase 1 only the in-session-agent Worker kind is implemented; copilot-p-shell is declared here for forward-compat with Phase 2 (AISDLC-377.3).",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -44,8 +44,8 @@
     },
     "workerKind": {
       "type": "string",
-      "enum": ["in-session-agent", "claude-p-shell", "any"],
-      "description": "Which Worker backend may claim this manifest. 'in-session-agent' (Phase 1) = foreground Agent call in an operator-opened CC session, draws subscription quota. 'claude-p-shell' (Phase 2) = supervisor-spawned claude -p subprocess, draws Agent SDK credit pool post-2026-06-15. 'any' = first-available wins."
+      "enum": ["in-session-agent", "copilot-p-shell", "any"],
+      "description": "Which Worker backend may claim this manifest. 'in-session-agent' (Phase 1) = foreground Agent call in an operator-opened CC session, draws subscription quota. 'copilot-p-shell' (Phase 2) = supervisor-spawned copilot -p subprocess, draws Agent SDK credit pool post-2026-06-15. 'any' = first-available wins."
     },
     "dispatchedAt": {
       "type": "string",
@@ -70,12 +70,12 @@
         "model": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional model override (e.g. 'claude-sonnet-4-6'). When absent the Worker uses its default per-role model."
+          "description": "Optional model override (e.g. 'copilot-sonnet-4-6'). When absent the Worker uses its default per-role model."
         },
         "budgetMs": {
           "type": "integer",
           "minimum": 60000,
-          "description": "Per-Worker wall-clock budget in milliseconds. Default 1800000 (30 min) — matches ShellClaudePSpawner.DEFAULT_TIMEOUT_MS per RFC-0041 OQ-3."
+          "description": "Per-Worker wall-clock budget in milliseconds. Default 1800000 (30 min) — matches CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS per RFC-0041 OQ-3."
         },
         "verifyCommands": {
           "type": "array",
@@ -104,12 +104,12 @@
     "lastSessionId": {
       "type": "string",
       "minLength": 1,
-      "description": "Phase 1.5 (AISDLC-377.2) — claude -p --session-id captured on first attempt for context-preserving resume of claude-p-shell Workers. The supervisor passes --session-id <uuid> on first spawn, records the uuid here on successful exit, and re-spawns with --resume <uuid> '<conductor-feedback>' on resume signal. in-session-agent Workers leave this null (they use the Agent tool's continue:true semantics instead). Phase 2 (AISDLC-377.3) wires the supervisor side."
+      "description": "Phase 1.5 (AISDLC-377.2) — copilot -p --session-id captured on first attempt for context-preserving resume of copilot-p-shell Workers. The supervisor passes --session-id <uuid> on first spawn, records the uuid here on successful exit, and re-spawns with --resume <uuid> '<conductor-feedback>' on resume signal. in-session-agent Workers leave this null (they use the Agent tool's continue:true semantics instead). Phase 2 (AISDLC-377.3) wires the supervisor side."
     },
     "noClaimBefore": {
       "type": "string",
       "format": "date-time",
-      "description": "OQ-7 (RFC-0041) — quota-backoff gate. When set, Workers MUST refuse to claim this manifest until the wall-clock passes this timestamp. Used by the Conductor to honor Anthropic Retry-After after a 429."
+      "description": "OQ-7 (RFC-0041) — quota-backoff gate. When set, Workers MUST refuse to claim this manifest until the wall-clock passes this timestamp. Used by the Conductor to honor GitHub Models Retry-After after a 429."
     }
   },
   "additionalProperties": false

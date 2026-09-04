@@ -412,7 +412,7 @@ export function buildAttestationCli(argv: string[]): ReturnType<typeof yargs> {
               demandOption: true,
               describe:
                 'Reviewer name: code-reviewer | test-reviewer | security-reviewer | ' +
-                'code-reviewer-codex | test-reviewer-codex.',
+                'code-reviewer-copilot | test-reviewer-copilot.',
             })
             .option('transcript-path', {
               type: 'string',
@@ -434,12 +434,12 @@ export function buildAttestationCli(argv: string[]): ReturnType<typeof yargs> {
             .option('harness', {
               type: 'string',
               demandOption: true,
-              describe: 'Harness: claude-code | codex.',
+              describe: 'Harness: copilot.',
             })
             .option('model', {
               type: 'string',
               demandOption: true,
-              describe: 'LLM model identifier, e.g. claude-sonnet-4-6.',
+              describe: 'LLM model identifier, e.g. balanced.',
             })
             .option('patch-id', {
               type: 'string',

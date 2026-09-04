@@ -15,7 +15,6 @@ dependencies:
 references:
   - scripts/check-attestation-sign.sh
   - ai-sdlc-plugin/scripts/sign-attestation.mjs
-  - docs/operations/cross-harness-review.md
 priority: medium
 ---
 

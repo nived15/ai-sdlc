@@ -35,8 +35,8 @@ openshell --version
 Create providers for the API keys your agents need:
 
 ```bash
-# For Claude Code
-openshell provider create --name claude --type claude --from-existing
+# For GitHub Copilot CLI
+openshell provider create --name copilot --type copilot --from-existing
 
 # For GitHub access
 openshell provider create --name github --type github --from-existing
@@ -69,12 +69,12 @@ import { createOpenShellSandbox } from '@ai-sdlc/reference';
 const sandbox = createOpenShellSandbox(exec, {
   workDir: '/path/to/repo',
   networkEndpoints: {
-    anthropic: [{ host: 'api.anthropic.com', port: 443, access: 'full' }],
+    github-models: [{ host: 'models.github.ai', port: 443, access: 'full' }],
     github: [{ host: 'api.github.com', port: 443, access: 'read-write' }],
     npm: [{ host: 'registry.npmjs.org', port: 443, access: 'read-only' }],
   },
   autoProviders: [
-    { name: 'claude', type: 'claude' },
+    { name: 'copilot', type: 'copilot' },
     { name: 'github', type: 'github' },
   ],
 });
@@ -94,7 +94,7 @@ Add OpenShell to your CI workflow:
 - name: Run AI-SDLC pipeline
   env:
     AI_SDLC_SANDBOX_PROVIDER: openshell
-    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
     GITHUB_TOKEN: ${{ secrets.AI_SDLC_PAT }}
   run: pnpm --filter @ai-sdlc/dogfood execute --issue ${{ github.event.issue.number }}
 ```

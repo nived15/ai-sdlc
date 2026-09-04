@@ -31,7 +31,7 @@ if (!command || typeof command !== 'string' || !command.trim()) {
 // ── Find project root and load agent-role.yaml ───────────────────
 
 const projectDir =
-  process.env.CLAUDE_PROJECT_DIR ||
+  process.env.COPILOT_PROJECT_DIR ||
   (() => {
     try {
       return execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();

@@ -566,13 +566,13 @@ describe('checkStaleLadder (AC-8)', () => {
         classification: 'not-actionable' as unknown as 'quick-fix-task',
         confidence: 0.8,
         reasoning: 'Not worth tracking.',
-        model: 'claude-haiku-4-5',
+        model: 'gpt-5-mini',
       },
       'capture-severity': {
         classification: 'low',
         confidence: 0.7,
         reasoning: 'Trivial.',
-        model: 'claude-haiku-4-5',
+        model: 'gpt-5-mini',
       },
     } as unknown as ConstructorParameters<typeof FakeLlmInvoker>[0]);
 

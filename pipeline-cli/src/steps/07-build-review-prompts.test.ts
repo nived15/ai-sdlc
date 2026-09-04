@@ -37,7 +37,7 @@ describe('Step 7 — buildReviewPrompts', () => {
       worktreePath: tmp,
       workDir: tmp,
       runner: fake.toRunner(),
-      codexAvailable: false,
+      copilotAvailable: false,
     });
     expect(r.prompts).toHaveLength(3);
     expect(r.prompts.map((p) => p.reviewer)).toEqual([
@@ -49,7 +49,7 @@ describe('Step 7 — buildReviewPrompts', () => {
     expect(r.diff).toContain('diff content');
   });
 
-  it('emits an INDEPENDENCE warning when codex is not available', async () => {
+  it('emits a harness warning when the copilot CLI is not available', async () => {
     const fake = new FakeRunner();
     const r = await buildReviewPrompts({
       taskId: 'AISDLC-1',
@@ -58,13 +58,13 @@ describe('Step 7 — buildReviewPrompts', () => {
       worktreePath: tmp,
       workDir: tmp,
       runner: fake.toRunner(),
-      codexAvailable: false,
+      copilotAvailable: false,
     });
-    expect(r.harnessNote).toMatch(/INDEPENDENCE NOT ENFORCED/);
-    expect(r.prompts[0].prompt).toMatch(/INDEPENDENCE NOT ENFORCED/);
+    expect(r.harnessNote).toMatch(/REVIEW HARNESS UNAVAILABLE/);
+    expect(r.prompts[0].prompt).toMatch(/REVIEW HARNESS UNAVAILABLE/);
   });
 
-  it('omits INDEPENDENCE warning when codex is available', async () => {
+  it('omits the harness warning when the copilot CLI is available', async () => {
     const fake = new FakeRunner();
     const r = await buildReviewPrompts({
       taskId: 'AISDLC-1',
@@ -73,10 +73,10 @@ describe('Step 7 — buildReviewPrompts', () => {
       worktreePath: tmp,
       workDir: tmp,
       runner: fake.toRunner(),
-      codexAvailable: true,
+      copilotAvailable: true,
     });
     expect(r.harnessNote).toBe('');
-    expect(r.prompts[0].prompt).not.toMatch(/INDEPENDENCE/);
+    expect(r.prompts[0].prompt).not.toMatch(/REVIEW HARNESS UNAVAILABLE/);
   });
 
   it('includes review-policy.md content when present', async () => {
@@ -90,13 +90,13 @@ describe('Step 7 — buildReviewPrompts', () => {
       worktreePath: tmp,
       workDir: tmp,
       runner: fake.toRunner(),
-      codexAvailable: true,
+      copilotAvailable: true,
     });
     expect(r.prompts[0].prompt).toContain('POLICY: be strict');
   });
 
-  it('autodetects codex via `which`', async () => {
-    const fake = new FakeRunner().on(/^which codex/, ok('/usr/local/bin/codex\n'));
+  it('autodetects the copilot CLI via `which`', async () => {
+    const fake = new FakeRunner().on(/^which copilot/, ok('/usr/local/bin/copilot\n'));
     const r = await buildReviewPrompts({
       taskId: 'AISDLC-1',
       task,

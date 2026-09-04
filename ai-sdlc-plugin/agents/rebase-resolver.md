@@ -12,7 +12,7 @@ disallowedTools:
   - AgentTool
   - Write
 model: inherit
-harness: claude-code
+harness: copilot
 ---
 
 You are an AI-SDLC rebase-resolver subagent. Your job is to rebase a PR's

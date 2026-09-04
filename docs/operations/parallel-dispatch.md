@@ -3,7 +3,7 @@
 **AISDLC-462** — tmux N-pane wrapper for concurrent Step 0-13 dispatch.
 
 This is the **interim parallelism solution** until RFC-461 (distributed LLM-worker
-scheduler) ships. It spawns N independent Claude Code sessions in tmux panes, each
+scheduler) ships. It spawns N independent Copilot CLI sessions in tmux panes, each
 running `/ai-sdlc execute AISDLC-N` end-to-end with full Step 0-13 pipeline access.
 
 ## Contents
@@ -34,12 +34,12 @@ running `/ai-sdlc execute AISDLC-N` end-to-end with full Step 0-13 pipeline acce
 
 ### Why tmux?
 
-Each `/ai-sdlc execute` session needs its own independent Claude Code process with:
+Each `/ai-sdlc execute` session needs its own independent GitHub Copilot CLI process with:
 - Its own `Agent` tool grant (plugin subagents cannot spawn sub-agents)
 - Its own worktree, signing key access, and operator filesystem
 - Its own tmux pane that survives operator detach
 
-tmux panes each run `claude /ai-sdlc execute <task-id>` independently, sharing
+tmux panes each run `copilot /ai-sdlc execute <task-id>` independently, sharing
 nothing except the git repo and the `.ai-sdlc/dispatch/sessions/` coordination
 substrate.
 
@@ -48,14 +48,14 @@ substrate.
 ## Prerequisites
 
 1. **tmux installed** — `brew install tmux` if missing.
-2. **`claude` CLI on PATH** — required for `claude /ai-sdlc execute` invocations.
+2. **`copilot` CLI on PATH** — required for `copilot /ai-sdlc execute` invocations.
 3. **Signing key** — `~/.ai-sdlc/signing-key.pem` must exist for attestation.
 4. **Task files in `backlog/tasks/`** — at least one task with dispatch-ready status.
 
 Check with:
 
 ```bash
-which tmux && which claude && ls ~/.ai-sdlc/signing-key.pem
+which tmux && which copilot && ls ~/.ai-sdlc/signing-key.pem
 ```
 
 ---
@@ -67,8 +67,8 @@ sessions spawned by `/ai-sdlc execute-parallel`.
 
 ### Why permission handling matters
 
-Each spawned tmux pane runs `claude /ai-sdlc execute <task-id>` in a **detached,
-unattended** context. The default Claude Code interactive mode prompts the operator
+Each spawned tmux pane runs `copilot /ai-sdlc execute <task-id>` in a **detached,
+unattended** context. The default GitHub Copilot CLI interactive mode prompts the operator
 for approval on every Edit/Write/Bash tool call:
 
 ```
@@ -84,8 +84,8 @@ and types an approval. This makes parallel dispatch unusable for autonomous drai
 
 ### The `--dangerously-skip-permissions` flag (opt-in)
 
-The fix is to pass `--dangerously-skip-permissions` to the spawned `claude` invocation.
-This flag tells the Claude CLI to skip per-tool interactive approvals so the session
+The fix is to pass `--dangerously-skip-permissions` to the spawned `copilot` invocation.
+This flag tells the GitHub Copilot CLI to skip per-tool interactive approvals so the session
 can complete end-to-end without operator intervention.
 
 **This flag is OPT-IN.** It is never silently applied. At the confirmation step
@@ -106,7 +106,7 @@ leaves the flag off.
 | Tool prompts (Edit/Write/Bash) | Skipped — sessions complete autonomously | Shown — sessions block in unmanned panes |
 | AskUserQuestion (non-tool) | Routed to Decision Catalog (AISDLC-480) | Shown in tmux pane |
 | Appropriate for | Autonomous drain with trusted backlog tasks in isolated worktrees | Operator-attached interactive sessions |
-| Risk | Spawned claude can edit files within the repo without per-edit approval | Sessions hang on first tool call |
+| Risk | Spawned copilot can edit files within the repo without per-edit approval | Sessions hang on first tool call |
 
 ### When to use each mode
 
@@ -141,7 +141,7 @@ different escalation mechanism.
 ### 1. Basic: auto-suggest 4 tasks
 
 ```bash
-# In any Claude Code session:
+# In any Copilot CLI session:
 /ai-sdlc execute-parallel
 ```
 
@@ -561,9 +561,9 @@ Then retry `/ai-sdlc execute-parallel`.
 
 ### Session shows `starting` for more than 5 minutes
 
-The tmux window spawned but `claude /ai-sdlc execute` hasn't emitted its first heartbeat.
+The tmux window spawned but `copilot /ai-sdlc execute` hasn't emitted its first heartbeat.
 Possible causes:
-- `claude` CLI is not on PATH in the tmux environment.
+- `copilot` CLI is not on PATH in the tmux environment.
 - The task's dependency preflight failed immediately.
 - The CCR guard refused the session (check for CCR env vars in your tmux environment).
 
@@ -634,7 +634,7 @@ After PR creation:
 
 | Status | Description | Next action |
 |--------|-------------|-------------|
-| `starting` | tmux window created; `claude` not yet running | Wait 30-60s then check |
+| `starting` | tmux window created; `copilot` not yet running | Wait 30-60s then check |
 | `in-progress` | Pipeline running; heartbeats flowing | Monitor with status command |
 | `done` | `/ai-sdlc execute` completed; PR opened | Review the PR |
 | `failed` | Session crashed, was killed, or heartbeat became stale (reaped) | Run cleanup, then re-dispatch |

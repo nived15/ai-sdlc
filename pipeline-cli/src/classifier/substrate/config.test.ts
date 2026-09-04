@@ -76,11 +76,11 @@ describe('loadSubstrateConfig — global overrides', () => {
       writeYaml(
         repoRoot,
         'capture-config.yaml',
-        'classifier:\n  threshold: 0.85\n  model: claude-sonnet-4-5\n',
+        'classifier:\n  threshold: 0.85\n  model: balanced\n',
       );
       const cfg = loadSubstrateConfig('capture-triage', repoRoot);
       expect(cfg.threshold).toBe(0.85);
-      expect(cfg.model).toBe('claude-sonnet-4-5');
+      expect(cfg.model).toBe('balanced');
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -93,13 +93,13 @@ describe('loadSubstrateConfig — global overrides', () => {
       writeYaml(
         repoRoot,
         'decisions-config.yaml',
-        'classifier:\n  threshold: 0.9\n  model: claude-opus-4-7\n',
+        'classifier:\n  threshold: 0.9\n  model: reasoning\n',
       );
       const captureCfg = loadSubstrateConfig('capture-triage', repoRoot);
       const decisionCfg = loadSubstrateConfig('decision-recommendation', repoRoot);
       expect(captureCfg.threshold).toBe(0.6);
       expect(decisionCfg.threshold).toBe(0.9);
-      expect(decisionCfg.model).toBe('claude-opus-4-7');
+      expect(decisionCfg.model).toBe('reasoning');
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -116,20 +116,20 @@ describe('loadSubstrateConfig — per-task overrides', () => {
         [
           'classifier:',
           '  threshold: 0.7',
-          '  model: claude-haiku-4-5',
+          '  model: gpt-5-mini',
           '  perTaskType:',
           '    capture-severity:',
           '      threshold: 0.85',
-          '      model: claude-sonnet-4-5',
+          '      model: balanced',
           '',
         ].join('\n'),
       );
       const triage = loadSubstrateConfig('capture-triage', repoRoot);
       const severity = loadSubstrateConfig('capture-severity', repoRoot);
       expect(triage.threshold).toBe(0.7);
-      expect(triage.model).toBe('claude-haiku-4-5');
+      expect(triage.model).toBe('gpt-5-mini');
       expect(severity.threshold).toBe(0.85);
-      expect(severity.model).toBe('claude-sonnet-4-5');
+      expect(severity.model).toBe('balanced');
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }

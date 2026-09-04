@@ -15,10 +15,10 @@ references:
   - pipeline-cli/src/cli/orchestrator.ts
   - pipeline-cli/src/orchestrator/loop.ts
   - pipeline-cli/src/cli/execute.ts
-  - pipeline-cli/src/runtime/spawners/codex-harness.ts
-  - scripts/codex-spawn-agent-bridge.mjs
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
+  - scripts/copilot-spawn-agent-bridge.mjs
   - docs/operations/orchestrator-runbook.md
-  - docs/operations/codex-execution-path.md
+  - docs/operations/copilot-spawner.md
 priority: high
 ---
 

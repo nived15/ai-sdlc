@@ -83,20 +83,14 @@ describe('defaults — new constants', () => {
     expect(defaults.DEFAULT_COMMIT_CO_AUTHOR.length).toBeGreaterThan(0);
   });
 
-  it('DEFAULT_OPENAI_API_URL is a valid URL', () => {
-    expect(defaults.DEFAULT_OPENAI_API_URL).toBe('https://api.openai.com/v1/chat/completions');
+  it('DEFAULT_GITHUB_MODELS_API_URL is the GitHub Models inference endpoint', () => {
+    expect(defaults.DEFAULT_GITHUB_MODELS_API_URL).toBe(
+      'https://models.github.ai/inference/chat/completions',
+    );
   });
 
-  it('DEFAULT_OPENAI_MODEL is gpt-4', () => {
-    expect(defaults.DEFAULT_OPENAI_MODEL).toBe('gpt-4');
-  });
-
-  it('DEFAULT_ANTHROPIC_API_URL is a valid URL', () => {
-    expect(defaults.DEFAULT_ANTHROPIC_API_URL).toBe('https://api.anthropic.com/v1/messages');
-  });
-
-  it('DEFAULT_ANTHROPIC_MODEL is claude-sonnet-4-5-20250929', () => {
-    expect(defaults.DEFAULT_ANTHROPIC_MODEL).toBe('claude-sonnet-4-5-20250929');
+  it('DEFAULT_GITHUB_MODELS_MODEL is gpt-5', () => {
+    expect(defaults.DEFAULT_GITHUB_MODELS_MODEL).toBe('gpt-5');
   });
 
   it('DEFAULT_GENERIC_LLM_MODEL is "default"', () => {

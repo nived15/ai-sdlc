@@ -3,7 +3,7 @@
  *
  * Storage layout:
  *   <artifactsDir>/_embeddings/
- *   └── openai-text-embedding-3-small-2024-01-25.jsonl   (one per provider+version)
+ *   └── github-models-embedding-small-2024-01-25.jsonl   (one per provider+version)
  *
  * Files are named `<safeProvider>-<safeModelVersion>.jsonl` where each component
  * is sanitized to `[a-zA-Z0-9._-]`. The directory itself is the index — `scan()`

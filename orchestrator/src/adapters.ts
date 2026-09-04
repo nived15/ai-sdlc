@@ -175,7 +175,7 @@ export function createPipelineAdapterRegistry(): AdapterRegistry {
         workDir: process.env.AI_SDLC_WORK_DIR,
         binaryPath: process.env.AI_SDLC_OPENSHELL_BIN,
         autoProviders: [
-          { name: 'claude', type: 'claude' },
+          { name: 'copilot', type: 'copilot' },
           { name: 'github', type: 'github' },
         ],
       };

@@ -1,8 +1,8 @@
 /**
  * Project-root discovery for the plugin's MCP server (AISDLC-99, AISDLC-216).
  *
- * The plugin's `plugin.json` sets `AI_SDLC_PROJECT_ROOT=${CLAUDE_PLUGIN_DATA}`
- * which resolves to `~/.claude/plugins/data/<source>-<plugin-name>/` — a
+ * The plugin's `plugin.json` sets `AI_SDLC_PROJECT_ROOT=${COPILOT_PLUGIN_DATA}`
+ * which resolves to `~/.copilot/plugins/data/<source>-<plugin-name>/` — a
  * write-available data directory that has nothing to do with the project the
  * user is actually working in. So tools that operate on `<project>/backlog/`
  * (e.g. `task_edit`, `task_complete`) silently target the wrong filesystem
@@ -14,7 +14,7 @@
  * 1. `AI_SDLC_PROJECT_ROOT` env var — but only if it points at a directory
  *    that contains a `backlog/` subdirectory. (The plugin's default value
  *    fails this check, so we transparently fall through to step 2.)
- * 2. `CLAUDE_PROJECT_DIR` env var — set by Claude Code when a session is
+ * 2. `COPILOT_PROJECT_DIR` env var — set by GitHub Copilot CLI when a session is
  *    bound to a project. Same `backlog/` validity check.
  * 3. Walk up from `process.cwd()` looking for the nearest ancestor directory
  *    that contains a `backlog/` subdirectory.
@@ -49,7 +49,7 @@ export const PATTERN_C_ERROR_MESSAGE =
   'AI-SDLC: Pattern C detected — parent working tree is read-only. ' +
   'Set AI_SDLC_ACTIVE_TASK_ID env (e.g. export AI_SDLC_ACTIVE_TASK_ID=AISDLC-216) ' +
   'or ensure /ai-sdlc execute has written a per-worktree .active-task sentinel ' +
-  '(at .worktrees/<task-id>/.active-task) before launching Claude Code.';
+  '(at .worktrees/<task-id>/.active-task) before launching GitHub Copilot CLI.';
 
 /**
  * Returns true when `dir` is an existing directory that contains a
@@ -184,9 +184,9 @@ export function resolveProjectRoot(opts: ResolveProjectRootOptions = {}): string
     return applyPatternCIfNeeded(resolve(envProjectRoot), env);
   }
 
-  const claudeProjectDir = env.CLAUDE_PROJECT_DIR;
-  if (claudeProjectDir && hasBacklogDir(claudeProjectDir)) {
-    return applyPatternCIfNeeded(resolve(claudeProjectDir), env);
+  const copilotProjectDir = env.COPILOT_PROJECT_DIR;
+  if (copilotProjectDir && hasBacklogDir(copilotProjectDir)) {
+    return applyPatternCIfNeeded(resolve(copilotProjectDir), env);
   }
 
   const fromCwd = walkUpForBacklog(cwd);

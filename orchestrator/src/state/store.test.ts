@@ -326,7 +326,7 @@ describe('Pipeline Runs', () => {
       gateResults: undefined,
       costUsd: 0.05,
       tokensUsed: 1000,
-      model: 'gpt-4',
+      model: 'gpt-5',
       agentName: 'agent-x',
       complexityScore: 3,
     });
@@ -343,7 +343,7 @@ describe('Pipeline Runs', () => {
     expect(run!.currentStage).toBe('compile');
     expect(run!.costUsd).toBe(0.05);
     expect(run!.tokensUsed).toBe(1000);
-    expect(run!.model).toBe('gpt-4');
+    expect(run!.model).toBe('gpt-5');
     expect(run!.agentName).toBe('agent-x');
     expect(run!.complexityScore).toBe(3);
     expect(run!.startedAt).toBeDefined();
@@ -566,7 +566,7 @@ describe('Cost Ledger', () => {
       runId: 'run-1',
       agentName: 'agent-a',
       pipelineType: 'build',
-      model: 'gpt-4',
+      model: 'gpt-5',
       inputTokens: 100,
       outputTokens: 200,
       totalTokens: 300,
@@ -585,7 +585,7 @@ describe('Cost Ledger', () => {
     expect(e.runId).toBe('run-1');
     expect(e.agentName).toBe('agent-a');
     expect(e.pipelineType).toBe('build');
-    expect(e.model).toBe('gpt-4');
+    expect(e.model).toBe('gpt-5');
     expect(e.inputTokens).toBe(100);
     expect(e.outputTokens).toBe(200);
     expect(e.totalTokens).toBe(300);

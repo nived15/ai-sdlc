@@ -49,7 +49,7 @@ export interface VerifyResult {
  * Extract a normalised task ID from a Backlog.md filename.
  *
  * Convention: `<taskId-lower> - <title-slug>.md`
- * E.g. `aisdlc-203 - codex-workflow-atomic.md` → `aisdlc-203`
+ * E.g. `aisdlc-203 - copilot-workflow-atomic.md` → `aisdlc-203`
  *
  * Returns null when the filename doesn't match the convention.
  */

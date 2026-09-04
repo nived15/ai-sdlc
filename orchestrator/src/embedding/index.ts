@@ -1,6 +1,6 @@
 /**
  * Embedding adapter framework per RFC-0019.
- * Phase 1: interface + registry + OpenAI default adapter + errors.
+ * Phase 1: interface + registry + GitHub Copilot default adapter + errors.
  * Phase 2: vector storage backend + JSONL default + backend factory + GC.
  * Phase 3: stale-vector policy, cross-provider compatibility, deprecation
  *          lifecycle (AISDLC-339). Migration tooling itself lives in
@@ -37,8 +37,8 @@ export {
   listEmbeddingAdapters,
 } from './registry.js';
 
-export { OpenAITextEmbedding3Small } from './adapters/openai-text-embedding-3-small.js';
-export type { EmbeddingCostCallback } from './adapters/openai-text-embedding-3-small.js';
+export { GitHubModelsEmbeddingSmall } from './adapters/github-models-embedding-small.js';
+export type { EmbeddingCostCallback } from './adapters/github-models-embedding-small.js';
 
 // Phase 2: vector storage backend + JSONL default + backend factory.
 export type {

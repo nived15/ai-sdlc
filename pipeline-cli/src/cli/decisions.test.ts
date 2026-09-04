@@ -699,7 +699,7 @@ describe('exemplars subcommand (RFC-0035 Phase 9 / AISDLC-293)', () => {
       timestamp: '2026-05-15T10:00:00Z',
       taskType: 'decision-recommendation',
       input: { text: 'pick an option' },
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       classification: 'opt-a',
       confidence: 0.82,
       reasoning: 'r',

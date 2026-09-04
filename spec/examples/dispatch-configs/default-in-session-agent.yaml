@@ -7,7 +7,7 @@ metadata:
   name: ai-sdlc-dispatch
 spec:
   # Subscription-quota preserving (RFC-0041 §4.3.1 / AISDLC-353).
-  # Switch to 'claude-p-shell' only after Phase 2 (AISDLC-377.3) ships AND
+  # Switch to 'copilot-p-shell' only after Phase 2 (AISDLC-377.3) ships AND
   # you accept Agent SDK credit pool / API-token billing post-2026-06-15.
   defaultWorkerKind: in-session-agent
 
@@ -15,8 +15,8 @@ spec:
     # Bound the Conductor's manifest emission to the number of CC sessions
     # the operator is expected to keep open. Increase as you scale terminals.
     inSessionAgentMaxSessions: 4
-    # Phase 2 supervisor disabled until claude-p-shell Workers ship.
-    claudePShellMaxConcurrent: 0
+    # Phase 2 supervisor disabled until copilot-p-shell Workers ship.
+    copilotPShellMaxConcurrent: 0
 
   inSessionAgent:
     pollIntervalSec: 5 # RFC-0041 OQ-6 cost-first bias
@@ -25,10 +25,10 @@ spec:
     quotaBackoffMultiplier: 2 # OQ-7 doubling per consecutive 429
     emptyQueueHibernateSec: 30 # Hibernate when queue empty
 
-  # Phase 2 forward-compat — Workers ignore this until claude-p-shell ships.
-  claudePShell:
+  # Phase 2 forward-compat — Workers ignore this until copilot-p-shell ships.
+  copilotPShell:
     pollIntervalSec: 15
-    watchdogMs: 1800000 # 30 min, matches ShellClaudePSpawner default
+    watchdogMs: 1800000 # 30 min, matches CopilotHarnessAdapter default
     supervisorPidFile: .ai-sdlc/dispatch/.supervisor.pid
 
   boardDir: .ai-sdlc/dispatch

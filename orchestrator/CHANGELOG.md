@@ -141,7 +141,7 @@
 * **orchestrator:** tier-based agent-role tool defaults — coding/research/meta (AISDLC-79) ([adeb70d](https://github.com/ai-sdlc-framework/ai-sdlc/commit/adeb70dff0ef45e4c57677df973f02607e343ce7))
 * promote AI_SDLC_PARALLELISM to default-on (AISDLC-116) ([4d7c06d](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4d7c06d9c67deda9dcdd95e5b25706f526645bea))
 * rfc-0011 phase 1 schema + needs-clarification status (AISDLC-115.1) ([300682b](https://github.com/ai-sdlc-framework/ai-sdlc/commit/300682bca895ee9a61da67840c567a36e06a87da))
-* **spec:** attestation harness context + Codex finalization via MCP task_complete (AISDLC-202.3) ([#414](https://github.com/ai-sdlc-framework/ai-sdlc/issues/414)) ([c994a1b](https://github.com/ai-sdlc-framework/ai-sdlc/commit/c994a1bb476ddb9cee35de6c20b6d3bb01250f91))
+* **spec:** attestation harness context + GitHub Copilot finalization via MCP task_complete (AISDLC-202.3) ([#414](https://github.com/ai-sdlc-framework/ai-sdlc/issues/414)) ([c994a1b](https://github.com/ai-sdlc-framework/ai-sdlc/commit/c994a1bb476ddb9cee35de6c20b6d3bb01250f91))
 * **spec:** make pipeline.yaml canonical; deprecate pipeline-backlog.yaml (AISDLC-245.5) ([#444](https://github.com/ai-sdlc-framework/ai-sdlc/issues/444)) ([281d139](https://github.com/ai-sdlc-framework/ai-sdlc/commit/281d1397400778f7dd90ff78ad24197303b6643f))
 * verifier Phase 3 — require contentHashV3, bump schema to v3 (AISDLC-103) ([4602edf](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4602edf92cc24d12fa90167b52ff31a95247eaf8))
 
@@ -161,7 +161,7 @@
 * **orchestrator:** re-apply / harden AISDLC-189 init-workspace test fix (AISDLC-159) ([ea89d5b](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ea89d5bfd08fa8129a327f95e3d7a85c255cce19))
 * **orchestrator:** unset GIT_* env in init-workspace test + direct .git/ writes ([f4f1e28](https://github.com/ai-sdlc-framework/ai-sdlc/commit/f4f1e289a147d8dad6455c15bb69c81bf3e283f4))
 * **orchestrator:** unshadow CLI --version listener and cover with integration tests (AISDLC-78) ([07b5680](https://github.com/ai-sdlc-framework/ai-sdlc/commit/07b56803eb5baa2db3f9182f019f391c6f3a6996))
-* **orchestrator:** verifier accepts codex reviewer variants + enforces cross-harness independence (AISDLC-252) ([#418](https://github.com/ai-sdlc-framework/ai-sdlc/issues/418)) ([2c3b109](https://github.com/ai-sdlc-framework/ai-sdlc/commit/2c3b109729f15e7f2ceebbd796ebbe62ff3f00f9))
+* **orchestrator:** verifier accepts copilot reviewer variants + enforces cross-session independence (AISDLC-252) ([#418](https://github.com/ai-sdlc-framework/ai-sdlc/issues/418)) ([2c3b109](https://github.com/ai-sdlc-framework/ai-sdlc/commit/2c3b109729f15e7f2ceebbd796ebbe62ff3f00f9))
 * **orchestrator:** wire designAuthority diagnostic into HC_design (AISDLC-171) ([3efab87](https://github.com/ai-sdlc-framework/ai-sdlc/commit/3efab871dccd3250b5c1a3c7f7f3906eb94e1def))
 * pin detectGitRemote cwd via git -C to avoid host git origin bleed (AISDLC-104) ([937a5fa](https://github.com/ai-sdlc-framework/ai-sdlc/commit/937a5fa6130766557b130b9016becbd86ed13c42))
 * validate changedFileDeltas element shape (review feedback) ([9556af5](https://github.com/ai-sdlc-framework/ai-sdlc/commit/9556af5eaf1611f510b2c6780aabc4b155b86e52))
@@ -181,7 +181,7 @@
 * add action governance — blockedActions in agent-role.yaml ([#45](https://github.com/ai-sdlc-framework/ai-sdlc/issues/45)) ([eb53342](https://github.com/ai-sdlc-framework/ai-sdlc/commit/eb5334229bfd3f66464c4986efb0c432d1756a3e))
 * add automated dogfood pipeline — admission, routing, and PR review workflows ([4583ab6](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4583ab65285163ab16e42f140cdd74e87dbfdb9a))
 * add CI boundary to review agent prompts (AISDLC-8.1) ([975c0cd](https://github.com/ai-sdlc-framework/ai-sdlc/commit/975c0cdf000cf8a00e0968348b673aa80ec04be6))
-* add Claude Code plugin and SDK runner for native governance integration ([804f068](https://github.com/ai-sdlc-framework/ai-sdlc/commit/804f06801e388fb356cde716291abc4e3386f050))
+* add GitHub Copilot CLI plugin and SDK runner for native governance integration ([804f068](https://github.com/ai-sdlc-framework/ai-sdlc/commit/804f06801e388fb356cde716291abc4e3386f050))
 * add DiffAnalyzer for deterministic structural pre-review (AISDLC-8.2) ([ae0dde5](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ae0dde5cb7d227998dd73fcb290da968c05a4fb3))
 * add meta-review pass and feedback flywheel (AISDLC-8.5) ([c9ba69d](https://github.com/ai-sdlc-framework/ai-sdlc/commit/c9ba69da6fa811fecedfafd33c736b6b6b94af93))
 * add pipeline visibility and lint/format to agent context ([8f07b3e](https://github.com/ai-sdlc-framework/ai-sdlc/commit/8f07b3ef4bc72c1a3bc48a1ba77e6ab9643420ea))
@@ -210,9 +210,9 @@
 * **orchestrator:** rfc-0010 phase 4 artifacts + observability ([93a41f1](https://github.com/ai-sdlc-framework/ai-sdlc/commit/93a41f178961047d87aca7f6701ff4e43f301dae))
 * **orchestrator:** rfc-0010 phase 6 database isolation ([d44597f](https://github.com/ai-sdlc-framework/ai-sdlc/commit/d44597f4aa29330eb7f8c3bd5a1f6a57e89f4d4c))
 * **orchestrator:** tier-based agent-role tool defaults — coding/research/meta (AISDLC-79) ([22ffe01](https://github.com/ai-sdlc-framework/ai-sdlc/commit/22ffe011964a65e3c71da49bbb8cad5904b3481c))
-* **orchestrator:** wire ClaudeCodeAdapter into security triage ([ddaadf7](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ddaadf7743254d1f3afb9cd7d7cb50ac425b271c))
+* **orchestrator:** wire CopilotAdapter into security triage ([ddaadf7](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ddaadf7743254d1f3afb9cd7d7cb50ac425b271c))
 * replace 21 hand-tuned rules with principles + exemplar bank (AISDLC-8.4) ([b02a755](https://github.com/ai-sdlc-framework/ai-sdlc/commit/b02a755e960c98f0b55d2252c0d699e82e9a4e19))
-* stream agent progress via Claude Code stream-json output ([4c5c5b4](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4c5c5b4ead16d2238af4809ec1ea1e1ef954767b))
+* stream agent progress via GitHub Copilot CLI stream-json output ([4c5c5b4](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4c5c5b4ead16d2238af4809ec1ea1e1ef954767b))
 * workflow pattern detection Phase 1 — telemetry collection ([#50](https://github.com/ai-sdlc-framework/ai-sdlc/issues/50)) ([454548e](https://github.com/ai-sdlc-framework/ai-sdlc/commit/454548ebe86b7588dff523e68d128b3c0b283a79))
 * workflow pattern detection Phase 1 — telemetry collection ([#50](https://github.com/ai-sdlc-framework/ai-sdlc/issues/50)) ([68f36be](https://github.com/ai-sdlc-framework/ai-sdlc/commit/68f36be6e66dd354b483ed2d851993823d544b7b))
 * workflow pattern detection Phases 2-4 — detection, proposals, artifacts ([e33a303](https://github.com/ai-sdlc-framework/ai-sdlc/commit/e33a303e8f9158076c04361d0d09cd5a6f59c2e9))
@@ -222,7 +222,7 @@
 ### Bug Fixes
 
 * Add missing validation for empty issueBody in SecurityTriageRunner ([#33](https://github.com/ai-sdlc-framework/ai-sdlc/issues/33)) ([#34](https://github.com/ai-sdlc-framework/ai-sdlc/issues/34)) ([9f81e66](https://github.com/ai-sdlc-framework/ai-sdlc/commit/9f81e66dde0950f13272064cb36695cd7c2d8387))
-* add real-time observability to Claude Code runner ([bcb2f08](https://github.com/ai-sdlc-framework/ai-sdlc/commit/bcb2f0825f52914fa7b07acd286bbdd97f50dd87))
+* add real-time observability to GitHub Copilot CLI runner ([bcb2f08](https://github.com/ai-sdlc-framework/ai-sdlc/commit/bcb2f0825f52914fa7b07acd286bbdd97f50dd87))
 * address review findings — add schema, audit logging, requireHumanApproval ([e11a79d](https://github.com/ai-sdlc-framework/ai-sdlc/commit/e11a79dcacd8ff0f19934e09e18c6e169879a52f))
 * Agent should address review findings before human review ([#35](https://github.com/ai-sdlc-framework/ai-sdlc/issues/35)) ([#36](https://github.com/ai-sdlc-framework/ai-sdlc/issues/36)) ([34c7606](https://github.com/ai-sdlc-framework/ai-sdlc/commit/34c7606db4dacdc21875f876f332f8d61bfc4c2a))
 * allow review dismissals with documented reason ([c38fa35](https://github.com/ai-sdlc-framework/ai-sdlc/commit/c38fa358d89c6d9d297f68bbb7f4f99fbd008569))
@@ -264,7 +264,7 @@
 * add action governance — blockedActions in agent-role.yaml ([#45](https://github.com/ai-sdlc-framework/ai-sdlc/issues/45)) ([eb53342](https://github.com/ai-sdlc-framework/ai-sdlc/commit/eb5334229bfd3f66464c4986efb0c432d1756a3e))
 * add automated dogfood pipeline — admission, routing, and PR review workflows ([4583ab6](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4583ab65285163ab16e42f140cdd74e87dbfdb9a))
 * add CI boundary to review agent prompts (AISDLC-8.1) ([975c0cd](https://github.com/ai-sdlc-framework/ai-sdlc/commit/975c0cdf000cf8a00e0968348b673aa80ec04be6))
-* add Claude Code plugin and SDK runner for native governance integration ([804f068](https://github.com/ai-sdlc-framework/ai-sdlc/commit/804f06801e388fb356cde716291abc4e3386f050))
+* add GitHub Copilot CLI plugin and SDK runner for native governance integration ([804f068](https://github.com/ai-sdlc-framework/ai-sdlc/commit/804f06801e388fb356cde716291abc4e3386f050))
 * add DiffAnalyzer for deterministic structural pre-review (AISDLC-8.2) ([ae0dde5](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ae0dde5cb7d227998dd73fcb290da968c05a4fb3))
 * add meta-review pass and feedback flywheel (AISDLC-8.5) ([c9ba69d](https://github.com/ai-sdlc-framework/ai-sdlc/commit/c9ba69da6fa811fecedfafd33c736b6b6b94af93))
 * add pipeline visibility and lint/format to agent context ([8f07b3e](https://github.com/ai-sdlc-framework/ai-sdlc/commit/8f07b3ef4bc72c1a3bc48a1ba77e6ab9643420ea))
@@ -293,9 +293,9 @@
 * **orchestrator:** rfc-0010 phase 4 artifacts + observability ([93a41f1](https://github.com/ai-sdlc-framework/ai-sdlc/commit/93a41f178961047d87aca7f6701ff4e43f301dae))
 * **orchestrator:** rfc-0010 phase 6 database isolation ([d44597f](https://github.com/ai-sdlc-framework/ai-sdlc/commit/d44597f4aa29330eb7f8c3bd5a1f6a57e89f4d4c))
 * **orchestrator:** tier-based agent-role tool defaults — coding/research/meta (AISDLC-79) ([22ffe01](https://github.com/ai-sdlc-framework/ai-sdlc/commit/22ffe011964a65e3c71da49bbb8cad5904b3481c))
-* **orchestrator:** wire ClaudeCodeAdapter into security triage ([ddaadf7](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ddaadf7743254d1f3afb9cd7d7cb50ac425b271c))
+* **orchestrator:** wire CopilotAdapter into security triage ([ddaadf7](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ddaadf7743254d1f3afb9cd7d7cb50ac425b271c))
 * replace 21 hand-tuned rules with principles + exemplar bank (AISDLC-8.4) ([b02a755](https://github.com/ai-sdlc-framework/ai-sdlc/commit/b02a755e960c98f0b55d2252c0d699e82e9a4e19))
-* stream agent progress via Claude Code stream-json output ([4c5c5b4](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4c5c5b4ead16d2238af4809ec1ea1e1ef954767b))
+* stream agent progress via GitHub Copilot CLI stream-json output ([4c5c5b4](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4c5c5b4ead16d2238af4809ec1ea1e1ef954767b))
 * workflow pattern detection Phase 1 — telemetry collection ([#50](https://github.com/ai-sdlc-framework/ai-sdlc/issues/50)) ([454548e](https://github.com/ai-sdlc-framework/ai-sdlc/commit/454548ebe86b7588dff523e68d128b3c0b283a79))
 * workflow pattern detection Phase 1 — telemetry collection ([#50](https://github.com/ai-sdlc-framework/ai-sdlc/issues/50)) ([68f36be](https://github.com/ai-sdlc-framework/ai-sdlc/commit/68f36be6e66dd354b483ed2d851993823d544b7b))
 * workflow pattern detection Phases 2-4 — detection, proposals, artifacts ([e33a303](https://github.com/ai-sdlc-framework/ai-sdlc/commit/e33a303e8f9158076c04361d0d09cd5a6f59c2e9))
@@ -305,7 +305,7 @@
 ### Bug Fixes
 
 * Add missing validation for empty issueBody in SecurityTriageRunner ([#33](https://github.com/ai-sdlc-framework/ai-sdlc/issues/33)) ([#34](https://github.com/ai-sdlc-framework/ai-sdlc/issues/34)) ([9f81e66](https://github.com/ai-sdlc-framework/ai-sdlc/commit/9f81e66dde0950f13272064cb36695cd7c2d8387))
-* add real-time observability to Claude Code runner ([bcb2f08](https://github.com/ai-sdlc-framework/ai-sdlc/commit/bcb2f0825f52914fa7b07acd286bbdd97f50dd87))
+* add real-time observability to GitHub Copilot CLI runner ([bcb2f08](https://github.com/ai-sdlc-framework/ai-sdlc/commit/bcb2f0825f52914fa7b07acd286bbdd97f50dd87))
 * address review findings — add schema, audit logging, requireHumanApproval ([e11a79d](https://github.com/ai-sdlc-framework/ai-sdlc/commit/e11a79dcacd8ff0f19934e09e18c6e169879a52f))
 * Agent should address review findings before human review ([#35](https://github.com/ai-sdlc-framework/ai-sdlc/issues/35)) ([#36](https://github.com/ai-sdlc-framework/ai-sdlc/issues/36)) ([34c7606](https://github.com/ai-sdlc-framework/ai-sdlc/commit/34c7606db4dacdc21875f876f332f8d61bfc4c2a))
 * allow review dismissals with documented reason ([c38fa35](https://github.com/ai-sdlc-framework/ai-sdlc/commit/c38fa358d89c6d9d297f68bbb7f4f99fbd008569))
@@ -345,7 +345,7 @@
 ### Features
 
 * add CI boundary to review agent prompts (AISDLC-8.1) ([975c0cd](https://github.com/ai-sdlc-framework/ai-sdlc/commit/975c0cdf000cf8a00e0968348b673aa80ec04be6))
-* add Claude Code plugin and SDK runner for native governance integration ([804f068](https://github.com/ai-sdlc-framework/ai-sdlc/commit/804f06801e388fb356cde716291abc4e3386f050))
+* add GitHub Copilot CLI plugin and SDK runner for native governance integration ([804f068](https://github.com/ai-sdlc-framework/ai-sdlc/commit/804f06801e388fb356cde716291abc4e3386f050))
 * add DiffAnalyzer for deterministic structural pre-review (AISDLC-8.2) ([ae0dde5](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ae0dde5cb7d227998dd73fcb290da968c05a4fb3))
 * add meta-review pass and feedback flywheel (AISDLC-8.5) ([c9ba69d](https://github.com/ai-sdlc-framework/ai-sdlc/commit/c9ba69da6fa811fecedfafd33c736b6b6b94af93))
 * add structured reasoning with confidence scores to review agents (AISDLC-8.3) ([1ed0ec0](https://github.com/ai-sdlc-framework/ai-sdlc/commit/1ed0ec0a41a476652380191022d9b5500058cec8))
@@ -368,7 +368,7 @@
 * **orchestrator:** rfc-0010 phase 4 artifacts + observability ([93a41f1](https://github.com/ai-sdlc-framework/ai-sdlc/commit/93a41f178961047d87aca7f6701ff4e43f301dae))
 * **orchestrator:** rfc-0010 phase 6 database isolation ([d44597f](https://github.com/ai-sdlc-framework/ai-sdlc/commit/d44597f4aa29330eb7f8c3bd5a1f6a57e89f4d4c))
 * **orchestrator:** tier-based agent-role tool defaults — coding/research/meta (AISDLC-79) ([22ffe01](https://github.com/ai-sdlc-framework/ai-sdlc/commit/22ffe011964a65e3c71da49bbb8cad5904b3481c))
-* **orchestrator:** wire ClaudeCodeAdapter into security triage ([ddaadf7](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ddaadf7743254d1f3afb9cd7d7cb50ac425b271c))
+* **orchestrator:** wire CopilotAdapter into security triage ([ddaadf7](https://github.com/ai-sdlc-framework/ai-sdlc/commit/ddaadf7743254d1f3afb9cd7d7cb50ac425b271c))
 * replace 21 hand-tuned rules with principles + exemplar bank (AISDLC-8.4) ([b02a755](https://github.com/ai-sdlc-framework/ai-sdlc/commit/b02a755e960c98f0b55d2252c0d699e82e9a4e19))
 * workflow pattern detection Phase 1 — telemetry collection ([#50](https://github.com/ai-sdlc-framework/ai-sdlc/issues/50)) ([454548e](https://github.com/ai-sdlc-framework/ai-sdlc/commit/454548ebe86b7588dff523e68d128b3c0b283a79))
 * workflow pattern detection Phases 2-4 — detection, proposals, artifacts ([e33a303](https://github.com/ai-sdlc-framework/ai-sdlc/commit/e33a303e8f9158076c04361d0d09cd5a6f59c2e9))
@@ -377,7 +377,7 @@
 ### Bug Fixes
 
 * **ci:** review bot no longer 422s on lines outside diff hunks ([b62111f](https://github.com/ai-sdlc-framework/ai-sdlc/commit/b62111fc8aa9bda891dfe2538b35b0d669f9dcae))
-* **dogfood:** unblock pr 69 ci — return after exit, mock claudecodeadapter ([42c0360](https://github.com/ai-sdlc-framework/ai-sdlc/commit/42c0360759fab3f8bdd86d4867eb300d2135a8c6))
+* **dogfood:** unblock pr 69 ci — return after exit, mock copilot adapter ([42c0360](https://github.com/ai-sdlc-framework/ai-sdlc/commit/42c0360759fab3f8bdd86d4867eb300d2135a8c6))
 * **orchestrator:** address local review findings for RFC-0008 ([3da537b](https://github.com/ai-sdlc-framework/ai-sdlc/commit/3da537b7aa1dd2a8c184414fc65368a3b23c94fe))
 * **orchestrator:** convention detector — React naming, multi-test-dir, path aliases (AISDLC-80) ([fdeefe4](https://github.com/ai-sdlc-framework/ai-sdlc/commit/fdeefe405f758b703c5bb5ec609c4fea4db2c009))
 * **orchestrator:** deflake withmergegate timeout test ([57aa161](https://github.com/ai-sdlc-framework/ai-sdlc/commit/57aa161de32b1631f94b08109667afb3cdce6dd9))
@@ -414,7 +414,7 @@
 * add trust-based source weighting to PPA admission scoring ([c04ca18](https://github.com/ai-sdlc-framework/ai-sdlc/commit/c04ca1836ce35db8f15f363f1efb5262317eefb0))
 * add typecheck command to agent prompt to prevent pre-commit failures ([3497c71](https://github.com/ai-sdlc-framework/ai-sdlc/commit/3497c7191bb2c7a5b34e973a68de3fc2986644ae))
 * human-readable agent log output instead of raw NDJSON ([685452f](https://github.com/ai-sdlc-framework/ai-sdlc/commit/685452f8559232d187df0a6a0095f017ef4f0fb8))
-* stream agent progress via Claude Code stream-json output ([4c5c5b4](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4c5c5b4ead16d2238af4809ec1ea1e1ef954767b))
+* stream agent progress via GitHub Copilot CLI stream-json output ([4c5c5b4](https://github.com/ai-sdlc-framework/ai-sdlc/commit/4c5c5b4ead16d2238af4809ec1ea1e1ef954767b))
 * workflow pattern detection Phase 1 — telemetry collection ([#50](https://github.com/ai-sdlc-framework/ai-sdlc/issues/50)) ([68f36be](https://github.com/ai-sdlc-framework/ai-sdlc/commit/68f36be6e66dd354b483ed2d851993823d544b7b))
 * workflow pattern detection Phases 2-4 — detection, proposals, artifacts ([e6ffd6a](https://github.com/ai-sdlc-framework/ai-sdlc/commit/e6ffd6aa93cbd9ca27fdb9b2eead4e6f12ed54ac))
 
@@ -422,7 +422,7 @@
 ### Bug Fixes
 
 * Add missing validation for empty issueBody in SecurityTriageRunner ([#33](https://github.com/ai-sdlc-framework/ai-sdlc/issues/33)) ([#34](https://github.com/ai-sdlc-framework/ai-sdlc/issues/34)) ([9f81e66](https://github.com/ai-sdlc-framework/ai-sdlc/commit/9f81e66dde0950f13272064cb36695cd7c2d8387))
-* add real-time observability to Claude Code runner ([bcb2f08](https://github.com/ai-sdlc-framework/ai-sdlc/commit/bcb2f0825f52914fa7b07acd286bbdd97f50dd87))
+* add real-time observability to GitHub Copilot CLI runner ([bcb2f08](https://github.com/ai-sdlc-framework/ai-sdlc/commit/bcb2f0825f52914fa7b07acd286bbdd97f50dd87))
 * address review findings — add schema, audit logging, requireHumanApproval ([e11a79d](https://github.com/ai-sdlc-framework/ai-sdlc/commit/e11a79dcacd8ff0f19934e09e18c6e169879a52f))
 * Agent should address review findings before human review ([#35](https://github.com/ai-sdlc-framework/ai-sdlc/issues/35)) ([#36](https://github.com/ai-sdlc-framework/ai-sdlc/issues/36)) ([34c7606](https://github.com/ai-sdlc-framework/ai-sdlc/commit/34c7606db4dacdc21875f876f332f8d61bfc4c2a))
 * allow review dismissals with documented reason ([c38fa35](https://github.com/ai-sdlc-framework/ai-sdlc/commit/c38fa358d89c6d9d297f68bbb7f4f99fbd008569))

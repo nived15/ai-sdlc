@@ -83,8 +83,8 @@ Each tick:
    (RFC-0014 §12 Q1). When off, the frontier is in `id ASC` order.
 2. Picks the first `maxConcurrent` candidates.
 3. Dispatches each via `executePipeline()` (RFC-0012 Tier 2). The default
-   spawner resolves to `ShellClaudePSpawner` (subscription) or
-   `ClaudeCodeSDKSpawner` (API key) per `defaultSpawner()`.
+   spawner resolves to `CopilotHarnessAdapter` (subscription) or
+   `CopilotHarnessAdapter` (API key) per `defaultSpawner()`.
 4. Records each outcome. If a dispatch throws OR returns
    `outcome: 'needs-human-attention'`, the orchestrator labels the
    associated PR (when one exists) with `needs-human-attention` via
@@ -406,7 +406,7 @@ Per RFC §13 Q12 resolution, defense-in-depth ships in two layers:
 > Phase 1 currently relies on the workflow side; the orchestrator-side
 > `gh pr merge --auto --rebase` call lands as a finalize-step extension in
 > Phase 2 alongside the catalogued failure-recovery handlers.
-> Setting the auto-merge flag is NOT the same as merging — see CLAUDE.md
+> Setting the auto-merge flag is NOT the same as merging — see .github/copilot-instructions.md
 > "Setting --auto is NOT merging" + RFC §13 Q12 nuance.
 
 ## Failure handling — Phase 2 catalogued playbook (AISDLC-169.2)
@@ -847,12 +847,12 @@ Was adapters.umbrellaDispatch injected?
               resolveUmbrellaSpawnerKind()
                 ├─ adapters.umbrellaSpawnerKind set? → use it
                 ├─ AI_SDLC_ORCHESTRATOR_SPAWNER env set? → parse it
-                └─ else → 'claude' (default since AISDLC-352)
+                └─ else → 'copilot' (default since AISDLC-352)
               │
               ▼
               runExecuteCommand({
                 taskId, workDir,
-                spawnerKind: 'claude',  // default since AISDLC-352
+                spawnerKind: 'copilot',  // default since AISDLC-352
                 maxIterations: 2,
                 run: true,
               })
@@ -862,7 +862,7 @@ Was adapters.umbrellaDispatch injected?
               │
               └─ ok: false → return { failure: { type, message } }
                               (RFC-0041 Phase 3.3 / AISDLC-377.6 removed the
-                              `claude-cli` spawner; the matching
+                              `copilot` spawner; the matching
                               "spawner-unavailable → api-key" retry now
                               no-ops — see buildDefaultUmbrellaDispatch.)
 ```
@@ -891,7 +891,7 @@ such outcomes. No existing test code changes are required.
 
 | Variable | Effect |
 |---|---|
-| `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` | Originally a retry hook for the `--spawner claude-cli` "manifest not consumed" failure mode. RFC-0041 Phase 3.3 (AISDLC-377.6) removed the `claude-cli` spawner; the retry guard never fires now (left in place as a configuration hook for future spawners with analogous transient-unavailability modes). Setting it still triggers the `FALLBACK_BILLING_WARNING` from `emitBillingSafetyWarnings` so operators see the same diagnostic. |
+| `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` | Originally a retry hook for the `--spawner copilot` "manifest not consumed" failure mode. RFC-0041 Phase 3.3 (AISDLC-377.6) removed the `copilot` spawner; the retry guard never fires now (left in place as a configuration hook for future spawners with analogous transient-unavailability modes). Setting it still triggers the `FALLBACK_BILLING_WARNING` from `emitBillingSafetyWarnings` so operators see the same diagnostic. |
 
 See `docs/operations/orchestrator-runbook.md` for runbook coverage of
 spawner-unavailable failures and what to do when the umbrella fails mid-tick.

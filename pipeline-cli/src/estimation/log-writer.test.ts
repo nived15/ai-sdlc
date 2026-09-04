@@ -125,12 +125,12 @@ describe('captureEstimate — basic capture', () => {
       stageA: buildStageA(),
       taskTitle: 't',
       taskDescription: 'd',
-      predictedBy: 'claude-opus-4-7',
+      predictedBy: 'reasoning',
       context: 'dispatch-decision',
       scopeFactors: ['test-only', 'corpus-fixture-already-shipped'],
       artifactsDir: workdir,
     });
-    expect(out.record.predictedBy).toBe('claude-opus-4-7');
+    expect(out.record.predictedBy).toBe('reasoning');
     expect(out.record.context).toBe('dispatch-decision');
     expect(out.record.scopeFactors).toEqual(['test-only', 'corpus-fixture-already-shipped']);
   });

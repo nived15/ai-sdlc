@@ -156,8 +156,8 @@ describe('dor-ingress.yml — workflow structure (AISDLC-379)', () => {
     );
   });
 
-  it('Compute has_violations step uses direct node bin invocation (CLAUDE.md CI rule)', () => {
-    // CLAUDE.md "CI behavior" section: workflows MUST call CLIs via
+  it('Compute has_violations step uses direct node bin invocation (.github/copilot-instructions.md CI rule)', () => {
+    // .github/copilot-instructions.md "CI behavior" section: workflows MUST call CLIs via
     // `node pipeline-cli/bin/cli-XXX.mjs` directly, never via `pnpm --filter
     // ... exec` (which silently fails to resolve workspace own-bins,
     // AISDLC-156). Lock this in for the new step too.
@@ -165,7 +165,7 @@ describe('dor-ingress.yml — workflow structure (AISDLC-379)', () => {
     assert.match(
       computeStep.run ?? '',
       /node pipeline-cli\/bin\/ai-sdlc-pipeline\.mjs/,
-      'compute step must invoke pipeline-cli via direct node bin path (CLAUDE.md CI rule)',
+      'compute step must invoke pipeline-cli via direct node bin path (.github/copilot-instructions.md CI rule)',
     );
     assert.doesNotMatch(
       computeStep.run ?? '',

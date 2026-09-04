@@ -2,7 +2,7 @@
  * AISDLC-245.4 — Repo-wide regression: no slash command body invokes a
  * hardcoded `node pipeline-cli/bin/...` or `node ai-sdlc-plugin/scripts/...`
  * path. Every body MUST resolve via $PIPELINE_CLI_BIN / $PLUGIN_SCRIPTS_DIR
- * (set by the path-resolution preamble using $CLAUDE_PLUGIN_DIR with a
+ * (set by the path-resolution preamble using $COPILOT_PLUGIN_DIR with a
  * dogfood-monorepo fallback).
  *
  * Why this exists: per the AISDLC-245.4 code-reviewer MAJOR finding, the
@@ -57,7 +57,7 @@ describe('AISDLC-245.4 — no bare hardcoded paths in slash command bodies', () 
       const detail = offenders.map((o) => `  ${o.file}:${o.line}\n    ${o.snippet}`).join('\n');
       throw new Error(
         `AISDLC-245.4: ${offenders.length} bare hardcoded path(s) found in slash command bodies. ` +
-          `Use $PIPELINE_CLI_BIN / $PLUGIN_SCRIPTS_DIR resolved via $CLAUDE_PLUGIN_DIR instead. ` +
+          `Use $PIPELINE_CLI_BIN / $PLUGIN_SCRIPTS_DIR resolved via $COPILOT_PLUGIN_DIR instead. ` +
           `See ai-sdlc-plugin/README.md for the convention.\n${detail}`,
       );
     }

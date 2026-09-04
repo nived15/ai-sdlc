@@ -145,7 +145,7 @@ export interface RunReconcileOptions {
   /**
    * Map of reviewer → /private/tmp Agent ID (e.g. `b0d3ltjxv`). When present
    * and the worktree transcript is absent, reconcile copies the file from
-   * the matching /private/tmp Claude session into the worktree transcripts
+   * the matching /private/tmp GitHub Copilot session into the worktree transcripts
    * dir before emitting a leaf.
    */
   reviewerAgentIds?: Partial<Record<ReviewerName | string, string>>;
@@ -166,12 +166,12 @@ export interface RunReconcileOptions {
   schemaVersion?: 'v5' | 'v6';
   /**
    * Override the model passed to `cli-attestation emit-leaf`. Defaults to
-   * `claude-sonnet-4-6`.
+   * `balanced`.
    */
   reviewerModel?: string;
   /**
    * Override the harness passed to `cli-attestation emit-leaf`. Defaults
-   * to `claude-code`.
+   * to `copilot`.
    */
   harness?: string;
   /**
@@ -229,18 +229,18 @@ export interface SalvageResult {
 }
 
 /**
- * Salvage a reviewer transcript from `/private/tmp/claude-*` when it isn't
+ * Salvage a reviewer transcript from `/private/tmp/copilot-*` when it isn't
  * already in the worktree's `.ai-sdlc/transcripts/<task>/` dir (AC #3).
  *
- * Claude Code writes transcripts to
- * `/private/tmp/claude-<uid>/<encoded-cwd>/<session-uuid>/tasks/<agentId>.output`.
+ * GitHub Copilot CLI writes transcripts to
+ * `/private/tmp/copilot-<uid>/<encoded-cwd>/<session-uuid>/tasks/<agentId>.output`.
  * Each reviewer Agent call has its own `agentId`; the slash command body's
  * caller knows the `agentId` because the `Agent` tool returns it.
  *
  * This function:
  *   1. Checks if `<destDir>/<reviewer>.jsonl` already exists — returns
  *      `already-present` if so.
- *   2. Searches `/private/tmp/claude-<uid>/` directories whose encoded
+ *   2. Searches `/private/tmp/copilot-<uid>/` directories whose encoded
  *      cwd path matches `worktreePath` for a `tasks/<agentId>.output` file.
  *   3. Copies the first match into `<destDir>/<reviewer>.jsonl`.
  *
@@ -249,9 +249,9 @@ export interface SalvageResult {
  * mode tolerates it).
  */
 /**
- * Validator for Claude Code `agentId` strings — defense-in-depth against a
+ * Validator for GitHub Copilot CLI `agentId` strings — defense-in-depth against a
  * malicious caller-supplied agentId that path-traverses out of the tasks/
- * directory (iter-2 MAJOR #5). Claude Code IDs are short lowercase
+ * directory (iter-2 MAJOR #5). GitHub Copilot CLI IDs are short lowercase
  * alphanumerics (observed: 6-10 chars in the wild, e.g. `b0d3ltjxv`); we
  * accept up to 32 to leave headroom without admitting `/`, `.`, etc.
  */
@@ -278,20 +278,20 @@ export function salvageReviewerTranscript(
     return { status: 'already-present', destination };
   }
   const tmpRoot = options.tmpRoot ?? '/private/tmp';
-  // Encode the worktree path the way Claude Code does: replace `/` with `-`
+  // Encode the worktree path the way GitHub Copilot CLI does: replace `/` with `-`
   // and prepend a `-`. e.g. `/Users/foo/repo/.worktrees/aisdlc-418` →
   // `-Users-foo-repo--worktrees-aisdlc-418`. Empty path components (`//`
   // after replacing `.` in `.worktrees`) become `--` so we don't
   // over-normalize.
-  const encoded = encodeWorktreePathForClaudeTmp(worktreePath);
+  const encoded = encodeWorktreePathForCopilotTmp(worktreePath);
   let candidates: string[];
   try {
-    candidates = readdirSync(tmpRoot).filter((d) => d.startsWith('claude-'));
+    candidates = readdirSync(tmpRoot).filter((d) => d.startsWith('copilot-'));
   } catch {
     return { status: 'not-found', destination };
   }
-  for (const claudeDir of candidates) {
-    const cwdDir = path.join(tmpRoot, claudeDir, encoded);
+  for (const sessionDir of candidates) {
+    const cwdDir = path.join(tmpRoot, sessionDir, encoded);
     if (!existsSync(cwdDir)) continue;
     let sessions: string[];
     try {
@@ -317,7 +317,7 @@ export function salvageReviewerTranscript(
 }
 
 /**
- * Encode an absolute worktree path the way Claude Code's tmp transcript
+ * Encode an absolute worktree path the way GitHub Copilot CLI's tmp transcript
  * dir naming convention expects:
  *   - each `/` becomes `-`
  *   - each `.` ALSO becomes `-` (dotfile path components like `.worktrees`
@@ -331,7 +331,7 @@ export function salvageReviewerTranscript(
  * Real-world entry observed on disk during the AISDLC-344 reconcile:
  *   `-Users-dominique-Documents-dev-ai-sdlc-ai-sdlc--worktrees-aisdlc-284`
  */
-export function encodeWorktreePathForClaudeTmp(worktreePath: string): string {
+export function encodeWorktreePathForCopilotTmp(worktreePath: string): string {
   const normalized = path.resolve(worktreePath);
   return normalized.replace(/[/.]/g, '-');
 }
@@ -501,8 +501,8 @@ function runReconcileInner(
 
   const cliAttestationBin =
     options.cliAttestationBin ?? path.join(workDir, 'pipeline-cli', 'bin', 'cli-attestation.mjs');
-  const reviewerModel = options.reviewerModel ?? 'claude-sonnet-4-6';
-  const harness = options.harness ?? 'claude-code';
+  const reviewerModel = options.reviewerModel ?? 'balanced';
+  const harness = options.harness ?? 'copilot';
 
   // AISDLC-493 — capture reviewer fan-out start/end timestamps for verdict patching.
   const reviewerStartedAt = now().toISOString();

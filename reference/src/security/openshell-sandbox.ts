@@ -20,9 +20,9 @@ export type ShellExec = (command: string) => Promise<string>;
 
 /** Credential to auto-create as an OpenShell provider before sandbox creation. */
 export interface ProviderCredential {
-  /** Provider name (e.g., 'claude', 'github'). */
+  /** Provider name (e.g., 'github-copilot', 'github'). */
   name: string;
-  /** Provider type: 'claude' | 'github' | 'openai' | 'nvidia' | 'generic'. */
+  /** Provider type: 'github-copilot' | 'github' | 'nvidia' | 'generic'. */
   type: string;
   /** If true, auto-discover from current shell environment. */
   fromExisting?: boolean;

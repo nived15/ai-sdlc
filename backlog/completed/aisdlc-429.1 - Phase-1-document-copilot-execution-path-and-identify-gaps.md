@@ -16,8 +16,8 @@ references:
   - ai-sdlc-plugin/commands/execute.md
   - pipeline-cli/src/cli/execute.ts
   - pipeline-cli/src/execute-pipeline.ts
-  - pipeline-cli/src/runtime/spawners/codex-harness.ts
-  - docs/operations/codex-execution-path.md
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
+  - docs/operations/copilot-spawner.md
 priority: high
 permittedExternalPaths: []
 ---

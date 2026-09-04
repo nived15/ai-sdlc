@@ -26,7 +26,7 @@ Spawn N concurrent `/ai-sdlc execute` sessions in tmux panes (AISDLC-462).
 ## Path resolution
 
 ```bash
-PLUGIN_SCRIPTS_DIR="${CLAUDE_PLUGIN_DIR:-${CLAUDE_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
+PLUGIN_SCRIPTS_DIR="${COPILOT_PLUGIN_DIR:-${COPILOT_PLUGIN_ROOT:-$(pwd)/ai-sdlc-plugin}}/scripts"
 if [ -z "${PIPELINE_CLI_BIN:-}" ]; then
   PIPELINE_CLI_BIN=$(bash "$PLUGIN_SCRIPTS_DIR/resolve-pipeline-cli.sh") || exit 1
 fi
@@ -226,7 +226,7 @@ done
 
 Present the candidate list and ask for confirmation before spawning. This is a required human-in-the-loop gate — do NOT skip it.
 
-**IMPORTANT — permission model (DEC-0009, AISDLC-485):** Spawned `claude` sessions run
+**IMPORTANT — permission model (DEC-0009, AISDLC-485):** Spawned `copilot` sessions run
 in detached, unattended tmux panes. Without the `--dangerously-skip-permissions` flag,
 every Edit/Write/Bash tool call in the pane blocks forever waiting for an interactive
 approval that can never come. Passing the flag is opt-in and requires explicit operator
@@ -244,7 +244,7 @@ Ask the operator:
 > Spawned sessions run in detached, unattended tmux panes. Without `--dangerously-skip-permissions`,
 > every Edit/Write/Bash tool call blocks forever on an interactive prompt — making
 > parallel dispatch unusable. I can pass `--dangerously-skip-permissions` to each spawned
-> `claude` invocation so sessions complete autonomously.
+> `copilot` invocation so sessions complete autonomously.
 >
 > **Security trade-off:** with this flag, spawned sessions skip per-tool permission
 > prompts for routine file edits and shell commands within the repo. Genuine
@@ -405,14 +405,14 @@ while IFS= read -r TASK_ID; do
   # tmux pane — operator can attach to answer, or the session times out per
   # its own watchdog.
   if [ "$SKIP_PERMISSIONS" = "true" ]; then
-    CLAUDE_SPAWN_CMD="claude --dangerously-skip-permissions /ai-sdlc execute $TASK_ID"
+    COPILOT_SPAWN_CMD="copilot --allow-all-tools /ai-sdlc execute $TASK_ID"
   else
-    CLAUDE_SPAWN_CMD="claude /ai-sdlc execute $TASK_ID"
+    COPILOT_SPAWN_CMD="copilot /ai-sdlc execute $TASK_ID"
   fi
   tmux new-window \
     -t "$TMUX_SESSION" \
     -n "$TMUX_WINDOW" \
-    "$CLAUDE_SPAWN_CMD; read -rp 'Session for $TASK_ID complete. Press Enter to close.' _" \
+    "$COPILOT_SPAWN_CMD; read -rp 'Session for $TASK_ID complete. Press Enter to close.' _" \
     2>/dev/null || {
     echo "[execute-parallel] ERROR: tmux new-window failed for $TASK_ID" >&2
     # Update session to failed

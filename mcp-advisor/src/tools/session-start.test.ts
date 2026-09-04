@@ -39,7 +39,7 @@ describe('handleSessionStart', () => {
   });
 
   it('creates a session and returns session info', async () => {
-    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'claude-code' });
+    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'copilot' });
     expect(result.sessionId).toBeTruthy();
     expect(result.linkedIssue).toBe(42);
     expect(result.linkMethod).toBe('branch');
@@ -54,7 +54,7 @@ describe('handleSessionStart', () => {
   });
 
   it('session is retrievable after creation', async () => {
-    const result = await handleSessionStart(deps, { developer: 'carol', tool: 'cursor' });
+    const result = await handleSessionStart(deps, { developer: 'carol', tool: 'vscode' });
     const session = deps.sessions.get(result.sessionId);
     expect(session).toBeDefined();
     expect(session?.developer).toBe('carol');
@@ -72,7 +72,7 @@ describe('handleSessionStart', () => {
       autoUpdated: ['@ai-sdlc/orchestrator'],
     });
 
-    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'claude-code' });
+    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'copilot' });
     expect(result.updateNotice).toContain('Auto-updated');
     expect(result.updateNotice).toContain('@ai-sdlc/orchestrator');
   });
@@ -88,13 +88,13 @@ describe('handleSessionStart', () => {
       autoUpdated: [],
     });
 
-    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'claude-code' });
+    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'copilot' });
     expect(result.updateNotice).toContain('MCP server update');
     expect(result.updateNotice).toContain('0.2.0');
   });
 
   it('no updateNotice when no updates available', async () => {
-    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'claude-code' });
+    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'copilot' });
     expect(result.updateNotice).toBeUndefined();
   });
 
@@ -102,7 +102,7 @@ describe('handleSessionStart', () => {
     const { checkForUpdatesCached } = await import('../version-check.js');
     vi.mocked(checkForUpdatesCached).mockRejectedValueOnce(new Error('network error'));
 
-    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'claude-code' });
+    const result = await handleSessionStart(deps, { developer: 'alice', tool: 'copilot' });
     // Should still succeed — version check is best-effort
     expect(result.sessionId).toBeTruthy();
     expect(result.updateNotice).toBeUndefined();
@@ -132,7 +132,7 @@ describe('handleSessionStart', () => {
     };
     deps.workspace = workspace;
 
-    await handleSessionStart(deps, { developer: 'alice', tool: 'claude-code' });
+    await handleSessionStart(deps, { developer: 'alice', tool: 'copilot' });
 
     expect(vi.mocked(checkForUpdatesCached)).toHaveBeenCalledWith({
       projectDirs: ['/workspace/frontend', '/workspace/backend'],

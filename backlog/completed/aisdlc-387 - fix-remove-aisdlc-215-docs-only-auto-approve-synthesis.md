@@ -9,7 +9,7 @@ references:
   - scripts/check-attestation-sign.test.mjs
   - ai-sdlc-plugin/scripts/sign-attestation.mjs
   - pipeline-cli/src/attestation/sign-v6.ts
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 created: "2026-05-22"
 ---
 

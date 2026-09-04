@@ -52,7 +52,7 @@ requiresDocs: []
 
 ## 1. Summary
 
-[GitHub Spec Kit](https://github.com/github/spec-kit) (v0.8.9, 98k+ stars, 30+ AI-tool integrations) has emerged as a mature spec-driven-development toolkit. Its workflow — `/speckit.constitution` → `/speckit.specify` → `/speckit.clarify` → `/speckit.plan` → `/speckit.tasks` → `/speckit.implement` — covers **idea → executable contract**. Ai-sdlc covers the opposite end of the funnel: **contract → shipped + governed code** via the DoR Gate, PPA admission, autonomous orchestration, attestations, quality gates, progressive autonomy, and cross-harness review.
+[GitHub Spec Kit](https://github.com/github/spec-kit) (v0.8.9, 98k+ stars, 30+ AI-tool integrations) has emerged as a mature spec-driven-development toolkit. Its workflow — `/speckit.constitution` → `/speckit.specify` → `/speckit.clarify` → `/speckit.plan` → `/speckit.tasks` → `/speckit.implement` — covers **idea → executable contract**. Ai-sdlc covers the opposite end of the funnel: **contract → shipped + governed code** via the DoR Gate, PPA admission, autonomous orchestration, attestations, quality gates, progressive autonomy, and independent parallel review.
 
 This RFC defines the seam between the two systems and operationalizes the positioning shift seeded by [AISDLC-248](../../backlog/completed/) (release readiness + repositioning beyond governance, 2026-05-11). Specifically:
 
@@ -159,7 +159,7 @@ The seam is the **spec artifact** (typically `tasks.md` or a backlog task file).
 
 | Capability | spec-kit | ai-sdlc |
 |---|---|---|
-| Constitution / project principles | ✓ (`constitution.md`) | ✓ (`CLAUDE.md`, governance YAML) |
+| Constitution / project principles | ✓ (`constitution.md`) | ✓ (`.github/copilot-instructions.md`, governance YAML) |
 | Feature spec authoring | ✓ (`/speckit.specify`) | — (delegated to upstream) |
 | Architectural plan | ✓ (`/speckit.plan`) | — (delegated to upstream) |
 | Task breakdown | ✓ (`/speckit.tasks`) | partial (manual authoring) |
@@ -168,7 +168,7 @@ The seam is the **spec artifact** (typically `tasks.md` or a backlog task file).
 | Implementation | partial (`/speckit.implement`) | ✓ (`/ai-sdlc execute` with subagents) |
 | Quality gates / attestation / merge governance | — | ✓ (multi-tier; required) |
 | Progressive autonomy | — | ✓ (RFC-0010 §13) |
-| Cross-harness review | — | ✓ (RFC-0010 §13) |
+| independent parallel review | — | ✓ (RFC-0010 §13) |
 | Cost governance | — | ✓ (RFC-0004) |
 | Dependency-graph composition | — | ✓ (RFC-0014) |
 | Autonomous orchestration | — | ✓ (RFC-0015) |
@@ -508,9 +508,9 @@ When spec-kit's analyze pass already ran upstream, should DoR at import be a no-
 
 ### OQ-8: Constitution composition
 
-Spec-kit's `constitution.md` ≈ ai-sdlc's `CLAUDE.md` + governance YAML. Merge, separate, or ignore?
+Spec-kit's `constitution.md` ≈ ai-sdlc's `.github/copilot-instructions.md` + governance YAML. Merge, separate, or ignore?
 
-**Resolution (2026-05-16):** **Separate + drift detection via Decision Catalog.** Each tool owns its file (preserves both ecosystems' ownership). Bridge detects drift on shared-norm sections (start simple: rebase-vs-merge policy, branch-naming convention, review cadence) → emits `Decision: constitution-claudemd-drift` → catalog routes per Stage A/B/C → operator-batch review. Default-on-silence = drift accepted as intentional. **Selected over CLAUDE.md-canonical-auto-derive** because forcing framework norms onto spec-kit's constitution surface violates "spec-kit is recommended, not required" (§1). Composes with G0: drift surfaces but never blocks.
+**Resolution (2026-05-16):** **Separate + drift detection via Decision Catalog.** Each tool owns its file (preserves both ecosystems' ownership). Bridge detects drift on shared-norm sections (start simple: rebase-vs-merge policy, branch-naming convention, review cadence) → emits `Decision: constitution-instructions-drift` → catalog routes per Stage A/B/C → operator-batch review. Default-on-silence = drift accepted as intentional. **Selected over .github/copilot-instructions.md-canonical-auto-derive** because forcing framework norms onto spec-kit's constitution surface violates "spec-kit is recommended, not required" (§1). Composes with G0: drift surfaces but never blocks.
 
 ### OQ-9: Positioning leadership
 
@@ -532,7 +532,7 @@ Pin supported spec-kit version range, or auto-detect schema and refuse unknowns?
 
 ### OQ-12: CLI vs slash-command surface
 
-`ai-sdlc import-spec` shown as CLI; should it also exist as `/ai-sdlc import-spec` inside Claude Code?
+`ai-sdlc import-spec` shown as CLI; should it also exist as `/ai-sdlc import-spec` inside GitHub Copilot CLI?
 
 **Resolution (2026-05-16):** **Both.** Existing dual-surface convention (`/ai-sdlc *` slash + `cli-*` bin). Established pattern across `/ai-sdlc execute`, `/ai-sdlc rebase`, etc.; no judgment needed for a new command following the same pattern.
 

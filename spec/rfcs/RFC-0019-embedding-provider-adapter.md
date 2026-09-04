@@ -14,7 +14,7 @@ requires:
   - RFC-0035
 requiresDocs: []
 implementedBy:
-  - AISDLC-337 (Phase 1 — Adapter interface + registry + OpenAI default)
+  - AISDLC-337 (Phase 1 — Adapter interface + registry + GitHub Copilot default)
   - AISDLC-338 (Phase 2 — JSONL vector storage + GC)
   - AISDLC-339 (Phase 3 — cli-embedding-bump migration tooling)
   - AISDLC-340 (Phase 4 — Pipeline integration + schema)
@@ -28,7 +28,7 @@ implementedBy:
 **Document type:** Normative
 **Status:** Ready for Review v0.3 — operator OQ re-walkthrough complete 2026-05-21 with **full rigor rubric** (problem statement → industry research → 3-4 options → recommendation + counter-argument per OQ) after the 2026-05-16 first-pass walkthrough was flagged as too shallow. Refinements over v0.2: (OQ-1) scale-escalation heuristic codified — swap JSONL→sqlite at >100K entries OR p95 read >250ms; (OQ-2) per-consumer `staleVectorPolicy` API parameter ADDED on top of per-org default — RFC-0009 Eτ drift consumer pins fail-loud at API site to preserve historical-trajectory fidelity; (OQ-3) split — strict no-op cross-PROVIDER, cross-VERSION-within-provider delegates to OQ-2 (resolves logical conflict with v0.2); (OQ-4) per-adapter `defaultGracePeriodDays` declaration + catalog dedup via per-Decision-key counter (emit at 1/7/30/60/89-day milestones, NOT per-load); (OQ-5) explicit `spec/schemas/` placement for both `embedding-adapter.v1.schema.json` AND `vector-store-entry.v1.schema.json`; (OQ-6) per-consumer `consumerLabel` dimension on cost-tracker (enables 'drift cost vs PPA cost' attribution without re-instrumentation); (OQ-7) per-adapter `billingModel: 'pay-per-token' \| 'subscription-quota'` + cost-tracker `unified-cost-report` view aggregating across substrates. Operator-impacting events (stale-vector, cross-provider, deprecation, cost-budget) **route through [RFC-0035 G0 non-blocking pipeline contract](RFC-0035-decision-catalog-operator-routing.md)** — pipeline never halts. §15.1 config schema updated to reflect refinements. Implementation phase tasks AISDLC-337..340 amended; AISDLC-341 unchanged.
 **Lifecycle:** Ready for Review
-**Author:** Dominique Legault (with Claude assist)
+**Author:** Dominique Legault (with GitHub Copilot assist)
 **Created:** 2026-05-03
 **Updated:** 2026-05-16
 **Target Spec Version:** v1alpha1
@@ -56,14 +56,14 @@ Engineering domain ownership; Product endorses with the structural-floor + enric
 | Version | Date       | Author    | Notes                                                                                                                                |
 | ------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | v1      | 2026-05-03 | dominique | Initial draft per RFC-0009 OQ-6 sub-decision; mirrors RFC-0010 §13 harness adapter pattern + §11 alias deprecation lifecycle.        |
-| v0.2    | 2026-05-16 | dominique | Operator OQ walkthrough resolved all 7 §15 OQs. Resolutions: JSONL storage backend (OQ-1), lazy-re-embed default with per-org fail-loud opt-in (OQ-2), explicit no-op for cross-provider comparison (OQ-3), 90d deprecation warning with per-org gracePeriodDays override (OQ-4), orchestrator placement for framework code with pipeline-cli for CLIs (OQ-5), `embeddingTokens` cost-tracker line item distinct from input/output tokens (OQ-6), separate from SubscriptionLedger (OQ-7). §15.1 added consolidating per-org `.ai-sdlc/embedding-config.yaml` schema. Cross-cutting framing: operator-impacting events (stale-vector, cross-provider, deprecation, cost-budget) route through RFC-0035 G0 catalog. Lifecycle promoted Draft → Ready for Review. Implementation broken into 5 phase tasks: AISDLC-337 (Phase 1 interface + registry + OpenAI default), AISDLC-338 (Phase 2 JSONL storage + GC), AISDLC-339 (Phase 3 migration tooling), AISDLC-340 (Phase 4 pipeline integration + schema), AISDLC-341 (Phase 5 soak + promotion). |
-| v0.3    | 2026-05-21 | dominique (Operator re-walkthrough) | Re-walked all 7 §15 OQs with **full rigor rubric per OQ** (problem statement → industry research → 3-4 options with tradeoffs → recommendation + counter-argument). 2026-05-16 first-pass resolutions flagged as too shallow ("skims over questions and recommends authors' recommendations"); this re-walkthrough surfaces substantive refinements on every OQ. Refinements: **(OQ-1)** scale-escalation heuristic codified — swap JSONL→sqlite at >100K entries OR p95 read >250ms; **(OQ-2)** per-consumer `staleVectorPolicy` API parameter ADDED on top of per-org default — RFC-0009 Eτ drift consumer pins `fail-loud` at API site to preserve historical-trajectory fidelity (v0.2 org-level granularity was structurally too coarse); **(OQ-3)** split — strict no-op cross-PROVIDER, cross-VERSION-within-provider delegates to OQ-2 (resolves logical conflict where v0.2 lumped both as "strict no-op" contradicting OQ-2's lazy-re-embed default); **(OQ-4)** three-layer precedence (framework default → adapter-declared `defaultGracePeriodDays` → per-org override) + catalog dedup via per-Decision-key counter (emit at 1/7/30/60/89-day milestones, NOT per-load — prevents Decision flood under orchestrator); **(OQ-5)** explicit `spec/schemas/` placement for both `embedding-adapter.v1.schema.json` AND `vector-store-entry.v1.schema.json` (v0.2 was silent — drift-prone); **(OQ-6)** per-consumer `consumerLabel` dimension on cost-tracker (enables "drift cost vs PPA cost" attribution without re-instrumentation when finance asks later); **(OQ-7)** per-adapter `billingModel: 'pay-per-token' \| 'subscription-quota'` declaration (forward-compat for future Anthropic embeddings shipped under subscription) + cost-tracker `unified-cost-report` view aggregating across substrates (answers finance's monthly-spend query in one place). §15.1 config schema updated to reflect all refinements (scaleEscalationHeuristic, perConsumerOverridesAllowed, split cross-provider policy, catalogDedup milestones, consumerLabel + unifiedCostReport, adapterBillingModelRespected). Implementation phase tasks AISDLC-337..340 amended to reflect refinements; AISDLC-341 (soak + promotion) unchanged. Practitioner-validation gates remain pending corpus run per Phase 5. |
+| v0.2    | 2026-05-16 | dominique | Operator OQ walkthrough resolved all 7 §15 OQs. Resolutions: JSONL storage backend (OQ-1), lazy-re-embed default with per-org fail-loud opt-in (OQ-2), explicit no-op for cross-provider comparison (OQ-3), 90d deprecation warning with per-org gracePeriodDays override (OQ-4), orchestrator placement for framework code with pipeline-cli for CLIs (OQ-5), `embeddingTokens` cost-tracker line item distinct from input/output tokens (OQ-6), separate from SubscriptionLedger (OQ-7). §15.1 added consolidating per-org `.ai-sdlc/embedding-config.yaml` schema. Cross-cutting framing: operator-impacting events (stale-vector, cross-provider, deprecation, cost-budget) route through RFC-0035 G0 catalog. Lifecycle promoted Draft → Ready for Review. Implementation broken into 5 phase tasks: AISDLC-337 (Phase 1 interface + registry + GitHub Copilot default), AISDLC-338 (Phase 2 JSONL storage + GC), AISDLC-339 (Phase 3 migration tooling), AISDLC-340 (Phase 4 pipeline integration + schema), AISDLC-341 (Phase 5 soak + promotion). |
+| v0.3    | 2026-05-21 | dominique (Operator re-walkthrough) | Re-walked all 7 §15 OQs with **full rigor rubric per OQ** (problem statement → industry research → 3-4 options with tradeoffs → recommendation + counter-argument). 2026-05-16 first-pass resolutions flagged as too shallow ("skims over questions and recommends authors' recommendations"); this re-walkthrough surfaces substantive refinements on every OQ. Refinements: **(OQ-1)** scale-escalation heuristic codified — swap JSONL→sqlite at >100K entries OR p95 read >250ms; **(OQ-2)** per-consumer `staleVectorPolicy` API parameter ADDED on top of per-org default — RFC-0009 Eτ drift consumer pins `fail-loud` at API site to preserve historical-trajectory fidelity (v0.2 org-level granularity was structurally too coarse); **(OQ-3)** split — strict no-op cross-PROVIDER, cross-VERSION-within-provider delegates to OQ-2 (resolves logical conflict where v0.2 lumped both as "strict no-op" contradicting OQ-2's lazy-re-embed default); **(OQ-4)** three-layer precedence (framework default → adapter-declared `defaultGracePeriodDays` → per-org override) + catalog dedup via per-Decision-key counter (emit at 1/7/30/60/89-day milestones, NOT per-load — prevents Decision flood under orchestrator); **(OQ-5)** explicit `spec/schemas/` placement for both `embedding-adapter.v1.schema.json` AND `vector-store-entry.v1.schema.json` (v0.2 was silent — drift-prone); **(OQ-6)** per-consumer `consumerLabel` dimension on cost-tracker (enables "drift cost vs PPA cost" attribution without re-instrumentation when finance asks later); **(OQ-7)** per-adapter `billingModel: 'pay-per-token' \| 'subscription-quota'` declaration (forward-compat for future GitHub Models embeddings shipped under subscription) + cost-tracker `unified-cost-report` view aggregating across substrates (answers finance's monthly-spend query in one place). §15.1 config schema updated to reflect all refinements (scaleEscalationHeuristic, perConsumerOverridesAllowed, split cross-provider policy, catalogDedup milestones, consumerLabel + unifiedCostReport, adapterBillingModelRespected). Implementation phase tasks AISDLC-337..340 amended to reflect refinements; AISDLC-341 (soak + promotion) unchanged. Practitioner-validation gates remain pending corpus run per Phase 5. |
 
 ---
 
 ## 1. Summary
 
-This RFC introduces a pluggable adapter framework for text→vector embedding providers, mirroring the harness-adapter (RFC-0010 §13) and database-branch-adapter (RFC-0010 §15) patterns already in use across the orchestrator. The reference implementation ships with `openai-text-embedding-3-small` as the default adapter; adopters MAY register custom adapters (other OpenAI models, Cohere, Voyage, locally-hosted ONNX/sentence-transformers, etc.) by implementing the `EmbeddingAdapter` interface and registering with `orchestrator/src/embedding/registry.ts`. Vectors are stored with explicit provider+version provenance so deprecated models can be migrated via a dedicated `cli-embedding-bump` tool without losing audit trail.
+This RFC introduces a pluggable adapter framework for text→vector embedding providers, mirroring the harness-adapter (RFC-0010 §13) and database-branch-adapter (RFC-0010 §15) patterns already in use across the orchestrator. The reference implementation ships with `github-models-embedding-small` as the default adapter; adopters MAY register custom adapters (other GitHub Copilot models, a third-party provider, Voyage, locally-hosted ONNX/sentence-transformers, etc.) by implementing the `EmbeddingAdapter` interface and registering with `orchestrator/src/embedding/registry.ts`. Vectors are stored with explicit provider+version provenance so deprecated models can be migrated via a dedicated `cli-embedding-bump` tool without losing audit trail.
 
 ## 2. Motivation
 
@@ -84,7 +84,7 @@ Each consumer has different latency/cost/quality tradeoffs. A single hard-coded 
 
 ### 2.3 Provider lock-in is a real risk without versioned storage
 
-Embeddings produced by `openai-text-embedding-3-small` (1536 dimensions, model `text-embedding-3-small`, snapshot 2024-01-25) are NOT interchangeable with vectors from `openai-text-embedding-3-large` (3072 dimensions), Cohere `embed-v3.0` (1024 dimensions), or any other provider. An accidental adapter swap silently corrupts every distance computation that reads from storage. The framework MUST treat `(embeddingProvider, embeddingModelVersion)` as part of the vector's identity and refuse to compare vectors across provider/version boundaries without an explicit migration step.
+Embeddings produced by `github-models-embedding-small` (1536 dimensions, model `text-embedding-3-small`, snapshot 2024-01-25) are NOT interchangeable with vectors from `github-models-embedding-large` (3072 dimensions), a third-party provider `embed-v3.0` (1024 dimensions), or any other provider. An accidental adapter swap silently corrupts every distance computation that reads from storage. The framework MUST treat `(embeddingProvider, embeddingModelVersion)` as part of the vector's identity and refuse to compare vectors across provider/version boundaries without an explicit migration step.
 
 ### 2.4 The harness-adapter precedent already validates the pattern
 
@@ -95,7 +95,7 @@ RFC-0010 §13 (HarnessAdapter) and §15 (DatabaseBranchAdapter) ship the same pa
 ### 3.1 Goals
 
 - Define the `EmbeddingAdapter` interface with explicit provider+version identity.
-- Ship `openai-text-embedding-3-small` as the default adapter, behind feature flag `AI_SDLC_EMBEDDING_PROVIDER` (default OFF in v1).
+- Ship `github-models-embedding-small` as the default adapter, behind feature flag `AI_SDLC_EMBEDDING_PROVIDER` (default OFF in v1).
 - Provide a registry pattern parallel to `orchestrator/src/harness/registry.ts`.
 - Define a vector storage schema (JSONL by default, sqlite-pluggable by Phase 6+) with embedded provider+version provenance.
 - Define a deprecation lifecycle (warning → error → removal) mirroring RFC-0010 §11's model alias pattern.
@@ -153,16 +153,16 @@ Every embedding adapter MUST implement the following TypeScript interface (decla
 interface EmbeddingAdapter {
   // Canonical adapter alias — the value adopters set in Pipeline.spec.embedding.provider.
   // MUST be unique across the registry. Convention: '<vendor>-<model-family>-<size>'.
-  // Examples: 'openai-text-embedding-3-small', 'cohere-embed-v3-multilingual'.
+  // Examples: 'github-models-embedding-small', 'self-hosted-embed-v3-multilingual'.
   readonly name: string;
 
   // Provider-specific model identifier — passed to the upstream API.
-  // Example: 'text-embedding-3-small' (the value posted to OpenAI's /embeddings endpoint).
+  // Example: 'text-embedding-3-small' (the value posted to GitHub Copilot's /embeddings endpoint).
   readonly modelId: string;
 
   // Snapshot identifier — ISO date for date-pinned snapshots, semver for versioned models.
   // Used as part of the storage key so vectors don't collide across model snapshots.
-  // Example: '2024-01-25' for OpenAI's 2024-01-25 text-embedding-3-small snapshot.
+  // Example: '2024-01-25' for GitHub Copilot's 2024-01-25 text-embedding-3-small snapshot.
   readonly modelVersion: string;
 
   // Vector length the adapter emits. Validated against storage on first write to detect
@@ -180,7 +180,7 @@ interface EmbeddingAdapter {
   // Implementations MUST preserve input order in the returned array.
   embedBatch?(texts: string[]): Promise<number[][]>;
 
-  // Cheap liveness probe. Combines env-var presence (e.g., OPENAI_API_KEY)
+  // Cheap liveness probe. Combines env-var presence (e.g., GITHUB_MODELS_TOKEN)
   // + lightweight provider health check (optional). Result MAY be cached for the
   // orchestrator's lifetime. Operator restart picks up freshly-installed credentials.
   isAvailable(): Promise<EmbeddingAvailability>;
@@ -207,7 +207,7 @@ interface EmbeddingAvailability {
 
 **Why `name` is separate from `modelId`.** The same `modelId` MAY be wrapped by multiple adapters with different default behaviors (e.g., one adapter defaults to truncate-on-overflow, another defaults to error-on-overflow). The `name` is the operator-facing alias; `modelId` is the wire-protocol value. Keeping them distinct preserves the adapter's freedom to evolve without breaking pipeline configs.
 
-**Why `modelVersion` is mandatory.** Without an explicit version, the same logical model can silently change behavior across provider snapshots — OpenAI has done this multiple times with `text-embedding-ada-002`. Pinning the snapshot date in the adapter source makes adapter upgrades a code change (visible in PR review) rather than a silent provider-side rollout.
+**Why `modelVersion` is mandatory.** Without an explicit version, the same logical model can silently change behavior across provider snapshots — GitHub Copilot has done this multiple times with `the legacy embedding model`. Pinning the snapshot date in the adapter source makes adapter upgrades a code change (visible in PR review) rather than a silent provider-side rollout.
 
 ## 6. Registry and Capability Matrix
 
@@ -217,7 +217,7 @@ The orchestrator maintains a registry at `orchestrator/src/embedding/registry.ts
 
 ```typescript
 const EMBEDDING_ADAPTERS = new Map<string, EmbeddingAdapter>([
-  ['openai-text-embedding-3-small', new OpenAITextEmbedding3Small()],
+  ['github-models-embedding-small', new GitHubModelsEmbeddingSmall()],
   // Adopters register custom adapters here in their fork OR via a registration
   // hook exposed at orchestrator/src/embedding/extensions.ts (Phase 4).
 ]);
@@ -235,7 +235,7 @@ Pipeline-load MUST fail with `UnknownEmbeddingProvider` if `Pipeline.spec.embedd
 
 ### 6.2 Capability matrix
 
-| Capability                | `openai-text-embedding-3-small` | `openai-text-embedding-3-large` (future) | `cohere-embed-v3` (future) | `local-onnx-bge-small` (future) |
+| Capability                | `github-models-embedding-small` | `github-models-embedding-large` (future) | `self-hosted-embed-v3` (future) | `local-onnx-bge-small` (future) |
 | ------------------------- | ------------------------------- | ----------------------------------------- | --------------------------- | ------------------------------- |
 | dimensions                | 1536                            | 3072                                      | 1024                        | 384                             |
 | maxInputTokens            | 8191                            | 8191                                      | 512                         | 512                             |
@@ -251,9 +251,9 @@ The matrix is normative for adapters that ship in-tree. Adopter-registered adapt
 Per RFC-0010 §13.8, capability declarations include `requires` for runtime dependencies:
 
 ```typescript
-// orchestrator/src/embedding/adapters/openai-text-embedding-3-small.ts
+// orchestrator/src/embedding/adapters/github-models-embedding-small.ts
 readonly requires: EmbeddingRequires = {
-  envVar: 'OPENAI_API_KEY',
+  envVar: 'GITHUB_MODELS_TOKEN',
   versionRange: undefined,    // SaaS — no client binary version to pin
 };
 
@@ -265,26 +265,26 @@ readonly requires: EmbeddingRequires = {
 };
 ```
 
-Pipeline-load validation runs `adapter.isAvailable()` for the configured provider AND fallback. If the primary returns `available: false`, pipeline-load FAILS with `EmbeddingProviderUnavailable` naming the `reason` and `detail` (e.g., "OPENAI_API_KEY env var not set; adapter `openai-text-embedding-3-small` requires it").
+Pipeline-load validation runs `adapter.isAvailable()` for the configured provider AND fallback. If the primary returns `available: false`, pipeline-load FAILS with `EmbeddingProviderUnavailable` naming the `reason` and `detail` (e.g., "GITHUB_MODELS_TOKEN env var not set; adapter `github-models-embedding-small` requires it").
 
-## 7. Default Adapter: openai-text-embedding-3-small
+## 7. Default Adapter: github-models-embedding-small
 
-The reference implementation lives at `orchestrator/src/embedding/adapters/openai-text-embedding-3-small.ts`:
+The reference implementation lives at `orchestrator/src/embedding/adapters/github-models-embedding-small.ts`:
 
 ```typescript
-export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
-  readonly name = 'openai-text-embedding-3-small';
+export class GitHubModelsEmbeddingSmall implements EmbeddingAdapter {
+  readonly name = 'github-models-embedding-small';
   readonly modelId = 'text-embedding-3-small';
-  readonly modelVersion = '2024-01-25';   // OpenAI's snapshot date
+  readonly modelVersion = '2024-01-25';   // GitHub Copilot's snapshot date
   readonly dimensions = 1536;
-  readonly requires = { envVar: 'OPENAI_API_KEY' };
+  readonly requires = { envVar: 'GITHUB_MODELS_TOKEN' };
 
   async isAvailable(): Promise<EmbeddingAvailability> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GITHUB_MODELS_TOKEN) {
       return {
         available: false,
         reason: 'env-var-missing',
-        detail: 'OPENAI_API_KEY not set; openai-text-embedding-3-small requires it.',
+        detail: 'GITHUB_MODELS_TOKEN not set; github-models-embedding-small requires it.',
       };
     }
     return { available: true };
@@ -294,10 +294,10 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
     if (!text || text.trim().length === 0) {
       throw new Error('embed(): empty input rejected');
     }
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
+    const response = await fetch('https://api.githubcopilot.com/v1/embeddings', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.GITHUB_MODELS_TOKEN}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -308,7 +308,7 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
     });
     if (!response.ok) {
       throw new EmbeddingProviderError(
-        `openai embeddings API returned ${response.status}: ${await response.text()}`
+        `github-copilot embeddings API returned ${response.status}: ${await response.text()}`
       );
     }
     const data = await response.json() as OpenAIEmbeddingsResponse;
@@ -329,14 +329,14 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {
-    // OpenAI accepts up to 2048 inputs per call; orchestrator batches above that.
+    // GitHub Copilot accepts up to 2048 inputs per call; orchestrator batches above that.
     // Implementation: same as embed() but with input: texts and returning data.data.map(d => d.embedding).
     // See actual implementation file for the full batch loop with chunking.
     // ...
   }
 
   async getAccountId(): Promise<string | null> {
-    const key = process.env.OPENAI_API_KEY;
+    const key = process.env.GITHUB_MODELS_TOKEN;
     if (!key) return null;
     return crypto.createHash('sha256').update(`${this.name}:${key}`).digest('hex');
   }
@@ -345,7 +345,7 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
 
 **Why `text-embedding-3-small` and not `-large`?** Per §3.2, v1 prioritizes cost-efficiency for the bootstrap use case (RFC-0009 OQ-6 drift). At $0.02 per 1M tokens, a 10K-token document embedded once costs $0.0002; a full corpus re-embed of 10K documents costs $2. The `-large` variant is 6.5× more expensive for marginal quality improvement on short-text drift detection. Adopters with quality-sensitive use cases (e.g., legal-document semantic search) MAY register the `-large` variant; the framework supports both.
 
-**Why snapshot 2024-01-25?** It is OpenAI's most recent stable snapshot for `text-embedding-3-small` as of this RFC's authoring; the adapter source pins it explicitly. When OpenAI ships a new snapshot, the adapter version is bumped in code (PR-reviewed, not silent provider-side).
+**Why snapshot 2024-01-25?** It is GitHub Copilot's most recent stable snapshot for `text-embedding-3-small` as of this RFC's authoring; the adapter source pins it explicitly. When GitHub Copilot ships a new snapshot, the adapter version is bumped in code (PR-reviewed, not silent provider-side).
 
 ## 8. Vector Storage Schema
 
@@ -354,7 +354,7 @@ export class OpenAITextEmbedding3Small implements EmbeddingAdapter {
 ```typescript
 interface VectorStoreEntry {
   vector: number[];                  // length === adapter.dimensions
-  embeddingProvider: string;         // adapter.name at write time (e.g., 'openai-text-embedding-3-small')
+  embeddingProvider: string;         // adapter.name at write time (e.g., 'github-models-embedding-small')
   embeddingModelVersion: string;     // adapter.modelVersion at write time
   writtenAt: string;                 // ISO 8601 timestamp
   text: string;                      // original source text (REQUIRED — needed for re-embed during migration)
@@ -371,8 +371,8 @@ interface VectorStoreEntry {
 
 ```
 <artifactsDir>/_embeddings/
-├── openai-text-embedding-3-small-2024-01-25.jsonl
-└── openai-text-embedding-3-large-2024-01-25.jsonl   (if multi-provider in use)
+├── github-models-embedding-small-2024-01-25.jsonl
+└── github-models-embedding-large-2024-01-25.jsonl   (if multi-provider in use)
 ```
 
 One file per `(provider, modelVersion)` tuple, named `<safeProvider>-<safeModelVersion>.jsonl` where each component is sanitized to `[a-zA-Z0-9._-]`. The directory listing itself is the index — `scan()` walks `<embeddingsDir>/*.jsonl` and each entry carries its own provenance for filtering. There is no separate `_index.json` file: dropping it eliminates a read-modify-write race on concurrent first-writes for different provider/version tuples (Phase 2 iter-2 review finding). Writes use an atomic temp-then-rename (read existing content → concatenate new line → write to `<file>.<uuid>.tmp` → atomic `rename` over the target) so readers never see partial lines regardless of write size. GC by mtime — `cli-embedding-gc --older-than 90d` removes stale entries via the same temp-then-rename pattern.
@@ -419,21 +419,21 @@ The 90d pre-warning is configurable via Q4 (§15); the values above are the lean
 ### 9.2 The `cli-embedding-bump` tool
 
 ```
-$ npx cli-embedding-bump --dry-run --to openai-text-embedding-3-large
-Found 12,847 vectors on deprecated provider 'openai-text-embedding-ada-002'.
+$ npx cli-embedding-bump --dry-run --to github-models-embedding-large
+Found 12,847 vectors on deprecated provider 'github-models-embedding-legacy'.
 Estimated re-embed cost:
   Total tokens to re-embed: 4,312,891
-  Provider rate (openai-text-embedding-3-large): $0.13 / 1M tokens
+  Provider rate (github-models-embedding-large): $0.13 / 1M tokens
   Estimated cost: $0.56 USD
   Estimated wall-clock (at 100 req/sec, batched 2048 per call): ~21s
 Run with --execute to perform migration.
 
-$ npx cli-embedding-bump --execute --to openai-text-embedding-3-large
-[1/3] Reading 12,847 vectors from openai-text-embedding-ada-002...    done (1.2s)
-[2/3] Re-embedding via openai-text-embedding-3-large...                done (19.8s, $0.55)
-[3/3] Atomic swap: writing _embeddings/openai-text-embedding-3-large-2024-01-25.jsonl...
-       Original kept at _embeddings/openai-text-embedding-ada-002.jsonl.bak.<timestamp> for 30d.
-Migration complete. 12,847 vectors migrated. Pipeline.spec.embedding.provider should now be set to 'openai-text-embedding-3-large'.
+$ npx cli-embedding-bump --execute --to github-models-embedding-large
+[1/3] Reading 12,847 vectors from github-models-embedding-legacy...    done (1.2s)
+[2/3] Re-embedding via github-models-embedding-large...                done (19.8s, $0.55)
+[3/3] Atomic swap: writing _embeddings/github-models-embedding-large-2024-01-25.jsonl...
+       Original kept at _embeddings/github-models-embedding-legacy.jsonl.bak.<timestamp> for 30d.
+Migration complete. 12,847 vectors migrated. Pipeline.spec.embedding.provider should now be set to 'github-models-embedding-large'.
 ```
 
 **Atomicity contract.** The migration writes the new provider+version JSONL file in full via temp-then-rename: the final `rename(<file>.<uuid>.tmp, <newProvider>-<newModelVersion>.jsonl)` is the linearization point. Concurrent reads see either the old file (still on the deprecated provider) or the new file (on the replacement provider), never a half-written mix. The original is preserved as `.bak.<timestamp>` for 30 days; `cli-embedding-gc` removes it after that window.
@@ -455,8 +455,8 @@ The policy is operator-configurable per pipeline; the default of `lazy-re-embed`
 ```yaml
 spec:
   embedding:
-    provider: openai-text-embedding-3-small      # adapter name (REQUIRED if section present)
-    fallback: openai-text-embedding-3-small      # adapter to use if primary unavailable (optional; same as primary = no fallback)
+    provider: github-models-embedding-small      # adapter name (REQUIRED if section present)
+    fallback: github-models-embedding-small      # adapter to use if primary unavailable (optional; same as primary = no fallback)
     storageBackend: jsonl                         # 'jsonl' (default v1); future: 'sqlite', 'pgvector', 'qdrant'
     storageBackendConfig: {}                      # backend-specific config; opaque to the framework
     staleVectorPolicy: lazy-re-embed              # 'lazy-re-embed' (default) | 'fail-loud' | 'warn'
@@ -481,16 +481,16 @@ Promotion to default-on follows the same corpus-driven pattern as RFC-0014 Phase
 
 Five phases. Critical path: 1 → 2 → 3/4 (parallel) → 5.
 
-### Phase 1 — Adapter interface + registry + OpenAI default (1 week)
+### Phase 1 — Adapter interface + registry + GitHub Copilot default (1 week)
 
 - `orchestrator/src/embedding/types.ts` (interface)
 - `orchestrator/src/embedding/registry.ts` (registry + getEmbeddingAdapter)
-- `orchestrator/src/embedding/adapters/openai-text-embedding-3-small.ts` (default adapter)
+- `orchestrator/src/embedding/adapters/github-models-embedding-small.ts` (default adapter)
 - `orchestrator/src/embedding/errors.ts` (UnknownEmbeddingProvider, EmbeddingProviderUnavailable, etc.)
 - Unit tests: registry round-trip, adapter dimension validation, isAvailable() probe behavior
 - Schema: `spec/schemas/embedding-adapter.v1.schema.json`
 
-**Exit criteria:** unit tests pass; `getEmbeddingAdapter('openai-text-embedding-3-small')` returns a working adapter when `OPENAI_API_KEY` is set; pipeline-load fails with structured error when adapter is unknown.
+**Exit criteria:** unit tests pass; `getEmbeddingAdapter('github-models-embedding-small')` returns a working adapter when `GITHUB_MODELS_TOKEN` is set; pipeline-load fails with structured error when adapter is unknown.
 
 ### Phase 2 — Vector storage + JSONL backend (0.5 week)
 
@@ -565,11 +565,11 @@ Amends RFC-0004 §4 cost-attribution categories with a new line item for embeddi
 
 **Reconsider when:** the orchestrator runs in air-gapped environments where outbound API calls are prohibited, OR when embedding cost dominates pipeline cost (very large corpora). Neither is true for the bootstrap use case.
 
-### 14.2 Anthropic embeddings API
+### 14.2 GitHub Models embeddings API
 
-**Rejected: doesn't exist as of this RFC's authoring.** Anthropic's roadmap does not currently include an embeddings endpoint. If/when that changes, an `anthropic-text-embedding-*` adapter is a 100-line addition to the registry — the framework supports it, no spec change needed.
+**Rejected: doesn't exist as of this RFC's authoring.** GitHub Models's roadmap does not currently include an embeddings endpoint. If/when that changes, an `github-models-text-embedding-*` adapter is a 100-line addition to the registry — the framework supports it, no spec change needed.
 
-### 14.3 Claude/GPT as a semantic distance oracle (no embeddings at all)
+### 14.3 GitHub Copilot/GPT as a semantic distance oracle (no embeddings at all)
 
 **Rejected: wrong shape.** Asking an LLM "how semantically similar are these two texts on a 0-1 scale" is a known-bad pattern. LLMs are inconsistent at numerical distance computation, expensive per call (vs $0.02/1M tokens for embeddings), and the resulting "distances" are not metrically valid (no triangle inequality, no symmetry guarantee). The right tool for this job is an embedding model + cosine similarity; this RFC ships exactly that.
 
@@ -589,7 +589,7 @@ Amends RFC-0004 §4 cost-attribution categories with a new line item for embeddi
 
 **Lean: JSONL.** Mirrors `_dor/calibration.jsonl`, `_deps/snapshot.jsonl`, `_subscription-ledger/*.jsonl` patterns; trivial to inspect with `jq`/`grep`; GC by mtime; no schema-migration story to author. sqlite would give us indexed lookups but adds a real migration story and breaks the "one cat command shows you the data" debugging pattern.
 
-**Resolution (2026-05-21 re-walkthrough, full rubric):** **JSONL for v1 + documented scale-escalation heuristic via `EmbeddingStorageBackend` (§8.3).** Industry research: LangChain / LlamaIndex / Embedchain default to in-process stores; OpenAI cookbook uses pickle for small, FAISS/pgvector for production; AI-SDLC convention is JSONL across `_dor/`, `_deps/`, `_subscription-ledger/`, `_captures/`, `_decisions/`. Perf: 1536-dim cosine over 10K vectors ≈ 50ms JS, 100K ≈ 500ms, 1M ≈ 5s. **Refinement over v0.2:** explicit scale-escalation heuristic codified in §15.1 config docs and operator runbook — **"swap from JSONL to sqlite (or vector DB) when count per (provider, modelVersion) exceeds ~100K entries OR p95 read latency exceeds 250ms."** Makes the transition operator-visible and corpus-driven, not tribal knowledge. **Counter-argument:** "just use sqlite from day one — file is portable, indexes solve perf, jq-debugging is overweighted for binary vector data." Rebuttal: JSONL debugging value isn't reading 1536-float vectors by eye — it's `jq '.embeddingProvider' | sort | uniq -c` for provenance audits, `grep <textHash>` for write confirmation, `jq 'select(.writtenAt > "2026-05")'` for windowed counts. Those ops are the substrate-debugging story consistency across other JSONL stores enables. **Selected over sqlite-as-default** because substrate-consistency outweighs indexed-lookup at v1 scale and the escape hatch is now operator-visible. **Selected over plugin-only-no-default** because bootstrap experience must work end-to-end without operator choice paralysis.
+**Resolution (2026-05-21 re-walkthrough, full rubric):** **JSONL for v1 + documented scale-escalation heuristic via `EmbeddingStorageBackend` (§8.3).** Industry research: LangChain / LlamaIndex / Embedchain default to in-process stores; GitHub Copilot cookbook uses pickle for small, FAISS/pgvector for production; AI-SDLC convention is JSONL across `_dor/`, `_deps/`, `_subscription-ledger/`, `_captures/`, `_decisions/`. Perf: 1536-dim cosine over 10K vectors ≈ 50ms JS, 100K ≈ 500ms, 1M ≈ 5s. **Refinement over v0.2:** explicit scale-escalation heuristic codified in §15.1 config docs and operator runbook — **"swap from JSONL to sqlite (or vector DB) when count per (provider, modelVersion) exceeds ~100K entries OR p95 read latency exceeds 250ms."** Makes the transition operator-visible and corpus-driven, not tribal knowledge. **Counter-argument:** "just use sqlite from day one — file is portable, indexes solve perf, jq-debugging is overweighted for binary vector data." Rebuttal: JSONL debugging value isn't reading 1536-float vectors by eye — it's `jq '.embeddingProvider' | sort | uniq -c` for provenance audits, `grep <textHash>` for write confirmation, `jq 'select(.writtenAt > "2026-05")'` for windowed counts. Those ops are the substrate-debugging story consistency across other JSONL stores enables. **Selected over sqlite-as-default** because substrate-consistency outweighs indexed-lookup at v1 scale and the escape hatch is now operator-visible. **Selected over plugin-only-no-default** because bootstrap experience must work end-to-end without operator choice paralysis.
 
 ### Q2: Stale-vector policy default — lazy-re-embed vs fail-loud?
 
@@ -599,18 +599,18 @@ Amends RFC-0004 §4 cost-attribution categories with a new line item for embeddi
 
 ### Q3: Cross-provider compatibility — explicit no-op or auto-migrate?
 
-**Lean: explicit no-op.** Vectors from `openai-text-embedding-3-small` (1536 dims) are NOT comparable to vectors from `openai-text-embedding-3-large` (3072 dims) even within the same provider family. The framework MUST refuse to compare across `(provider, modelVersion)` boundaries; adopters who change adapters MUST run `cli-embedding-bump`. Auto-migration on read is technically possible (the `lazy-re-embed` policy in Q2 already does it on a per-vector basis) but framework-level "magic" cross-provider migration would obscure the identity-of-vectors invariant.
+**Lean: explicit no-op.** Vectors from `github-models-embedding-small` (1536 dims) are NOT comparable to vectors from `github-models-embedding-large` (3072 dims) even within the same provider family. The framework MUST refuse to compare across `(provider, modelVersion)` boundaries; adopters who change adapters MUST run `cli-embedding-bump`. Auto-migration on read is technically possible (the `lazy-re-embed` policy in Q2 already does it on a per-vector basis) but framework-level "magic" cross-provider migration would obscure the identity-of-vectors invariant.
 
-**Resolution (2026-05-21 re-walkthrough, full rubric):** **Split — strict no-op cross-PROVIDER; cross-VERSION-within-provider delegates to OQ-2 `staleVectorPolicy`.** Industry research: Pinecone (model-locked indexes), Weaviate (refuse cross-vectorizer queries), Qdrant / pgvector (schema-enforced per-collection dimensions) — all refuse cross-provider; no industry pattern for "auto-migrate cross-provider" because the math is genuinely undefined (vectors in different embedding spaces have no metrically-valid distance). **Key bug in v0.2 resolution surfaced by re-walkthrough:** v0.2 lumped cross-PROVIDER (openai vs cohere — math undefined) AND cross-VERSION-within-provider (3-small@2024-01-25 vs 3-small@2025-01-25 — closely-correlated spaces, lazy re-embed valid) under one "strict no-op" policy, **directly contradicting OQ-2's lazy-re-embed default** for the cross-version case. **Refinement over v0.2:** explicit split — cross-PROVIDER always strict no-op + `Decision: cross-provider-comparison-attempted` + emit `cli-embedding-bump` migration task (rare, high-cost, high-surprise); cross-VERSION-within-provider delegates to OQ-2's `staleVectorPolicy` (composes cleanly with per-consumer override). **Counter-argument:** "splitting adds API complexity for a corner case." Rebuttal: the split already exists in the data model (`provider` and `modelVersion` are distinct fields); making policy reflect that distinction is clarifying, not complexifying. The two policies compose without ambiguity. **Selected over v0.2 lumped strict-no-op** because v0.2's logical conflict with OQ-2 is the kind of cross-resolution inconsistency that surfaces as a real bug 6 months in. **Selected over uniform auto-migrate** because auto-migrate cost for cross-PROVIDER is catastrophic (re-embed entire corpus from text on every comparison). **Selected over allow+warn** because cross-provider distance is mathematically undefined.
+**Resolution (2026-05-21 re-walkthrough, full rubric):** **Split — strict no-op cross-PROVIDER; cross-VERSION-within-provider delegates to OQ-2 `staleVectorPolicy`.** Industry research: Pinecone (model-locked indexes), Weaviate (refuse cross-vectorizer queries), Qdrant / pgvector (schema-enforced per-collection dimensions) — all refuse cross-provider; no industry pattern for "auto-migrate cross-provider" because the math is genuinely undefined (vectors in different embedding spaces have no metrically-valid distance). **Key bug in v0.2 resolution surfaced by re-walkthrough:** v0.2 lumped cross-PROVIDER (github-copilot vs self-hosted — math undefined) AND cross-VERSION-within-provider (3-small@2024-01-25 vs 3-small@2025-01-25 — closely-correlated spaces, lazy re-embed valid) under one "strict no-op" policy, **directly contradicting OQ-2's lazy-re-embed default** for the cross-version case. **Refinement over v0.2:** explicit split — cross-PROVIDER always strict no-op + `Decision: cross-provider-comparison-attempted` + emit `cli-embedding-bump` migration task (rare, high-cost, high-surprise); cross-VERSION-within-provider delegates to OQ-2's `staleVectorPolicy` (composes cleanly with per-consumer override). **Counter-argument:** "splitting adds API complexity for a corner case." Rebuttal: the split already exists in the data model (`provider` and `modelVersion` are distinct fields); making policy reflect that distinction is clarifying, not complexifying. The two policies compose without ambiguity. **Selected over v0.2 lumped strict-no-op** because v0.2's logical conflict with OQ-2 is the kind of cross-resolution inconsistency that surfaces as a real bug 6 months in. **Selected over uniform auto-migrate** because auto-migrate cost for cross-PROVIDER is catastrophic (re-embed entire corpus from text on every comparison). **Selected over allow+warn** because cross-provider distance is mathematically undefined.
 
 ### Q4: Embedding provider deprecation grace period?
 
-**Lean: 90d warning + hard removal at `removedAt`.** OpenAI typically gives 12-month deprecation notices; 90d framework-side warning is conservative within that window. Concrete schedule:
+**Lean: 90d warning + hard removal at `removedAt`.** GitHub Copilot typically gives 12-month deprecation notices; 90d framework-side warning is conservative within that window. Concrete schedule:
 - Warning starts: 90 days before `deprecatedAt` (configurable to a smaller value in pipeline config for fast-moving providers; 90d is the default lean).
 - Error starts: at `deprecatedAt` (operator-strict mode); warning continues in default mode.
 - Pipeline-load FAILS: at `removedAt`; operator MUST run `cli-embedding-bump` to migrate.
 
-**Resolution (2026-05-21 re-walkthrough, full rubric):** **Three-layer precedence: 90d framework default → adapter-declared `defaultGracePeriodDays` (capability matrix) → per-org `gracePeriodDays` override — PLUS catalog dedup via per-Decision-key counter (emit at 1/7/30/60/89-day milestones, NOT per-load).** Industry research: OpenAI ~12-15 months total deprecation (text-embedding-ada-002: 2024-01-25 announced, 2025-04-15 shutdown); Cohere 6 months; Google Vertex / AWS Bedrock 12 / 6 months; K8s API deprecation 12 months GA / 9 months beta with staggered escalation; Stripe 1-year notice; semver convention ≥ one major version. 90d framework default gives ~3 sprint cycles to migrate, conservative within OpenAI's window but eats half of Cohere's window. **Two substantive gaps in v0.2 surfaced by re-walkthrough:** (1) no adapter-declared override — Cohere-style fast-moving providers get insufficient warning under 90d default; the adapter knows its provider's lifecycle better than framework default. (2) No Decision dedup story — every pipeline-load between (deprecatedAt - 90d) and `deprecatedAt` emits `Decision: embedding-provider-deprecated`; orchestrator-driven loads (RFC-0015) can trigger thousands of identical Decisions. **Refinement over v0.2:** adapter capability matrix gains optional `defaultGracePeriodDays` field (overrides framework default but per-org still applies on top); catalog dedup via per-Decision-key counter on `embedding-provider-deprecated:<adapter-name>:<deprecatedAt>` emits at milestone thresholds (89d, 60d, 30d, 7d, 1d before deprecatedAt) NOT per-load. At `removedAt`: pipeline-load emits `Decision: embedding-provider-removed` → auto-action: emit `cli-embedding-bump` migration task. Pipeline never halts — downstream consumers degrade gracefully. **Counter-argument:** "three layers of override is config-surface bloat." Rebuttal: framework default → adapter default → user override is the standard precedence chain used by every config system (env vars, JSON Schema defaults, etc.); each layer has a clear semantic owner. **Selected over v0.2 (90d + per-org override only)** because v0.2's missing adapter-declared default leaves fast-moving providers under-warned AND missing dedup floods the catalog at orchestrator scale. **Selected over configurable-with-no-default** because no default punts choice paralysis to adopter on day-1. **Selected over tiered (warn at 90d / error at 30d)** because triple-staged severity is more surface than benefit for v1 — defer until corpus signals demand.
+**Resolution (2026-05-21 re-walkthrough, full rubric):** **Three-layer precedence: 90d framework default → adapter-declared `defaultGracePeriodDays` (capability matrix) → per-org `gracePeriodDays` override — PLUS catalog dedup via per-Decision-key counter (emit at 1/7/30/60/89-day milestones, NOT per-load).** Industry research: GitHub Copilot ~12-15 months total deprecation (the legacy embedding model: 2024-01-25 announced, 2025-04-15 shutdown); a third-party provider 6 months; Google Vertex / AWS Bedrock 12 / 6 months; K8s API deprecation 12 months GA / 9 months beta with staggered escalation; Stripe 1-year notice; semver convention ≥ one major version. 90d framework default gives ~3 sprint cycles to migrate, conservative within GitHub Copilot's window but eats half of a third-party provider's window. **Two substantive gaps in v0.2 surfaced by re-walkthrough:** (1) no adapter-declared override — a third-party provider-style fast-moving providers get insufficient warning under 90d default; the adapter knows its provider's lifecycle better than framework default. (2) No Decision dedup story — every pipeline-load between (deprecatedAt - 90d) and `deprecatedAt` emits `Decision: embedding-provider-deprecated`; orchestrator-driven loads (RFC-0015) can trigger thousands of identical Decisions. **Refinement over v0.2:** adapter capability matrix gains optional `defaultGracePeriodDays` field (overrides framework default but per-org still applies on top); catalog dedup via per-Decision-key counter on `embedding-provider-deprecated:<adapter-name>:<deprecatedAt>` emits at milestone thresholds (89d, 60d, 30d, 7d, 1d before deprecatedAt) NOT per-load. At `removedAt`: pipeline-load emits `Decision: embedding-provider-removed` → auto-action: emit `cli-embedding-bump` migration task. Pipeline never halts — downstream consumers degrade gracefully. **Counter-argument:** "three layers of override is config-surface bloat." Rebuttal: framework default → adapter default → user override is the standard precedence chain used by every config system (env vars, JSON Schema defaults, etc.); each layer has a clear semantic owner. **Selected over v0.2 (90d + per-org override only)** because v0.2's missing adapter-declared default leaves fast-moving providers under-warned AND missing dedup floods the catalog at orchestrator scale. **Selected over configurable-with-no-default** because no default punts choice paralysis to adopter on day-1. **Selected over tiered (warn at 90d / error at 30d)** because triple-staged severity is more surface than benefit for v1 — defer until corpus signals demand.
 
 ### Q5: Where in `pipeline-cli` vs `orchestrator` does the framework live?
 
@@ -620,15 +620,15 @@ Amends RFC-0004 §4 cost-attribution categories with a new line item for embeddi
 
 ### Q6: Token budget tracking for embedding calls?
 
-**Lean: yes, embedded under `embeddingTokens` line item in cost-tracker.** OpenAI charges per token embedded; the framework MUST track this against `Pipeline.spec.costBudget`. New line item `embeddingTokens` (not conflated with `inputTokens`/`outputTokens` from harness calls) — keeps the cost-attribution story clean for adopters who want to break out embedding spend separately.
+**Lean: yes, embedded under `embeddingTokens` line item in cost-tracker.** GitHub Copilot charges per token embedded; the framework MUST track this against `Pipeline.spec.costBudget`. New line item `embeddingTokens` (not conflated with `inputTokens`/`outputTokens` from harness calls) — keeps the cost-attribution story clean for adopters who want to break out embedding spend separately.
 
-**Resolution (2026-05-21 re-walkthrough, full rubric):** **New `embeddingTokens` line item + per-consumer `consumerLabel` dimension on the `embed()` API.** Industry research: OpenAI billing dashboard splits embedding vs chat/completion vs fine-tuning into separate line items; Cohere splits embed-trial / embed-paid / generate / classify; Datadog / Honeycomb cost-attribution standard is per-service-category line items; FinOps best practice mandates per-resource cost attribution NOT aggregated bottom-line. Embedding tokens differ from chat tokens on every relevant axis: unit cost (3-1500× cheaper), latency (~50ms vs 1-5s), upstream provider (potentially different), consumer surface (drift / similarity vs review-classifier / orchestrator). **Substantive gap in v0.2 surfaced by re-walkthrough:** v0.2 captures `(provider, modelVersion, accountId)` but **omits per-consumer attribution**. §2.2 enumerates 5 anticipated consumers (drift, PPA similarity, DoR dedup, classifier embeddings, backlog auto-tagging). Without `consumerLabel`, cost-tracker can answer "total monthly embedding cost" but NOT "drift cost vs PPA cost" — that's the question finance / ops will ask within 6 months of multiple consumers shipping. **Refinement over v0.2:** add optional `consumerLabel?: string` parameter on `embed()` (default `'unspecified'`; callers pass consumer identity e.g., `'rfc-0009-tessellation-drift'`); cost-tracker records the dimension alongside provider/modelVersion/accountId. Budget breaches still route per RFC-0035 G0 (`Decision: cost-budget-exceeded`). **Counter-argument:** "per-consumer label is YAGNI — one consumer today." Rebuttal: §2.2 enumerates 5 anticipated consumers; the label is a one-line API addition; adding later forces re-instrumentation of every embed() call site. Cheap now, expensive to retrofit — exactly the case where YAGNI flips to "do it now." **Selected over v0.2 (no consumerLabel)** because v0.2's missing per-consumer attribution is debt that surfaces 6 months in as a finance-team blocker. **Selected over conflating into `inputTokens`** because conflation makes per-category cost-allocation impossible. **Selected over subscription-window-based** because embedding APIs are pay-per-token, not window-quota'd.
+**Resolution (2026-05-21 re-walkthrough, full rubric):** **New `embeddingTokens` line item + per-consumer `consumerLabel` dimension on the `embed()` API.** Industry research: GitHub Copilot billing dashboard splits embedding vs chat/completion vs fine-tuning into separate line items; a third-party provider splits embed-trial / embed-paid / generate / classify; Datadog / Honeycomb cost-attribution standard is per-service-category line items; FinOps best practice mandates per-resource cost attribution NOT aggregated bottom-line. Embedding tokens differ from chat tokens on every relevant axis: unit cost (3-1500× cheaper), latency (~50ms vs 1-5s), upstream provider (potentially different), consumer surface (drift / similarity vs review-classifier / orchestrator). **Substantive gap in v0.2 surfaced by re-walkthrough:** v0.2 captures `(provider, modelVersion, accountId)` but **omits per-consumer attribution**. §2.2 enumerates 5 anticipated consumers (drift, PPA similarity, DoR dedup, classifier embeddings, backlog auto-tagging). Without `consumerLabel`, cost-tracker can answer "total monthly embedding cost" but NOT "drift cost vs PPA cost" — that's the question finance / ops will ask within 6 months of multiple consumers shipping. **Refinement over v0.2:** add optional `consumerLabel?: string` parameter on `embed()` (default `'unspecified'`; callers pass consumer identity e.g., `'rfc-0009-tessellation-drift'`); cost-tracker records the dimension alongside provider/modelVersion/accountId. Budget breaches still route per RFC-0035 G0 (`Decision: cost-budget-exceeded`). **Counter-argument:** "per-consumer label is YAGNI — one consumer today." Rebuttal: §2.2 enumerates 5 anticipated consumers; the label is a one-line API addition; adding later forces re-instrumentation of every embed() call site. Cheap now, expensive to retrofit — exactly the case where YAGNI flips to "do it now." **Selected over v0.2 (no consumerLabel)** because v0.2's missing per-consumer attribution is debt that surfaces 6 months in as a finance-team blocker. **Selected over conflating into `inputTokens`** because conflation makes per-category cost-allocation impossible. **Selected over subscription-window-based** because embedding APIs are pay-per-token, not window-quota'd.
 
 ### Q7: How does this interact with RFC-0010 SubscriptionLedger?
 
-**Lean: track separately, don't conflate.** Embedding API calls are pay-per-token (OpenAI bills against the API key directly), not subscription-quota-based. The SubscriptionLedger (RFC-0010 §14) tracks Claude Code Max / Codex subscription windows; embedding spend is a separate dollar-denominated cost that surfaces under cost-tracker's `embeddingTokens` line item. Conflating them would distort burn-down pacing in §14.4 (subscription quota would appear consumed by embedding calls that don't actually count against it).
+**Lean: track separately, don't conflate.** Embedding API calls are pay-per-token (GitHub Copilot bills against the API key directly), not subscription-quota-based. The SubscriptionLedger (RFC-0010 §14) tracks GitHub Copilot CLI Max / GitHub Copilot subscription windows; embedding spend is a separate dollar-denominated cost that surfaces under cost-tracker's `embeddingTokens` line item. Conflating them would distort burn-down pacing in §14.4 (subscription quota would appear consumed by embedding calls that don't actually count against it).
 
-**Resolution (2026-05-21 re-walkthrough, full rubric):** **Separation invariant + per-adapter `billingModel: 'pay-per-token' | 'subscription-quota'` declaration + cost-tracker `unified-cost-report` view.** Industry research: AWS / Snowflake / Datadog all keep distinct pricing models as separate line items (compute / storage / API-calls); FinOps standard practice mandates per-model attribution; conflation distorts capacity planning AND breaks per-category cost-allocation. **Two substantive gaps in v0.2 surfaced by re-walkthrough:** (1) v0.2 hard-codes "embeddings = pay-per-token = no subscription consumption" but the framework is provider-pluggable — when Anthropic ships an embeddings endpoint (§14.2 anticipates this), it WOULD be billed against Claude Code Max subscription. Framework must handle BOTH cost models. (2) No unified-reporting view — finance asks "what's our total AI spend this month?" needing `(subscription cost) + (embedding $) + (other API-key-billed)`; v0.2 says "track separately" but doesn't define the cross-substrate query path. **Refinement over v0.2:** (a) adapter capability matrix gains `billingModel: 'pay-per-token' | 'subscription-quota'`; today's adapters (OpenAI, future Cohere, future local-ONNX) declare `'pay-per-token'` → `consumeSubscriptionQuota: false`; future Anthropic embedding adapter declares `'subscription-quota'` → routes through SubscriptionLedger (consumes quota, affects §14.4 burn-down pacing). (b) Cost-tracker `unified-cost-report` view aggregates `inputTokens` + `outputTokens` + `embeddingTokens` + SubscriptionLedger window consumption (cost-converted) with explicit `costModel` label per row — answers finance's monthly-spend query in one place. **Counter-argument:** "per-adapter billing model is YAGNI — no Anthropic embeddings API today, no roadmap for subscription-billed embedding providers." Rebuttal: the framework already declares per-adapter capabilities (`dimensions`, `maxInputTokens`, `supportsBatching`, `selfHosted`, `pricingModel`); adding `billingModel` is a one-field addition to existing matrix. Cost of retrofitting when Anthropic ships embeddings: every consumer call site potentially affected. Cheap now, expensive later. **Selected over v0.2 (separation only)** because v0.2's gaps surface the moment finance asks for unified reporting OR a subscription-billed embedding provider ships. **Selected over billingModel-only** because unified reporting is a real operational need today (finance multi-substrate query). **Selected over unified-report-only** because billing-model declaration is structurally load-bearing for forward-compat.
+**Resolution (2026-05-21 re-walkthrough, full rubric):** **Separation invariant + per-adapter `billingModel: 'pay-per-token' | 'subscription-quota'` declaration + cost-tracker `unified-cost-report` view.** Industry research: AWS / Snowflake / Datadog all keep distinct pricing models as separate line items (compute / storage / API-calls); FinOps standard practice mandates per-model attribution; conflation distorts capacity planning AND breaks per-category cost-allocation. **Two substantive gaps in v0.2 surfaced by re-walkthrough:** (1) v0.2 hard-codes "embeddings = pay-per-token = no subscription consumption" but the framework is provider-pluggable — when GitHub Models ships an embeddings endpoint (§14.2 anticipates this), it WOULD be billed against GitHub Copilot CLI Max subscription. Framework must handle BOTH cost models. (2) No unified-reporting view — finance asks "what's our total AI spend this month?" needing `(subscription cost) + (embedding $) + (other API-key-billed)`; v0.2 says "track separately" but doesn't define the cross-substrate query path. **Refinement over v0.2:** (a) adapter capability matrix gains `billingModel: 'pay-per-token' | 'subscription-quota'`; today's adapters (GitHub Copilot, future a third-party provider, future local-ONNX) declare `'pay-per-token'` → `consumeSubscriptionQuota: false`; future GitHub Models embedding adapter declares `'subscription-quota'` → routes through SubscriptionLedger (consumes quota, affects §14.4 burn-down pacing). (b) Cost-tracker `unified-cost-report` view aggregates `inputTokens` + `outputTokens` + `embeddingTokens` + SubscriptionLedger window consumption (cost-converted) with explicit `costModel` label per row — answers finance's monthly-spend query in one place. **Counter-argument:** "per-adapter billing model is YAGNI — no GitHub Models embeddings API today, no roadmap for subscription-billed embedding providers." Rebuttal: the framework already declares per-adapter capabilities (`dimensions`, `maxInputTokens`, `supportsBatching`, `selfHosted`, `pricingModel`); adding `billingModel` is a one-field addition to existing matrix. Cost of retrofitting when GitHub Models ships embeddings: every consumer call site potentially affected. Cheap now, expensive later. **Selected over v0.2 (separation only)** because v0.2's gaps surface the moment finance asks for unified reporting OR a subscription-billed embedding provider ships. **Selected over billingModel-only** because unified reporting is a real operational need today (finance multi-substrate query). **Selected over unified-report-only** because billing-model declaration is structurally load-bearing for forward-compat.
 
 ### 15.1 Configuration Schema (per-org defaults)
 
@@ -636,7 +636,7 @@ Per-organization configurability is mandatory across the resolved OQs. The conso
 
 ```yaml
 embedding:
-  provider: openai-text-embedding-3-small   # default adapter (OQ-5 + Phase 1)
+  provider: github-models-embedding-small   # default adapter (OQ-5 + Phase 1)
 
   storage:                              # OQ-1 — JSONL backend + scale-escalation heuristic
     backend: jsonl
@@ -654,7 +654,7 @@ embedding:
                                         # (e.g., RFC-0009 Eτ drift pins fail-loud regardless of org default)
 
   crossProviderPolicy:                  # OQ-3 — split (re-walkthrough refinement)
-    crossProvider: refuse               # ALWAYS strict no-op cross-PROVIDER (openai vs cohere)
+    crossProvider: refuse               # ALWAYS strict no-op cross-PROVIDER (github-copilot vs self-hosted)
                                         # → Decision: cross-provider-comparison-attempted
     crossVersionWithinProvider: delegate-to-staleVectorPolicy
                                         # cross-VERSION delegates to OQ-2 (resolves v0.2 logical conflict)
@@ -677,15 +677,15 @@ embedding:
       enabled: true                     # aggregates embeddingTokens + inputTokens + outputTokens +
                                         # SubscriptionLedger window cost; tagged by costModel
       costModelLabels:
-        - subscription-quota            # Claude Code Max / Codex
-        - pay-per-token                 # OpenAI / Cohere / future Anthropic embeddings if launched
+        - subscription-quota            # GitHub Copilot CLI Max / GitHub Copilot
+        - pay-per-token                 # GitHub Copilot / a third-party provider / future GitHub Models embeddings if launched
 
   subscription-ledger-interaction:      # OQ-7 — separation + per-adapter billingModel
     consumeQuotaDefault: false          # default for pay-per-token adapters
     adapterBillingModelRespected: true  # NEW (re-walkthrough): adapter declares
                                         # 'pay-per-token' | 'subscription-quota' in capability matrix
                                         # subscription-quota adapters route through SubscriptionLedger
-                                        # (e.g., future Anthropic embeddings if shipped)
+                                        # (e.g., future GitHub Models embeddings if shipped)
 ```
 
 Default constants ship in the `ai-sdlc init` embedding-config template. Operator-configurable from day one. Per-org override via the standard config-precedence convention. **Re-walkthrough additions (2026-05-21)** marked NEW above: scale-escalation heuristic (OQ-1); per-consumer override flag (OQ-2); split cross-provider vs cross-version (OQ-3); catalog dedup milestones (OQ-4); consumerLabel + unifiedCostReport (OQ-6); adapter billingModel respect (OQ-7).
@@ -710,5 +710,5 @@ Default constants ship in the `ai-sdlc init` embedding-config template. Operator
 | Version | Date       | Author    | Notes                                                                                                                                |
 | ------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | v1      | 2026-05-03 | dominique | Initial draft per RFC-0009 OQ-6 sub-decision; mirrors RFC-0010 §13 harness adapter pattern + §11 alias deprecation lifecycle.        |
-| v0.2    | 2026-05-16 | dominique | Operator OQ walkthrough resolved all 7 §15 OQs. Resolutions: JSONL storage backend (OQ-1), lazy-re-embed default with per-org fail-loud opt-in (OQ-2), explicit no-op for cross-provider comparison (OQ-3), 90d deprecation warning with per-org gracePeriodDays override (OQ-4), orchestrator placement for framework code with pipeline-cli for CLIs (OQ-5), `embeddingTokens` cost-tracker line item distinct from input/output tokens (OQ-6), separate from SubscriptionLedger (OQ-7). §15.1 added consolidating per-org `.ai-sdlc/embedding-config.yaml` schema. Cross-cutting framing: operator-impacting events (stale-vector, cross-provider, deprecation, cost-budget) route through RFC-0035 G0 catalog. Lifecycle promoted Draft → Ready for Review. Implementation broken into 5 phase tasks: AISDLC-337 (Phase 1 interface + registry + OpenAI default), AISDLC-338 (Phase 2 JSONL storage + GC), AISDLC-339 (Phase 3 migration tooling), AISDLC-340 (Phase 4 pipeline integration + schema), AISDLC-341 (Phase 5 soak + promotion). |
-| v0.3    | 2026-05-21 | dominique (Operator re-walkthrough) | Re-walked all 7 §15 OQs with **full rigor rubric per OQ** (problem statement → industry research → 3-4 options with tradeoffs → recommendation + counter-argument). 2026-05-16 first-pass resolutions flagged as too shallow ("skims over questions and recommends authors' recommendations"); this re-walkthrough surfaces substantive refinements on every OQ. Refinements: **(OQ-1)** scale-escalation heuristic codified — swap JSONL→sqlite at >100K entries OR p95 read >250ms; **(OQ-2)** per-consumer `staleVectorPolicy` API parameter ADDED on top of per-org default — RFC-0009 Eτ drift consumer pins `fail-loud` at API site to preserve historical-trajectory fidelity (v0.2 org-level granularity was structurally too coarse); **(OQ-3)** split — strict no-op cross-PROVIDER, cross-VERSION-within-provider delegates to OQ-2 (resolves logical conflict where v0.2 lumped both as "strict no-op" contradicting OQ-2's lazy-re-embed default); **(OQ-4)** three-layer precedence (framework default → adapter-declared `defaultGracePeriodDays` → per-org override) + catalog dedup via per-Decision-key counter (emit at 1/7/30/60/89-day milestones, NOT per-load — prevents Decision flood under orchestrator); **(OQ-5)** explicit `spec/schemas/` placement for both `embedding-adapter.v1.schema.json` AND `vector-store-entry.v1.schema.json` (v0.2 was silent — drift-prone); **(OQ-6)** per-consumer `consumerLabel` dimension on cost-tracker (enables "drift cost vs PPA cost" attribution without re-instrumentation when finance asks later); **(OQ-7)** per-adapter `billingModel: 'pay-per-token' \| 'subscription-quota'` declaration (forward-compat for future Anthropic embeddings shipped under subscription) + cost-tracker `unified-cost-report` view aggregating across substrates (answers finance's monthly-spend query in one place). §15.1 config schema updated to reflect all refinements (scaleEscalationHeuristic, perConsumerOverridesAllowed, split cross-provider policy, catalogDedup milestones, consumerLabel + unifiedCostReport, adapterBillingModelRespected). Implementation phase tasks AISDLC-337..340 amended to reflect refinements; AISDLC-341 (soak + promotion) unchanged. Practitioner-validation gates remain pending corpus run per Phase 5. |
+| v0.2    | 2026-05-16 | dominique | Operator OQ walkthrough resolved all 7 §15 OQs. Resolutions: JSONL storage backend (OQ-1), lazy-re-embed default with per-org fail-loud opt-in (OQ-2), explicit no-op for cross-provider comparison (OQ-3), 90d deprecation warning with per-org gracePeriodDays override (OQ-4), orchestrator placement for framework code with pipeline-cli for CLIs (OQ-5), `embeddingTokens` cost-tracker line item distinct from input/output tokens (OQ-6), separate from SubscriptionLedger (OQ-7). §15.1 added consolidating per-org `.ai-sdlc/embedding-config.yaml` schema. Cross-cutting framing: operator-impacting events (stale-vector, cross-provider, deprecation, cost-budget) route through RFC-0035 G0 catalog. Lifecycle promoted Draft → Ready for Review. Implementation broken into 5 phase tasks: AISDLC-337 (Phase 1 interface + registry + GitHub Copilot default), AISDLC-338 (Phase 2 JSONL storage + GC), AISDLC-339 (Phase 3 migration tooling), AISDLC-340 (Phase 4 pipeline integration + schema), AISDLC-341 (Phase 5 soak + promotion). |
+| v0.3    | 2026-05-21 | dominique (Operator re-walkthrough) | Re-walked all 7 §15 OQs with **full rigor rubric per OQ** (problem statement → industry research → 3-4 options with tradeoffs → recommendation + counter-argument). 2026-05-16 first-pass resolutions flagged as too shallow ("skims over questions and recommends authors' recommendations"); this re-walkthrough surfaces substantive refinements on every OQ. Refinements: **(OQ-1)** scale-escalation heuristic codified — swap JSONL→sqlite at >100K entries OR p95 read >250ms; **(OQ-2)** per-consumer `staleVectorPolicy` API parameter ADDED on top of per-org default — RFC-0009 Eτ drift consumer pins `fail-loud` at API site to preserve historical-trajectory fidelity (v0.2 org-level granularity was structurally too coarse); **(OQ-3)** split — strict no-op cross-PROVIDER, cross-VERSION-within-provider delegates to OQ-2 (resolves logical conflict where v0.2 lumped both as "strict no-op" contradicting OQ-2's lazy-re-embed default); **(OQ-4)** three-layer precedence (framework default → adapter-declared `defaultGracePeriodDays` → per-org override) + catalog dedup via per-Decision-key counter (emit at 1/7/30/60/89-day milestones, NOT per-load — prevents Decision flood under orchestrator); **(OQ-5)** explicit `spec/schemas/` placement for both `embedding-adapter.v1.schema.json` AND `vector-store-entry.v1.schema.json` (v0.2 was silent — drift-prone); **(OQ-6)** per-consumer `consumerLabel` dimension on cost-tracker (enables "drift cost vs PPA cost" attribution without re-instrumentation when finance asks later); **(OQ-7)** per-adapter `billingModel: 'pay-per-token' \| 'subscription-quota'` declaration (forward-compat for future GitHub Models embeddings shipped under subscription) + cost-tracker `unified-cost-report` view aggregating across substrates (answers finance's monthly-spend query in one place). §15.1 config schema updated to reflect all refinements (scaleEscalationHeuristic, perConsumerOverridesAllowed, split cross-provider policy, catalogDedup milestones, consumerLabel + unifiedCostReport, adapterBillingModelRespected). Implementation phase tasks AISDLC-337..340 amended to reflect refinements; AISDLC-341 (soak + promotion) unchanged. Practitioner-validation gates remain pending corpus run per Phase 5. |

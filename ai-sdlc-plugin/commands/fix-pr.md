@@ -99,7 +99,7 @@ Present:
 ## Step 7 — Never merge
 
 Do **not** run `gh pr merge`. The skill fixes and surfaces; humans merge.
-This is a hard rule from CLAUDE.md.
+This is a hard rule from .github/copilot-instructions.md.
 
 ## Notes
 

@@ -19,7 +19,7 @@
 
 ## What this is
 
-AI-SDLC is the **Decision Engine** for spec-driven AI workflows — the execution-and-governance half of a spec-driven development stack. Operators frontload the load-bearing decisions through a Definition-of-Ready gate; an autonomous orchestrator dispatches developer subagents through the dependency graph; cross-harness reviewers (Claude × Codex × …) verify the work in parallel; DSSE attestations seal every change; pull requests open themselves.
+AI-SDLC is the **Decision Engine** for spec-driven AI workflows — the execution-and-governance half of a spec-driven development stack. Operators frontload the load-bearing decisions through a Definition-of-Ready gate; an autonomous orchestrator dispatches developer subagents through the dependency graph; three independent reviewer agents verify the work in parallel; DSSE attestations seal every change; pull requests open themselves. Everything runs on the **GitHub Copilot CLI**.
 
 The leverage move is **cost asymmetry**: operator decisions made upfront — with full context, time to think, and access to stakeholders — are cheap and (mostly) correct. AI decisions made mid-execution under uncertainty are expensive and often wrong. The framework's value is not "AI writes code"; it's **"AI executes well-specified contracts deterministically."** Those are different products with different reliability profiles.
 
@@ -56,9 +56,9 @@ A Definition-of-Ready gate (RFC-0011) refuses to dispatch tasks the operator has
 
 `cli-orchestrator tick` walks the dependency graph (RFC-0014), runs admission filters (blocked, in-flight, DoR, dispatchability), dispatches admitted tasks into isolated git worktrees, runs the Step 0-13 pipeline (dev agent → 3 reviewers → attestation sign → PR open), quarantines failures, and resumes from checkpoint commits on interruption. Operators monitor; they don't type. Feature flag: `AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental`. → [Concept page](https://ai-sdlc.io/docs/concepts/autonomous-orchestrator) · [Runbook](docs/operations/orchestrator-runbook.md)
 
-### 3. Cross-Harness Review — [RFC-0010](spec/rfcs/RFC-0010-parallel-execution-worktree-pooling.md) §13
+### 3. Independent Parallel Review — [RFC-0010](spec/rfcs/RFC-0010-parallel-execution-worktree-pooling.md) §13
 
-Three reviewer subagents run in parallel on every change. DSSE envelopes carry a `harness` field that identifies the execution harness behind each review, and `verify-attestation` enforces **independence by construction**: if Claude implemented, Claude cannot also be the code or test reviewer. Codex reviews Claude's work and vice versa. Reviewer collusion is mechanically impossible. → [Concept page](https://ai-sdlc.io/docs/concepts/cross-harness-review) · [Runbook](docs/operations/cross-harness-review.md)
+Three reviewer subagents — code, test, security — run in parallel on every change, each in its own fresh GitHub Copilot CLI session so no reviewer inherits the implementer's context. DSSE envelopes record every reviewer's agent file hash and verdict, and `verify-attestation` enforces **reviewer-set completeness by construction**: an envelope missing any of the three roles is rejected. Silently skipping a reviewer is mechanically impossible. → [Runbook](docs/operations/copilot-spawner.md)
 
 ### 4. Operator TUI — [RFC-0023](spec/rfcs/RFC-0023-operator-tui-pipeline-monitoring.md)
 
@@ -66,30 +66,32 @@ A live terminal interface with five panes: decisions-pending (RFC-0035), pipelin
 
 ### 5. Declarative Governance
 
-Declarative resources for the whole lifecycle: `Pipeline`, `Decision`, `AgentRole`, `QualityGate`, `AutonomyPolicy`, `AdapterBinding` — all with JSON Schema (draft 2020-12) under [`spec/schemas/`](spec/schemas/). Quality gates run advisory → soft-mandatory → hard-mandatory with cross-harness review and DSSE attestation. Adopters declare a compliance posture ([RFC-0022](spec/rfcs/RFC-0022-compliance-posture-audit-surface.md)) and the framework derives gate defaults — EU AI Act, NIST AI RMF, ISO 42001. → [Specification](spec/spec.md)
+Declarative resources for the whole lifecycle: `Pipeline`, `Decision`, `AgentRole`, `QualityGate`, `AutonomyPolicy`, `AdapterBinding` — all with JSON Schema (draft 2020-12) under [`spec/schemas/`](spec/schemas/). Quality gates run advisory → soft-mandatory → hard-mandatory with independent parallel review and DSSE attestation. Adopters declare a compliance posture ([RFC-0022](spec/rfcs/RFC-0022-compliance-posture-audit-surface.md)) and the framework derives gate defaults — EU AI Act, NIST AI RMF, ISO 42001. → [Specification](spec/spec.md)
 
 ---
 
 ## Quick start
 
 ```bash
-# 1. Install the Claude Code plugin (recommended)
-/plugin marketplace add ai-sdlc-framework/ai-sdlc
-/plugin install ai-sdlc@ai-sdlc
-/reload-plugins
+# 1. Install the GitHub Copilot CLI and authenticate
+npm install -g @github/copilot
+copilot   # then run /login
 
 # 2. Scaffold your repository
 ai-sdlc init
 
-# 3. Dispatch your first task
-/ai-sdlc execute AISDLC-42
+# 3. Point the framework at your Copilot bridge script
+export COPILOT_SPAWN_AGENT_BIN="$(pwd)/scripts/copilot-spawn-agent-bridge.mjs"
+
+# 4. Dispatch your first task
+node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-42 --run --spawner copilot
 ```
 
-Full setup, runner configuration, agent-runner reference, and the autonomous-orchestrator opt-in are in the documentation:
+Full setup, bridge configuration, and the autonomous-orchestrator opt-in are in the documentation:
 
 → [Getting Started](https://ai-sdlc.io/docs/getting-started) · [Tutorials](https://ai-sdlc.io/docs/tutorials) · [API Reference](https://ai-sdlc.io/docs/api-reference) · [Operations Runbooks](docs/operations/)
 
-The framework is agent-agnostic — Claude Code, Codex, Cursor, Copilot, Aider, or any OpenAI-compatible API. See the [Agent Runner Reference](https://ai-sdlc.io/docs/api-reference/runners).
+The framework dispatches every agent through the GitHub Copilot CLI. See the [`--spawner copilot` runbook](docs/operations/copilot-spawner.md).
 
 ---
 
@@ -98,19 +100,19 @@ The framework is agent-agnostic — Claude Code, Codex, Cursor, Copilot, Aider, 
 If you are an AI agent or a new contributor coming to this codebase for the first time, read these documents in order. Each is canonical for its concern:
 
 1. **[`VISION.md`](VISION.md)** — the organizing thesis (Decision Engine, cost asymmetry, operator-as-decision-steward, anti-patterns ruled out). Every decision in this repo should trace back here.
-2. **[`CLAUDE.md`](CLAUDE.md)** — operating conventions for any agent or contributor working in this repo: git flow (always rebase, never merge), branch + commit conventions, pre-push hooks, attestation requirements, backlog workflow, Pattern-C worktree isolation, plugin MCP routing. **Load this before doing any work.**
+2. **[`.github/copilot-instructions.md`](.github/copilot-instructions.md)** — operating conventions for any agent or contributor working in this repo: git flow (always rebase, never merge), branch + commit conventions, pre-push hooks, attestation requirements, backlog workflow, Pattern-C worktree isolation, plugin MCP routing. **Load this before doing any work.**
 3. **[`CHARTER.md`](CHARTER.md)** — project governance, IP policy, CNCF alignment.
 4. **[`spec/rfcs/README.md`](spec/rfcs/README.md)** — the architectural decisions registry. Every load-bearing design choice lives as an RFC. The registry table is the canonical lookup for numbers and lifecycle states; the Critical Path section traces dependencies.
 5. **[`spec/spec.md`](spec/spec.md)** + **[`spec/`](spec/)** — the normative specification: resource model, policy enforcement, autonomy, agents, adapters, metrics.
 
-Canonical execution paths (when working inside a Claude Code session):
+Canonical execution paths (when working inside a GitHub Copilot CLI session):
 
 | Use case | Command | Billing |
 |---|---|---|
-| Internal dogfood (backlog tasks) | `/ai-sdlc execute <task-id>` | Subscription |
+| Internal dogfood (backlog tasks) | `/ai-sdlc execute <task-id>` | GitHub Copilot subscription |
 | Manual cleanup | `/ai-sdlc cleanup [<task-id>]` | n/a |
-| Shell-driven autonomous tick | `cli-orchestrator tick --spawner claude` | Subscription |
-| GitHub issue / unattended / CI | `pnpm --filter @ai-sdlc/dogfood watch --issue <id>` | API key |
+| Shell-driven autonomous tick | `cli-orchestrator tick --spawner copilot` | GitHub Copilot subscription |
+| GitHub issue / unattended / CI | `pnpm --filter @ai-sdlc/dogfood watch --issue <id>` | GitHub Copilot subscription |
 
 Rules of thumb to internalize before pushing code:
 
@@ -130,7 +132,7 @@ The plugin's slash commands and MCP tools are documented in [`ai-sdlc-plugin/REA
 |---|---|---|
 | `@ai-sdlc/orchestrator` | [`orchestrator/`](orchestrator/) | Orchestrator runtime — CLI, runners, admission, state store |
 | `@ai-sdlc/pipeline-cli` | [`pipeline-cli/`](pipeline-cli/) | Step 0-13 pipeline runtime; `cli-orchestrator`, `cli-deps`, `cli-decisions`, `cli-tui` |
-| `ai-sdlc-plugin` | [`ai-sdlc-plugin/`](ai-sdlc-plugin/) | Claude Code plugin — hooks, slash commands, reviewer subagents, MCP server |
+| `ai-sdlc-plugin` | [`ai-sdlc-plugin/`](ai-sdlc-plugin/) | GitHub Copilot CLI plugin — hooks, slash commands, reviewer subagents, MCP server |
 | `@ai-sdlc/sdk` | [`sdk-typescript/`](sdk-typescript/) | TypeScript SDK |
 | `ai-sdlc-framework` | [`sdk-python/`](sdk-python/) | Python SDK (`pip install ai-sdlc-framework`) |
 | `sdk-go` | [`sdk-go/`](sdk-go/) | Go SDK + Kubernetes-style operator CRDs |

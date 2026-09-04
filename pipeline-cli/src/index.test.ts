@@ -13,12 +13,10 @@ const REQUIRED_EXPORTS = [
   'executePipeline',
   // runtime
   'MockSpawner',
-  'ShellClaudePSpawner',
-  'ClaudeCodeSDKSpawner',
+  'CopilotHarnessAdapter',
+  'subprocessCopilotSpawnAgent',
   'defaultSpawner',
   'defaultWhich',
-  'defaultSDKInvoker',
-  'parseClaudeOutput',
   'defaultRunner',
   // step functions (one per step)
   'sweepMergedWorktrees',

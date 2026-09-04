@@ -57,7 +57,7 @@ function stageC(overrides: Partial<StageCOutput> = {}): StageCOutput {
   return {
     corpusEntryId: 'corpus-1',
     effectiveThreshold: 0.7,
-    model: 'claude-haiku-4-5',
+    model: 'gpt-5-mini',
     metBehindThreshold: false,
     llmAnswerEligible: false,
     recommendation: {
@@ -177,7 +177,7 @@ describe('writeResearchArtifact / readResearchArtifacts', () => {
       decisionId: 'DEC-0294',
       findingsMarkdown: '## Findings\n\nKubernetes uses X.\n',
       now: new Date('2026-05-27T12:34:56.789Z'),
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       observedConfidence: 0.42,
     });
     expect(result.path).toMatch(
@@ -185,7 +185,7 @@ describe('writeResearchArtifact / readResearchArtifacts', () => {
     );
     const written = readFileSync(result.path, 'utf8');
     expect(written).toContain('<!-- decision: DEC-0294 -->');
-    expect(written).toContain('<!-- model: claude-haiku-4-5 -->');
+    expect(written).toContain('<!-- model: gpt-5-mini -->');
     expect(written).toContain('<!-- observedStageCConfidence: 0.420 -->');
     expect(written).toContain('## Findings');
   });
@@ -278,7 +278,7 @@ describe('runResearchSubagent', () => {
     };
     const invoker = vi.fn().mockResolvedValue({
       findingsMarkdown: '## Findings\n\nResearch body.',
-      model: 'claude-sonnet-4-5',
+      model: 'balanced',
       inputTokens: 1500,
       outputTokens: 800,
     });
@@ -298,13 +298,13 @@ describe('runResearchSubagent', () => {
     expect(r.invoked).toBe(true);
     expect(r.observedConfidence).toBe(0.42);
     expect(r.artifact?.path).toMatch(/DEC-0294-2026-05-27T15-00-00Z\.md$/);
-    expect(r.response?.model).toBe('claude-sonnet-4-5');
+    expect(r.response?.model).toBe('balanced');
 
     // AC#5 — ledger debit
     expect(ledger).toHaveLength(1);
     expect(ledger[0]).toMatchObject({
       taskType: 'decision-recommendation',
-      model: 'claude-sonnet-4-5',
+      model: 'balanced',
       inputTokens: 1500,
       outputTokens: 800,
     });
@@ -339,7 +339,7 @@ describe('runResearchSubagent', () => {
     const ledger: SubscriptionLedgerEntry[] = [];
     const invoker = vi.fn().mockResolvedValue({
       findingsMarkdown: 'body',
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       // no inputTokens / outputTokens
     });
     await runResearchSubagent({
@@ -361,7 +361,7 @@ describe('runResearchSubagent', () => {
   it('swallows ledger-writer failures (artifact still persisted)', async () => {
     const invoker = vi.fn().mockResolvedValue({
       findingsMarkdown: 'body',
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       inputTokens: 100,
       outputTokens: 200,
     });
@@ -384,7 +384,7 @@ describe('runResearchSubagent', () => {
   it('passes operator framing through to invoker', async () => {
     const invoker = vi.fn().mockResolvedValue({
       findingsMarkdown: 'body',
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
     });
     await runResearchSubagent({
       decision: baseDecision(),

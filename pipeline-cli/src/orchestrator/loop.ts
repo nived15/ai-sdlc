@@ -66,7 +66,12 @@ import { sortFrontierByEffectivePriority } from '../deps/dispatch.js';
 import { executePipeline } from '../execute-pipeline.js';
 import { defaultRunner, type Runner } from '../runtime/exec.js';
 import { defaultSpawner } from '../runtime/default-spawner.js';
-import { runExecuteCommand, type ExecuteCommandResult, type SpawnerKind } from '../cli/execute.js';
+import {
+  runExecuteCommand,
+  RETIRED_SPAWNER_KINDS,
+  type ExecuteCommandResult,
+  type SpawnerKind,
+} from '../cli/execute.js';
 import { findTaskFile, parseSimpleYaml } from '../steps/01-validate.js';
 import { sweepMergedWorktrees } from '../steps/00-sweep.js';
 import {
@@ -224,14 +229,12 @@ export interface OrchestratorAdapters {
    */
   spawner?: SubagentSpawner;
   /**
-   * AISDLC-229 / AISDLC-352 — spawner kind for the umbrella dispatcher.
-   * Defaults to `'claude'` (subscription billing via `claude -p`, AISDLC-352).
+   * AISDLC-229 / AISDLC-429.3 — spawner kind for the umbrella dispatcher.
+   * Defaults to `'copilot'` (GitHub Copilot CLI host-bridge dispatch).
    * Override via the `AI_SDLC_ORCHESTRATOR_SPAWNER` env var or by injecting
    * this field directly (tests).
    *
-   * RFC-0041 Phase 3.3 (AISDLC-377.6) removed the legacy `claude-cli` inline-
-   * manifest spawner kind. The supported kinds are now `mock`, `api-key`,
-   * `claude`, and `codex`.
+   * The supported kinds are `mock` and `copilot`.
    */
   umbrellaSpawnerKind?: SpawnerKind;
   /**
@@ -610,15 +613,13 @@ export async function runOrchestratorTick(
   //      `failure: undefined` so the tick loop has a single code path.
   //   3. Default — production behaviour:
   //      - Default to the LEGACY direct-spawner path (`buildDefaultDispatch`)
-  //        wrapped in the rich envelope. This uses `ShellClaudePSpawner`
-  //        directly, the same path that successfully drove AISDLC-178.5,
-  //        178.6, and 229 itself through the queue.
+  //        wrapped in the rich envelope. This uses `defaultSpawner()` (the
+  //        GitHub Copilot bridge) directly, the same path that successfully
+  //        drove AISDLC-178.5, 178.6, and 229 itself through the queue.
   //      - Opt INTO the umbrella path with `AI_SDLC_ORCHESTRATOR_USE_UMBRELLA=1`.
-  //        AISDLC-352 promoted `claude` (shell-out `claude -p`) to the
-  //        umbrella's default spawner, and AISDLC-377.6 removed the legacy
-  //        `claude-cli` inline-manifest path entirely. The default direct-
-  //        spawner path still uses `ShellClaudePSpawner`, the same backing
-  //        implementation `--spawner claude` resolves to.
+  //        `copilot` is the umbrella's default spawner; the default direct-
+  //        spawner path resolves to the same `CopilotHarnessAdapter` backing
+  //        implementation that `--spawner copilot` constructs.
   const envUmbrellaSpawner = resolveEnvUmbrellaSpawnerKind();
   const useUmbrella =
     (process.env.AI_SDLC_ORCHESTRATOR_USE_UMBRELLA ?? '').trim() === '1' ||
@@ -2599,60 +2600,47 @@ function buildDefaultMaxBudgetUsdLoader(workDir: string): (taskId: string) => nu
 }
 
 /**
- * AISDLC-229 / AISDLC-352 — resolve which spawner kind to use for the
+ * AISDLC-229 / AISDLC-429.3 — resolve which spawner kind to use for the
  * umbrella dispatch.
  *
  * Decision tree:
  *   1. If `adapters.umbrellaSpawnerKind` is explicitly set, use it.
- *      (The CLI always sets this via `buildAdapters`; since AISDLC-352 the
- *      CLI default for `--spawner` is `claude`, so the adapter will carry
- *      `claude` unless the operator passes an explicit flag.)
+ *      (The CLI always sets this via `buildAdapters`; the CLI default for
+ *      `--spawner` is `copilot`, so the adapter will carry `copilot` unless
+ *      the operator passes an explicit flag.)
  *   2. If `AI_SDLC_ORCHESTRATOR_SPAWNER` is set, use it.
- *   3. If `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` is set AND the
- *      umbrella will need the fallback (checked post-hoc after the umbrella
- *      runs — see `buildDefaultUmbrellaDispatch`), fall back to `api-key`.
- *   4. Otherwise default to `claude` (subscription billing via `claude -p`,
- *      AISDLC-352).
+ *   3. Otherwise default to `copilot` (GitHub Copilot CLI host-bridge
+ *      dispatch — see docs/operations/copilot-spawner.md).
  *
- * RFC-0041 Phase 3.3 (AISDLC-377.6) removed the legacy `claude-cli` inline-
- * manifest spawner kind. The supported kinds are `mock`, `api-key`, `claude`,
- * `codex`, and `copilot` (AISDLC-429.3 wired the GitHub Copilot CLI spawner
- * — see docs/operations/copilot-spawner.md).
+ * The supported kinds are `mock` and `copilot`. Legacy third-party kinds
+ * (`api-key`, `claude`, `claude-cli`, `codex`, …) throw an actionable
+ * migration error.
  */
 export function resolveUmbrellaSpawnerKind(adapters: OrchestratorAdapters): SpawnerKind {
   if (adapters.umbrellaSpawnerKind) return adapters.umbrellaSpawnerKind;
   const envKind = resolveEnvUmbrellaSpawnerKind();
   if (envKind) return envKind;
-  return 'claude';
+  return 'copilot';
 }
 
 function resolveEnvUmbrellaSpawnerKind(): SpawnerKind | undefined {
   const raw = (process.env[ORCHESTRATOR_SPAWNER_ENV] ?? '').trim();
   if (!raw) return undefined;
-  if (
-    raw === 'mock' ||
-    raw === 'api-key' ||
-    raw === 'claude' ||
-    raw === 'codex' ||
-    raw === 'copilot'
-  ) {
+  if (raw === 'mock' || raw === 'copilot') {
     return raw;
   }
-  // RFC-0041 Phase 3.3 (AISDLC-377.6) — `claude-cli` was removed; surface a
-  // pointed migration message rather than the generic "must be one of" list
-  // so legacy env-var configurations get an actionable error.
-  if (raw === 'claude-cli') {
+  // Surface a pointed migration message for retired third-party spawner
+  // kinds rather than the generic "must be one of" list, so legacy env-var
+  // configurations get an actionable error.
+  if (RETIRED_SPAWNER_KINDS.includes(raw)) {
     throw new Error(
-      `${ORCHESTRATOR_SPAWNER_ENV}=claude-cli is no longer supported. ` +
-        'The `claude-cli` inline-manifest spawner was removed in RFC-0041 ' +
-        'Phase 3.3 (AISDLC-377.6). Set ' +
-        `${ORCHESTRATOR_SPAWNER_ENV}=claude (default), api-key, codex, or copilot, ` +
-        'or unset it. See docs/operations/claude-cli-spawner-removed.md.',
+      `${ORCHESTRATOR_SPAWNER_ENV}=${raw} is not supported. ` +
+        'AI-SDLC dispatches subagents through the GitHub Copilot CLI. Set ' +
+        `${ORCHESTRATOR_SPAWNER_ENV}=copilot (default) or mock, or unset it. ` +
+        'See docs/operations/copilot-spawner.md.',
     );
   }
-  throw new Error(
-    `${ORCHESTRATOR_SPAWNER_ENV} must be one of: mock, api-key, claude, codex, copilot`,
-  );
+  throw new Error(`${ORCHESTRATOR_SPAWNER_ENV} must be one of: mock, copilot`);
 }
 
 /**
@@ -2717,21 +2705,14 @@ function extractPipelineDetail(
  * (DSSE attestation sign), Step 11 (push + PR), Step 12 (sibling PRs).
  *
  * Spawner selection:
- *   1. Default: `claude` (subscription billing via `claude -p`, AISDLC-352).
- *      RFC-0041 Phase 3.3 (AISDLC-377.6) removed the legacy `claude-cli`
- *      inline-manifest kind; supported kinds are now `mock`, `api-key`,
- *      `claude`, and `codex`.
- *   2. Fallback: the `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` retry
- *      path was originally wired for the `claude-cli` "manifest not consumed"
- *      failure mode; with `claude-cli` removed it is now a no-op
- *      (left in place so a future spawner can opt back in by extending the
- *      `wantFallback` predicate).
- *   3. Otherwise: record `failure: { type: 'spawner-unavailable', ... }` and
+ *   1. Default: `copilot` (GitHub Copilot CLI host-bridge dispatch). The
+ *      supported kinds are `mock` and `copilot`.
+ *   2. Otherwise: record `failure: { type: 'spawner-unavailable', ... }` and
  *      set outcome to `aborted` so the tick continues without blocking.
  *
- * NOTE: The `api-key` fallback path uses ANTHROPIC_API_KEY. If the key is
- * missing, the umbrella will return `ok: false` with an appropriate reason,
- * which surfaces as `failure: { type: 'unknown', ... }`.
+ * NOTE: When `COPILOT_SPAWN_AGENT_BIN` is unset, the umbrella returns
+ * `ok: false` with an appropriate reason, which surfaces as
+ * `failure: { type: 'spawner-unavailable', ... }`.
  */
 /**
  * AISDLC-225 — build a `UmbrellaDispatchFn` that reads a pre-written
@@ -2877,18 +2858,10 @@ function buildDefaultUmbrellaDispatch(
       });
     };
 
-    // First (and currently only) attempt with the configured spawner
-    // (default: `claude` since AISDLC-352).
-    //
-    // AISDLC-229 AC #2's `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key`
-    // retry was originally wired for the `--spawner claude-cli` "manifest not
-    // consumed by slash command body" failure mode. RFC-0041 Phase 3.3
-    // (AISDLC-377.6) removed the `claude-cli` spawner, so the retry guard
-    // (`spawnerKind === 'claude-cli'`) would never fire — the branch was
-    // dropped to keep the dispatcher easy to read. The env var is still
-    // accepted (emitted as a billing-safety warning in cli/orchestrator.ts),
-    // and the fallback can be re-introduced by extending the predicate when
-    // a future spawner has an analogous transient unavailability mode.
+    // Single attempt with the configured spawner (default: `copilot`).
+    // There is no cross-spawner retry: the operator selected the GitHub
+    // Copilot billing model, and silently retrying elsewhere would violate
+    // that intent. A misconfigured bridge surfaces as `spawner-unavailable`.
     const execResult = await runUmbrella(spawnerKind);
 
     // Map ExecuteCommandResult → RichDispatchResult
@@ -2902,7 +2875,7 @@ function buildDefaultUmbrellaDispatch(
         if (reason.includes('developer-json-contract-violated'))
           return 'developer-json-contract-violated';
         if (reason.includes('aborted')) return 'aborted';
-        if (reason.includes('spawner') || reason.includes('ANTHROPIC_API_KEY'))
+        if (reason.includes('spawner') || reason.includes('COPILOT_SPAWN_AGENT_BIN'))
           return 'spawner-unavailable';
         return 'unknown';
       })();

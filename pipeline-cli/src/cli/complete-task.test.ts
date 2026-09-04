@@ -2,7 +2,7 @@
  * Hermetic tests for `completeTaskAtomically()` (AISDLC-203).
  *
  * Covers the duplicate-detection regression described in AISDLC-203:
- * Codex/external completion paths were copying the completed file without
+ * GitHub Copilot/external completion paths were copying the completed file without
  * removing the original from backlog/tasks/, causing the same task ID to
  * appear in BOTH directories.
  */
@@ -123,7 +123,7 @@ describe('completeTaskAtomically — idempotency (already in completed/)', () =>
 
 describe('completeTaskAtomically — duplicate detection (regression AISDLC-203)', () => {
   it('throws DuplicateTaskFileError when file exists in BOTH tasks/ and completed/', () => {
-    // Simulate the Codex copy-only pattern: original in tasks/, copy in completed/.
+    // Simulate the GitHub Copilot copy-only pattern: original in tasks/, copy in completed/.
     writeTaskFile('tasks');
     writeTaskFile('completed');
 

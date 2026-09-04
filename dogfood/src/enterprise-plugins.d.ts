@@ -11,7 +11,7 @@ declare module '@ai-sdlc-enterprise/plugins' {
     initialize(ctx: unknown): void;
   }
 
-  export class ClaudeCodeAuditHookPlugin implements OrchestratorPlugin {
+  export class CopilotAuditHookPlugin implements OrchestratorPlugin {
     readonly name: string;
     constructor(config: { relayEndpoint: string; tokenEnvVar?: string });
     initialize(ctx: unknown): void;

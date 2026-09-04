@@ -18,7 +18,7 @@
  *     exists on disk. The pipeline writes this file in Step 4 (flip-status);
  *     its presence means a pipeline run is active right now. Always enabled.
  *
- * (c) **Live subprocess** — a `claude --print` or `claude -p` process with the
+ * (c) **Live subprocess** — a `copilot -p` process with the
  *     task ID in its argv is running. Best-effort: uses `ps -ax -o pid,command`
  *     (Darwin + Linux portable). Enabled when
  *     `AI_SDLC_ORCHESTRATOR_DETECT_SUBPROCESS` is truthy or when the `opts`
@@ -150,12 +150,12 @@ export function checkAlreadyInFlight(opts: CheckAlreadyInFlightOpts): FilterResu
   if (shouldDetect) {
     try {
       const psOutput = opts.readProcessTable ? opts.readProcessTable() : runPsAx();
-      const pid = findClaudeSubprocess(psOutput, opts.taskId);
+      const pid = findCopilotSubprocess(psOutput, opts.taskId);
       if (pid !== null) {
         const detail: AlreadyInFlightDetail = {
           kind: 'already-in-flight',
           signal: 'live-subprocess',
-          description: `live claude --print subprocess for ${opts.taskId} (PID ${pid})`,
+          description: `live copilot -p subprocess for ${opts.taskId} (PID ${pid})`,
           subprocessPid: pid,
         };
         return {
@@ -205,10 +205,10 @@ function runPsAx(): string {
 }
 
 /**
- * Scan ps output for a line matching a claude `--print` (or `-p`) subprocess
+ * Scan ps output for a line matching a copilot `--print` (or `-p`) subprocess
  * that contains the task ID. Returns the PID if found, null otherwise.
  *
- * Pattern: `claude` in the command, `--print` or `-p` flag, and the task ID
+ * Pattern: `copilot` in the command, `--print` or `-p` flag, and the task ID
  * string somewhere in the argv.
  *
  * We accept both uppercase and lowercase forms of the task ID in the process
@@ -226,7 +226,7 @@ function runPsAx(): string {
  * This ensures `AISDLC-2` only matches `AISDLC-2` (followed by a non-digit),
  * never `AISDLC-28` or `AISDLC-283`.
  */
-function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
+function findCopilotSubprocess(psOutput: string, taskId: string): number | null {
   const taskIdLower = taskId.toLowerCase();
   // Escape any regex special chars in the task ID (defensive; standard IDs
   // are alphanumeric + hyphen and don't require escaping, but guard anyway).
@@ -248,8 +248,8 @@ function findClaudeSubprocess(psOutput: string, taskId: string): number | null {
     const pid = parseInt(pidStr, 10);
     if (isNaN(pid)) continue;
 
-    // Must contain `claude` (the binary name) and a --print or -p flag.
-    if (!command.includes('claude')) continue;
+    // Must contain `copilot` (the binary name) and a --print or -p flag.
+    if (!command.includes('copilot')) continue;
     if (!command.includes('--print') && !/ -p(\s|$)/.test(command)) continue;
 
     // Must reference the task ID with word-boundary protection (no digit suffix).

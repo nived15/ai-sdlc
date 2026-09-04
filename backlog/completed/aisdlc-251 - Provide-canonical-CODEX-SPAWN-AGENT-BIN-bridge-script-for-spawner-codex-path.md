@@ -13,8 +13,8 @@ parentTaskId: AISDLC-202
 dependencies:
   - AISDLC-202.2
 references:
-  - pipeline-cli/src/runtime/spawners/codex-harness.ts
-  - docs/operations/codex-execution-path.md
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
+  - docs/operations/copilot-spawner.md
 priority: low
 ---
 

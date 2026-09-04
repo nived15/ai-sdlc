@@ -84,12 +84,12 @@ describe('orchestrator barrel exports', () => {
   });
 
   // Runners
-  it('exports ClaudeCodeRunner', () => {
-    expect(barrel.ClaudeCodeRunner).toBeTypeOf('function');
+  it('exports CopilotRunner', () => {
+    expect(barrel.CopilotRunner).toBeTypeOf('function');
   });
-  it('exports GitHubActionsRunner as backward-compat alias', () => {
-    expect(barrel.GitHubActionsRunner).toBeTypeOf('function');
-    expect(barrel.GitHubActionsRunner).toBe(barrel.ClaudeCodeRunner);
+  it('exports CopilotRunner as backward-compat alias', () => {
+    expect(barrel.CopilotRunner).toBeTypeOf('function');
+    expect(barrel.CopilotRunner).toBe(barrel.CopilotRunner);
   });
 
   // State store
@@ -201,17 +201,11 @@ describe('orchestrator barrel exports', () => {
   it('exports DEFAULT_COMMIT_CO_AUTHOR', () => {
     expect(barrel.DEFAULT_COMMIT_CO_AUTHOR).toBeTypeOf('string');
   });
-  it('exports DEFAULT_OPENAI_API_URL', () => {
-    expect(barrel.DEFAULT_OPENAI_API_URL).toBeTypeOf('string');
+  it('exports DEFAULT_GITHUB_MODELS_API_URL', () => {
+    expect(barrel.DEFAULT_GITHUB_MODELS_API_URL).toBeTypeOf('string');
   });
-  it('exports DEFAULT_OPENAI_MODEL', () => {
-    expect(barrel.DEFAULT_OPENAI_MODEL).toBeTypeOf('string');
-  });
-  it('exports DEFAULT_ANTHROPIC_API_URL', () => {
-    expect(barrel.DEFAULT_ANTHROPIC_API_URL).toBeTypeOf('string');
-  });
-  it('exports DEFAULT_ANTHROPIC_MODEL', () => {
-    expect(barrel.DEFAULT_ANTHROPIC_MODEL).toBeTypeOf('string');
+  it('exports DEFAULT_GITHUB_MODELS_MODEL', () => {
+    expect(barrel.DEFAULT_GITHUB_MODELS_MODEL).toBeTypeOf('string');
   });
   it('exports DEFAULT_GENERIC_LLM_MODEL', () => {
     expect(barrel.DEFAULT_GENERIC_LLM_MODEL).toBeTypeOf('string');

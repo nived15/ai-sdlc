@@ -280,7 +280,7 @@ export function formatVerificationError({
         `  Recovery: the signed envelope should be committed to .ai-sdlc/attestations/.\n` +
         `  If this is a fresh install of a newly-released version, the envelope may\n` +
         `  not yet be present in the installed plugin's git tree. Re-run:\n` +
-        `    git -C "$CLAUDE_PLUGIN_ROOT" pull --ff-only\n` +
+        `    git -C "$COPILOT_PLUGIN_ROOT" pull --ff-only\n` +
         `  to refresh the attestation. If the envelope is still missing, open an\n` +
         `  issue at https://github.com/ai-sdlc-framework/ai-sdlc/issues.`
       );
@@ -290,7 +290,7 @@ export function formatVerificationError({
         `  Envelope: ${envelopePath}\n` +
         `  The file exists but is not valid JSON or is missing required fields.\n` +
         `  Recovery: delete ${envelopePath} and run\n` +
-        `    git -C "$CLAUDE_PLUGIN_ROOT" checkout HEAD -- ${envelopePath}\n` +
+        `    git -C "$COPILOT_PLUGIN_ROOT" checkout HEAD -- ${envelopePath}\n` +
         `  to restore the committed version.`
       );
     case 'predicate-type-mismatch':
@@ -326,7 +326,7 @@ export function formatVerificationError({
         `  No trusted key matched the DSSE signature.\n` +
         `  Recovery:\n` +
         `    1. Confirm .ai-sdlc/trusted-reviewers.yaml is up to date:\n` +
-        `         git -C "$CLAUDE_PLUGIN_ROOT" log --oneline -- .ai-sdlc/trusted-reviewers.yaml\n` +
+        `         git -C "$COPILOT_PLUGIN_ROOT" log --oneline -- .ai-sdlc/trusted-reviewers.yaml\n` +
         `    2. If the envelope was signed with a key recently rotated out, that\n` +
         `       envelope is legitimately invalid — re-install the plugin and fetch\n` +
         `       a freshly-signed envelope.\n` +

@@ -427,26 +427,25 @@ describe('execute-parallel spawn logic', () => {
 // ─── AISDLC-485: spawn command includes permission flag when opt-in is active ─
 
 /**
- * Extract the CLAUDE_SPAWN_CMD construction block from the execute-parallel.md
+ * Extract the COPILOT_SPAWN_CMD construction block from the execute-parallel.md
  * command body. This tests the actual shell template that ships, not a copy of it,
  * so the test cannot drift from the real spawn command.
  *
  * The extraction targets the `if [ "$SKIP_PERMISSIONS" = "true" ]; then` block
- * that was introduced by AISDLC-485 / DEC-0009. We look for the two CLAUDE_SPAWN_CMD
+ * that was introduced by AISDLC-485 / DEC-0009. We look for the two COPILOT_SPAWN_CMD
  * assignments and assert both their contents.
  */
 function extractSpawnCmdBlock() {
   const md = readFileSync(EXECUTE_PARALLEL_MD, 'utf8');
   // Assert the opt-in branch includes the permission-skip flag
-  const optInLine =
-    'CLAUDE_SPAWN_CMD="claude --dangerously-skip-permissions /ai-sdlc execute $TASK_ID"';
+  const optInLine = 'COPILOT_SPAWN_CMD="copilot --allow-all-tools /ai-sdlc execute $TASK_ID"';
   // Assert the non-opt-in branch is the bare command (no flag)
-  const optOutLine = 'CLAUDE_SPAWN_CMD="claude /ai-sdlc execute $TASK_ID"';
+  const optOutLine = 'COPILOT_SPAWN_CMD="copilot /ai-sdlc execute $TASK_ID"';
   return { md, optInLine, optOutLine };
 }
 
 describe('execute-parallel spawn command template (AISDLC-485 / DEC-0009)', () => {
-  it('spawn template includes --dangerously-skip-permissions on the SKIP_PERMISSIONS=true branch', () => {
+  it('spawn template includes --allow-all-tools on the SKIP_PERMISSIONS=true branch', () => {
     const { md, optInLine } = extractSpawnCmdBlock();
     assert.ok(
       md.includes(optInLine),
@@ -461,7 +460,7 @@ describe('execute-parallel spawn command template (AISDLC-485 / DEC-0009)', () =
     assert.ok(
       md.includes(optOutLine),
       `execute-parallel.md must contain the non-opt-in spawn line:\n  ${optOutLine}\n` +
-        'The non-opt-in branch must use plain claude without the permission flag ' +
+        'The non-opt-in branch must use plain copilot without the permission flag ' +
         'so interactive/manual mode sessions behave normally.',
     );
   });

@@ -1,12 +1,12 @@
 /**
- * Anthropic API budget-exhaustion classifier (AISDLC-147 patch 2;
+ * GitHub API budget-exhaustion classifier (AISDLC-147 patch 2;
  * AISDLC-149 added valid-verdict-finding inspection; AISDLC-154 widened
  * the substring fallback to use the WHOLE stdout instead of just the
  * last line).
  *
  * The CI reviewer fan-out in `.github/workflows/ai-sdlc-review.yml`'s `analyze`
  * job spawns up to 3 reviewer agents (testing, critic, security) against
- * Anthropic's API. When the API key's credit balance hits $0, every reviewer
+ * GitHub's API. When the API key's credit balance hits $0, every reviewer
  * fails with HTTP 400 `invalid_request_error` carrying a body that includes
  * the substring "credit balance is too low". Without this classifier the
  * report job would parse three "Verdict not valid JSON" errors and post a
@@ -14,7 +14,7 @@
  * teaches operators to ignore the bot.
  *
  * AISDLC-149: in production we observed that `cli-review` actually CATCHES
- * the Anthropic API error and PACKAGES it into a well-formed verdict JSON
+ * the GitHub API error and PACKAGES it into a well-formed verdict JSON
  * (with `approved: false` and a critical finding whose `message` embeds the
  * raw error body). The original AISDLC-147 classifier short-circuited on
  * any well-formed verdict and never looked at the finding contents — so
@@ -59,7 +59,7 @@
  *   budget-related (would suppress real CHANGES_REQUESTED). "credit balance
  *   is too low" alone could in principle appear in a reviewer's natural-language
  *   commentary on a PR (vanishingly unlikely but cheap to defend against).
- *   Both substrings together is the unambiguous Anthropic error-body signature.
+ *   Both substrings together is the unambiguous GitHub error-body signature.
  *
  * Hermetic — pure functions, no I/O. Tested at
  * `pipeline-cli/src/classifier/budget-classifier.test.ts`.
@@ -87,7 +87,7 @@ export interface ReviewerRawOutput {
    * The reviewer's WHOLE stdout (entire contents of /tmp/review-<type>.txt),
    * not just the last line. Used by the substring fallback path when the
    * verdict failed to parse — AISDLC-154: `cli-review` writes pretty-printed
-   * multi-line JSON when it captures an Anthropic API error, so the last
+   * multi-line JSON when it captures an GitHub API error, so the last
    * line is just `}` and the credit-exhaustion text lives in the body.
    * The substring fallback must inspect the whole stdout, not just the
    * verdict line, or it misses the budget signature entirely.
@@ -98,7 +98,7 @@ export interface ReviewerRawOutput {
   stdoutRaw?: string;
   /**
    * The reviewer's stderr (entire contents of /tmp/review-<type>-stderr.txt).
-   * The Anthropic SDK writes the API error body here on failure, including
+   * The GitHub SDK writes the API error body here on failure, including
    * the "credit balance is too low" substring we match against.
    */
   stderr: string;
@@ -137,7 +137,7 @@ export interface BudgetClassification {
 
 /**
  * The two substrings whose simultaneous presence (case-insensitive) defines
- * an Anthropic budget-exhaustion failure. Exported so the workflow YAML's
+ * an GitHub budget-exhaustion failure. Exported so the workflow YAML's
  * audit log + the test fixtures can reference the canonical strings.
  */
 export const BUDGET_EXHAUSTED_SUBSTRINGS = Object.freeze([
@@ -191,7 +191,7 @@ function isBudgetExhaustedFailure(combined: string): boolean {
  * Test whether a parsed verdict's findings contain the budget-exhaustion
  * signature embedded in any finding's `message` field.
  *
- * The AISDLC-149 fix path: `cli-review` catches Anthropic API errors and
+ * The AISDLC-149 fix path: `cli-review` catches GitHub API errors and
  * packages them into a well-formed verdict with `approved: false` and a
  * critical finding whose `message` includes the raw error body, e.g.:
  *
@@ -199,7 +199,7 @@ function isBudgetExhaustedFailure(combined: string): boolean {
  *     "approved": false,
  *     "findings": [{
  *       "severity": "critical",
- *       "message": "Review agent failed: Anthropic API error 400: {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low...\"}}"
+ *       "message": "Review agent failed: GitHub API error 400: {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low...\"}}"
  *     }],
  *     "summary": "review could not be completed"
  *   }
@@ -248,7 +248,7 @@ export function classifyOneReviewer(input: ReviewerRawOutput): ReviewerClassific
   if (parsed !== null) {
     // AISDLC-149: even a well-formed verdict can carry the budget
     // signature inside a finding's message when cli-review caught an
-    // Anthropic API error and packaged it. Check before declaring ok.
+    // GitHub API error and packaged it. Check before declaring ok.
     if (verdictContainsBudgetSignature(parsed)) {
       return 'budget-exhausted';
     }
@@ -262,7 +262,7 @@ export function classifyOneReviewer(input: ReviewerRawOutput): ReviewerClassific
   // stdout body, not just the last line. Prefer `stdoutRaw` (the entire
   // file contents) when supplied; fall back to `verdictLine` for older
   // callers that don't pass it. Stderr is always considered too — the
-  // Anthropic SDK normally writes the API error body there on connection
+  // GitHub SDK normally writes the API error body there on connection
   // failure paths that don't go through the cli-review wrapper.
   const stdoutForSubstring = input.stdoutRaw ?? input.verdictLine;
   const combined = `${stdoutForSubstring}\n${input.stderr}`;

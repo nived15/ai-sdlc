@@ -12,7 +12,7 @@
  *  - SI-4: A request with an invalid session token is refused 403.
  *  - SI-5: A request exceeding rate limits is refused 429.
  *  - SI-6: A request exceeding body size is refused 413.
- *  - SI-7: Only POST /v1/messages (Anthropic) / /v1/chat/completions (OpenAI)
+ *  - SI-7: Only POST /inference/chat/completions (GitHub Models) / /chat/completions (GitHub Copilot)
  *           is accepted; other paths return 404; other methods return 405.
  *  - SI-8: Response-too-large from upstream is refused 502.
  *  - SI-9: Session scoping — a different session token is rejected.
@@ -53,7 +53,7 @@ import {
 
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
-const FAKE_CREDENTIAL = 'sk-ant-api03-test-credential-value-1234567890abcdef';
+const FAKE_CREDENTIAL = 'ghp-test-test-credential-value-1234567890abcdef';
 const FAKE_PR_NUMBER = 42;
 const FAKE_SESSION_TOKEN = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 
@@ -143,7 +143,7 @@ function makeMockRequest(opts: {
   const emitter = new EventEmitter();
   const req = Object.assign(emitter, {
     method: opts.method ?? 'POST',
-    url: opts.url ?? '/v1/messages',
+    url: opts.url ?? '/inference/chat/completions',
     headers: opts.headers ?? {},
   });
 
@@ -162,11 +162,11 @@ function makeMockRequest(opts: {
 }
 
 /**
- * Build a valid review-shaped request body (Anthropic format).
+ * Build a valid review-shaped request body (GitHub Models format).
  */
 function makeReviewBody(overrides: Record<string, unknown> = {}): string {
   return JSON.stringify({
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'gpt-5-5-sonnet-20241022',
     max_tokens: 1024,
     messages: [{ role: 'user', content: 'Review this code: console.log("hello")' }],
     ...overrides,
@@ -216,7 +216,7 @@ async function createTestProxy(
   const proxy = new TestProxy({
     prNumber: config?.prNumber ?? FAKE_PR_NUMBER,
     credential: config?.credential ?? FAKE_CREDENTIAL,
-    provider: config?.provider ?? 'anthropic',
+    provider: config?.provider ?? 'github-models',
     limits: config?.limits,
     auditLog: (entry) => auditEntries.push(entry),
     port: 0,
@@ -250,7 +250,7 @@ async function simulateRequest(
   const server = (proxy as unknown as { server: MockServer }).server;
   const req = makeMockRequest({
     method: opts.method ?? 'POST',
-    url: opts.url ?? '/v1/messages',
+    url: opts.url ?? '/inference/chat/completions',
     headers: {
       'content-type': 'application/json',
       ...(opts.sessionToken !== undefined ? { 'x-proxy-session': opts.sessionToken } : {}),
@@ -308,7 +308,7 @@ describe('redactCredential', () => {
   });
 
   it('handles credentials that are substrings of JSON strings', () => {
-    const cred = 'sk-ant-api03-secret';
+    const cred = 'ghp-test-secret';
     const input = JSON.stringify({ header: `x-api-key: ${cred}`, other: 'data' });
     const result = redactCredential(input, cred);
     expect(result).not.toContain(cred);
@@ -323,7 +323,7 @@ describe('assertEntryClean', () => {
     prNumber: 42,
     sessionToken: 'abc123...',
     method: 'POST',
-    path: '/v1/messages',
+    path: '/inference/chat/completions',
     requestBodyBytes: 100,
     responseStatus: 200,
     forwarded: true,
@@ -350,7 +350,7 @@ describe('detectToolUse', () => {
   it('returns false for a plain messages-only body', () => {
     expect(
       detectToolUse({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'gpt-5-5-sonnet-20241022',
         messages: [{ role: 'user', content: 'hello' }],
       }),
     ).toBe(false);
@@ -359,7 +359,7 @@ describe('detectToolUse', () => {
   it('returns true when tools array is present and non-empty', () => {
     expect(
       detectToolUse({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'gpt-5-5-sonnet-20241022',
         messages: [{ role: 'user', content: 'hello' }],
         tools: [{ name: 'bash', description: 'run bash', input_schema: {} }],
       }),
@@ -369,7 +369,7 @@ describe('detectToolUse', () => {
   it('returns false when tools array is empty', () => {
     expect(
       detectToolUse({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'gpt-5-5-sonnet-20241022',
         messages: [{ role: 'user', content: 'hello' }],
         tools: [],
       }),
@@ -379,17 +379,17 @@ describe('detectToolUse', () => {
   it('returns true when tool_choice is present', () => {
     expect(
       detectToolUse({
-        model: 'gpt-4',
+        model: 'gpt-5',
         messages: [{ role: 'user', content: 'hello' }],
         tool_choice: 'auto',
       }),
     ).toBe(true);
   });
 
-  it('returns true when function_call is present (OpenAI legacy)', () => {
+  it('returns true when function_call is present (GitHub Copilot legacy)', () => {
     expect(
       detectToolUse({
-        model: 'gpt-4',
+        model: 'gpt-5',
         messages: [{ role: 'user', content: 'hello' }],
         function_call: { name: 'get_weather' },
       }),
@@ -399,7 +399,7 @@ describe('detectToolUse', () => {
   it('returns true when functions array is present and non-empty', () => {
     expect(
       detectToolUse({
-        model: 'gpt-4',
+        model: 'gpt-5',
         messages: [{ role: 'user', content: 'hello' }],
         functions: [{ name: 'get_weather', description: 'Get weather' }],
       }),
@@ -433,7 +433,7 @@ describe('isReviewShapedCall', () => {
   it('returns false when messages is absent', () => {
     expect(
       isReviewShapedCall({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'gpt-5-5-sonnet-20241022',
         prompt: 'review this',
       }),
     ).toBe(false);
@@ -456,7 +456,7 @@ describe('isReviewShapedCall', () => {
 
 describe('sanitizeErrorMessage', () => {
   it('strips the credential from an error string', () => {
-    const cred = 'sk-ant-api03-secret-value-1234';
+    const cred = 'ghp-test-secret-value-1234';
     const errMsg = `Error: upstream rejected request with header x-api-key: ${cred}`;
     const sanitized = sanitizeErrorMessage(errMsg, cred);
     expect(sanitized).not.toContain(cred);
@@ -552,25 +552,25 @@ describe('buildReviewerProxyEnv', () => {
   it('does NOT include the provider credential', () => {
     const envStr = JSON.stringify(env);
     expect(envStr).not.toContain(FAKE_CREDENTIAL);
-    // Also: no ANTHROPIC_API_KEY field
-    expect(env).not.toHaveProperty('ANTHROPIC_API_KEY');
+    // Also: no GITHUB_MODELS_TOKEN field
+    expect(env).not.toHaveProperty('GITHUB_MODELS_TOKEN');
   });
 
-  it('sets ANTHROPIC_BASE_URL to the proxy address', () => {
-    expect(env['ANTHROPIC_BASE_URL']).toBe('http://inference.local:9876');
+  it('sets GITHUB_MODELS_BASE_URL to the proxy address', () => {
+    expect(env['GITHUB_MODELS_BASE_URL']).toBe('http://inference.local:9876');
   });
 
-  it('defaults provider to anthropic', () => {
-    expect(env['INFERENCE_PROXY_PROVIDER']).toBe('anthropic');
+  it('defaults provider to github-models', () => {
+    expect(env['INFERENCE_PROXY_PROVIDER']).toBe('github-models');
   });
 
   it('uses the specified provider', () => {
     const envWithProvider = buildReviewerProxyEnv({
       port: 9876,
       sessionToken: FAKE_SESSION_TOKEN,
-      provider: 'openai',
+      provider: 'github-copilot',
     });
-    expect(envWithProvider['INFERENCE_PROXY_PROVIDER']).toBe('openai');
+    expect(envWithProvider['INFERENCE_PROXY_PROVIDER']).toBe('github-copilot');
   });
 });
 
@@ -593,7 +593,7 @@ describe('SI-1: proxy completes model call without credential in sandbox env', (
     expect(res.statusCode).toBe(200);
     // The upstream call included the credential in the header (injected out-of-process)
     const call = upstreamCalls[0]!;
-    expect(call.headers['x-api-key']).toBe(FAKE_CREDENTIAL);
+    expect(call.headers['authorization']).toContain(FAKE_CREDENTIAL);
     // The audit log recorded it as forwarded
     const lastEntry = auditEntries[auditEntries.length - 1];
     expect(lastEntry?.forwarded).toBe(true);
@@ -605,11 +605,11 @@ describe('SI-1: proxy completes model call without credential in sandbox env', (
     // Simulate a reviewer process that only knows the session token (not the credential)
     const res = await simulateRequest(proxy, {
       sessionToken,
-      // The caller does NOT pass ANTHROPIC_API_KEY — the proxy injects it
+      // The caller does NOT pass GITHUB_MODELS_TOKEN — the proxy injects it
       headers: {
         'content-type': 'application/json',
         'x-proxy-session': sessionToken,
-        // Note: no authorization or x-api-key from the caller
+        // Note: no authorization header from the caller
       },
       body: makeReviewBody(),
     });
@@ -618,7 +618,7 @@ describe('SI-1: proxy completes model call without credential in sandbox env', (
 
     // Despite no credential from the caller, the upstream got a valid call
     expect(upstreamCalls).toHaveLength(1);
-    expect(upstreamCalls[0]?.headers['x-api-key']).toBe(FAKE_CREDENTIAL);
+    expect(upstreamCalls[0]?.headers['authorization']).toContain(FAKE_CREDENTIAL);
     expect(res.statusCode).toBe(200);
   });
 });
@@ -660,14 +660,16 @@ describe('SI-2: tool-use / non-review calls are refused', () => {
     expect(upstreamCalls).toHaveLength(0);
   });
 
-  it('refuses a request with function_call field (422 — OpenAI legacy)', async () => {
-    const { proxy, upstreamCalls, sessionToken } = await createTestProxy({ provider: 'openai' });
+  it('refuses a request with function_call field (422 — GitHub Copilot legacy)', async () => {
+    const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
+      provider: 'github-copilot',
+    });
 
     const res = await simulateRequest(proxy, {
-      url: '/v1/chat/completions',
+      url: '/chat/completions',
       sessionToken,
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-5',
         messages: [{ role: 'user', content: 'hello' }],
         function_call: { name: 'get_weather' },
       }),
@@ -730,7 +732,7 @@ describe('SI-2b: non-review-shaped calls are refused 422 (MAJOR anti-exfiltratio
 
     const res = await simulateRequest(proxy, {
       sessionToken,
-      body: JSON.stringify({ model: 'claude-3', prompt: 'some arbitrary content' }),
+      body: JSON.stringify({ model: 'gpt-5', prompt: 'some arbitrary content' }),
     });
 
     await proxy.stop();
@@ -939,7 +941,7 @@ describe('SI-3: credential never appears in audit log entries', () => {
   });
 
   it('redactCredential catches the credential even if it appears in a response body context', () => {
-    const cred = 'sk-ant-super-secret-12345';
+    const cred = 'ghp-test-super-secret-12345';
     const value = `the api key is ${cred} and should not leak`;
     const redacted = redactCredential(value, cred);
     expect(redacted).not.toContain(cred);
@@ -1173,14 +1175,14 @@ describe('SI-7: path and method enforcement', () => {
     expect(entry?.denialReason).toBe('path-not-allowed');
   });
 
-  it('refuses /v1/chat/completions on Anthropic provider (404)', async () => {
+  it('refuses /chat/completions on GitHub Models provider (404)', async () => {
     const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
-      provider: 'anthropic',
+      provider: 'github-models',
     });
 
-    // /v1/chat/completions is OpenAI's path — not allowed on Anthropic provider
+    // /chat/completions is GitHub Copilot's path — not allowed on GitHub Models provider
     const res = await simulateRequest(proxy, {
-      url: '/v1/chat/completions',
+      url: '/chat/completions',
       sessionToken,
       body: makeReviewBody(),
     });
@@ -1191,13 +1193,13 @@ describe('SI-7: path and method enforcement', () => {
     expect(upstreamCalls).toHaveLength(0);
   });
 
-  it('accepts POST /v1/messages for Anthropic provider', async () => {
+  it('accepts POST /inference/chat/completions for GitHub Models provider', async () => {
     const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
-      provider: 'anthropic',
+      provider: 'github-models',
     });
 
     const res = await simulateRequest(proxy, {
-      url: '/v1/messages',
+      url: '/inference/chat/completions',
       sessionToken,
       body: makeReviewBody(),
     });
@@ -1208,16 +1210,16 @@ describe('SI-7: path and method enforcement', () => {
     expect(upstreamCalls).toHaveLength(1);
   });
 
-  it('accepts POST /v1/chat/completions for OpenAI provider', async () => {
+  it('accepts POST /chat/completions for GitHub Copilot provider', async () => {
     const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
-      provider: 'openai',
+      provider: 'github-copilot',
     });
 
     const res = await simulateRequest(proxy, {
-      url: '/v1/chat/completions',
+      url: '/chat/completions',
       sessionToken,
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-5',
         messages: [{ role: 'user', content: 'review this code' }],
       }),
     });
@@ -1255,29 +1257,29 @@ describe('SI-8: response-too-large from upstream is refused', () => {
 // ── SI-11: Credential injection ───────────────────────────────────────────────
 
 describe('SI-11: credential is injected by the proxy into upstream headers', () => {
-  it('upstream call includes x-api-key for Anthropic provider', async () => {
+  it('upstream call includes a bearer authorization header for GitHub Models provider', async () => {
     const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
-      provider: 'anthropic',
+      provider: 'github-models',
     });
 
     await simulateRequest(proxy, { sessionToken, body: makeReviewBody() });
     await proxy.stop();
 
-    expect(upstreamCalls[0]?.headers['x-api-key']).toBe(FAKE_CREDENTIAL);
-    // The reviewer caller did NOT include x-api-key
+    expect(upstreamCalls[0]?.headers['authorization']).toContain(FAKE_CREDENTIAL);
+    // The reviewer caller did NOT include an authorization header
     // (asserted by simulating request without it — see SI-1)
   });
 
-  it('upstream call includes Bearer authorization for OpenAI provider', async () => {
+  it('upstream call includes Bearer authorization for GitHub Copilot provider', async () => {
     const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
-      provider: 'openai',
+      provider: 'github-copilot',
     });
 
     await simulateRequest(proxy, {
-      url: '/v1/chat/completions',
+      url: '/chat/completions',
       sessionToken,
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-5',
         messages: [{ role: 'user', content: 'review' }],
       }),
     });
@@ -1288,13 +1290,13 @@ describe('SI-11: credential is injected by the proxy into upstream headers', () 
 
   it('upstream call targets the correct provider hostname', async () => {
     const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
-      provider: 'anthropic',
+      provider: 'github-models',
     });
 
     await simulateRequest(proxy, { sessionToken, body: makeReviewBody() });
     await proxy.stop();
 
-    expect(upstreamCalls[0]?.hostname).toBe('api.anthropic.com');
+    expect(upstreamCalls[0]?.hostname).toBe('models.github.ai');
   });
 });
 
@@ -1322,9 +1324,9 @@ describe('SI-13: buildReviewerProxyEnv does not include provider credential', ()
     expect(envStr).not.toContain(FAKE_CREDENTIAL);
   });
 
-  it('env vars do not contain ANTHROPIC_API_KEY key', () => {
+  it('env vars do not contain GITHUB_MODELS_TOKEN key', () => {
     const env = buildReviewerProxyEnv({ port: 1234, sessionToken: FAKE_SESSION_TOKEN });
-    expect(Object.keys(env)).not.toContain('ANTHROPIC_API_KEY');
+    expect(Object.keys(env)).not.toContain('GITHUB_MODELS_TOKEN');
   });
 });
 
@@ -1447,19 +1449,21 @@ describe('upstream error handling', () => {
   });
 });
 
-// ── Anthropic-specific header forwarding ──────────────────────────────────────
+// ── GitHub-specific header forwarding ──────────────────────────────────────
 
-describe('Anthropic-specific header forwarding', () => {
-  it('forwards anthropic-version header to upstream when present', async () => {
-    const { proxy, upstreamCalls, sessionToken } = await createTestProxy({ provider: 'anthropic' });
+describe('GitHub-specific header forwarding', () => {
+  it('forwards x-github-api-version header to upstream when present', async () => {
+    const { proxy, upstreamCalls, sessionToken } = await createTestProxy({
+      provider: 'github-models',
+    });
 
     const req = makeMockRequest({
       method: 'POST',
-      url: '/v1/messages',
+      url: '/inference/chat/completions',
       headers: {
         'content-type': 'application/json',
         'x-proxy-session': sessionToken,
-        'anthropic-version': '2023-06-01',
+        'x-github-api-version': '2023-06-01',
       },
       body: makeReviewBody(),
     });
@@ -1469,13 +1473,13 @@ describe('Anthropic-specific header forwarding', () => {
 
     await proxy.stop();
 
-    expect(upstreamCalls[0]?.headers['anthropic-version']).toBe('2023-06-01');
+    expect(upstreamCalls[0]?.headers['x-github-api-version']).toBe('2023-06-01');
   });
 });
 
 // ── defaultUpstreamConnector — streaming size cap and timeout ─────────────────
 //
-// These tests use a real local HTTP server (not the Anthropic API) to exercise
+// These tests use a real local HTTP server (not the GitHub Models API) to exercise
 // the production connector code paths without network I/O to external hosts.
 // The server binds on a random loopback port and is torn down after each test.
 
@@ -1586,7 +1590,7 @@ describe('integration: real HTTP server (AI_SDLC_SANDBOX_INTEGRATION_TESTS=1 onl
           {
             hostname: '127.0.0.1',
             port,
-            path: '/v1/messages',
+            path: '/inference/chat/completions',
             method: 'POST',
             headers: {
               'content-type': 'application/json',
@@ -1609,7 +1613,7 @@ describe('integration: real HTTP server (AI_SDLC_SANDBOX_INTEGRATION_TESTS=1 onl
 
       await proxy.stop();
 
-      // In integration mode, the upstream connector is the real one (points to Anthropic)
+      // In integration mode, the upstream connector is the real one (points to GitHub Models)
       // but we don't have a real API key in tests. The proxy should return 403/401 from
       // upstream, not a proxy-level error. This confirms the proxy forwarded the request.
       // We accept 200, 401, or 403 as valid "proxy worked" statuses.
@@ -1634,7 +1638,7 @@ describe('integration: real HTTP server (AI_SDLC_SANDBOX_INTEGRATION_TESTS=1 onl
           {
             hostname: '127.0.0.1',
             port,
-            path: '/v1/messages',
+            path: '/inference/chat/completions',
             method: 'POST',
             headers: {
               'content-type': 'application/json',

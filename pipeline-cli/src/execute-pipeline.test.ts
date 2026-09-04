@@ -14,8 +14,7 @@ import { dirname, join, resolve } from 'node:path';
 import { executePipeline } from './execute-pipeline.js';
 import { MockSpawner } from './runtime/subagent-spawner.js';
 import { defaultSpawner } from './runtime/default-spawner.js';
-import { ShellClaudePSpawner } from './runtime/shell-claude-p-spawner.js';
-import { ClaudeCodeSDKSpawner } from './runtime/claude-code-sdk-spawner.js';
+import { CopilotHarnessAdapter } from './runtime/spawners/copilot-harness.js';
 import { FakeRunner, ok, fail } from './__test-helpers/fake-runner.js';
 import { cleanupTmpProject, makeTmpProject, writeTaskFile } from './__test-helpers/make-task.js';
 import type { DeveloperReturn } from './types.js';
@@ -1148,7 +1147,7 @@ describe('integration — executePipeline (full Step 0-13)', () => {
     //      it).
     //   3. Invoke the hook via `child_process.spawnSync(node, hook)` with
     //      stdin JSON simulating a Write to an external-path target,
-    //      CLAUDE_PROJECT_DIR pointing at the worktree, and `cwd` set so
+    //      COPILOT_PROJECT_DIR pointing at the worktree, and `cwd` set so
     //      the per-worktree sentinel lookup walks up correctly.
     //   4. Assert the hook EXITS 0 with no `deny` decision on stdout —
     //      i.e. the allowlist resolved and the external write was
@@ -1207,22 +1206,22 @@ describe('integration — executePipeline (full Step 0-13)', () => {
 
       // The hook's task-ID resolution chain:
       //   (1) per-worktree sentinel walk-up (Pattern C: cwd under
-      //       `<CLAUDE_PROJECT_DIR>/.worktrees/<id>/`)
+      //       `<COPILOT_PROJECT_DIR>/.worktrees/<id>/`)
       //   (2) legacy project-level sentinel
       //   (3) `AI_SDLC_ACTIVE_TASK_ID` env var
-      // For this hermetic test the worktree is its own `CLAUDE_PROJECT_DIR`
+      // For this hermetic test the worktree is its own `COPILOT_PROJECT_DIR`
       // (matching `git rev-parse --show-toplevel` inside a worktree), so
       // (1) and (2) don't apply — we drive the lookup via (3), which is
       // what the dev subagent's env carries in production anyway (per
       // `ai-sdlc-plugin/agents/developer.md` line 123).
       const hookEnv = {
         ...process.env,
-        CLAUDE_PROJECT_DIR: worktreePath,
+        COPILOT_PROJECT_DIR: worktreePath,
         AI_SDLC_ACTIVE_TASK_ID: 'gh-issue-700',
       };
 
       // POSITIVE case — Write to a path under permittedExternalPaths.
-      // Hook reads CLAUDE_PROJECT_DIR/backlog/tasks/ (= worktree's
+      // Hook reads COPILOT_PROJECT_DIR/backlog/tasks/ (= worktree's
       // `backlog/tasks/`), finds the synthetic file via the `${id} -`
       // prefix match, parses `permittedExternalPaths: ['../ai-sdlc-io/']`,
       // resolves it relative to the project root, and allows the Write.
@@ -1296,34 +1295,24 @@ describe('integration — executePipeline (full Step 0-13)', () => {
   });
 });
 
-describe('integration — defaultSpawner picks the right spawner per environment', () => {
-  it('picks ShellClaudePSpawner when claude CLI is available', async () => {
+describe('integration — defaultSpawner resolves the GitHub Copilot bridge', () => {
+  it('returns a CopilotHarnessAdapter when COPILOT_SPAWN_AGENT_BIN is set', async () => {
     const spawner = await defaultSpawner({
-      which: vi.fn().mockResolvedValue(true),
-      env: () => undefined,
+      env: () => '/usr/local/bin/copilot-bridge.mjs',
     });
-    expect(spawner).toBeInstanceOf(ShellClaudePSpawner);
+    expect(spawner).toBeInstanceOf(CopilotHarnessAdapter);
   });
 
-  it('picks ClaudeCodeSDKSpawner when only ANTHROPIC_API_KEY is set', async () => {
-    const spawner = await defaultSpawner({
-      which: vi.fn().mockResolvedValue(false),
-      env: () => 'sk-ant-test',
-    });
-    expect(spawner).toBeInstanceOf(ClaudeCodeSDKSpawner);
-  });
-
-  it('throws clearly when neither runtime is available', async () => {
+  it('throws clearly when no Copilot bridge is configured', async () => {
     await expect(
       defaultSpawner({
-        which: vi.fn().mockResolvedValue(false),
         env: () => undefined,
       }),
-    ).rejects.toThrow(/install the `claude` CLI|set ANTHROPIC_API_KEY/);
+    ).rejects.toThrow(/COPILOT_SPAWN_AGENT_BIN/);
   });
 
   it('the default spawner is interchangeable with MockSpawner in executePipeline (smoke)', async () => {
-    // Use a mock-backed defaultSpawner via the SDK invoker injection so we
+    // Drive the resolved spawner through an injected `spawnAgent` bridge so we
     // exercise the full pipeline against a default-resolved spawner without
     // touching network or shell. This proves the resolved spawner satisfies
     // the SubagentSpawner contract end-to-end (Step 5b + Step 7b).
@@ -1335,34 +1324,28 @@ describe('integration — defaultSpawner picks the right spawner per environment
     });
     mkdirSync(join(tmp, '.worktrees', 'aisdlc-200'), { recursive: true });
 
-    // Defer to the SDK path via env, but inject a mock invoker so no real SDK
-    // call is made.
-    const spawner = await defaultSpawner({
-      which: vi.fn().mockResolvedValue(false),
-      env: () => 'sk-ant-test',
-      sdk: {
-        invoker: vi.fn().mockImplementation(async ({ type }: { type: string }) => {
-          if (type === 'developer') {
-            return {
-              output: '',
-              parsed: {
-                summary: 'shipped',
-                filesChanged: ['x.ts'],
-                commitSha: 'abc1234',
-                verifications: {
-                  build: 'passed',
-                  test: 'passed',
-                  lint: 'passed',
-                  format: 'passed',
-                },
-                acceptanceCriteriaMet: [1],
-                notes: '',
+    const spawner = new CopilotHarnessAdapter({
+      spawnAgent: vi.fn().mockImplementation(async ({ agentType }: { agentType: string }) => {
+        if (agentType === 'developer') {
+          return {
+            output: '',
+            parsed: {
+              summary: 'shipped',
+              filesChanged: ['x.ts'],
+              commitSha: 'abc1234',
+              verifications: {
+                build: 'passed',
+                test: 'passed',
+                lint: 'passed',
+                format: 'passed',
               },
-            };
-          }
-          return { output: '', parsed: { approved: true, findings: [], summary: 'lgtm' } };
-        }),
-      },
+              acceptanceCriteriaMet: [1],
+              notes: '',
+            },
+          };
+        }
+        return { output: '', parsed: { approved: true, findings: [], summary: 'lgtm' } };
+      }),
     });
 
     const result = await executePipeline({

@@ -17,7 +17,7 @@
  *     handcrafted YAML loader (per file header — `scripts/verify-
  *     attestation.mjs` keeps the install footprint minimal). We mirror
  *     the same minimal-loader approach here so this check can run from
- *     any TypeScript context (CLI, GitHub Action, Claude Code subagent)
+ *     any TypeScript context (CLI, GitHub Action, GitHub Copilot CLI subagent)
  *     without pulling in `js-yaml`.
  *   - Identities in the file are free-form strings (typically email or
  *     GitHub handle). The caller is responsible for passing the right

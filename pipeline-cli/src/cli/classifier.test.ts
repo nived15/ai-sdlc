@@ -25,7 +25,7 @@ function fakeEntry(overrides: Partial<CalibrationCorpusEntry> = {}): Calibration
     timestamp: overrides.timestamp ?? '2026-05-15T10:00:00Z',
     taskType: overrides.taskType ?? 'capture-triage',
     input: overrides.input ?? { text: 'a finding' },
-    model: 'claude-haiku-4-5',
+    model: 'gpt-5-mini',
     classification: 'quick-fix-task',
     confidence: 0.82,
     reasoning: 'r',

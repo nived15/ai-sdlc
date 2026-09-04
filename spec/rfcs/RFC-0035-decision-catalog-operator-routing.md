@@ -68,7 +68,7 @@ implementedBy:
 
 ## 1. Summary
 
-This RFC operationalizes [`VISION.md`](../../VISION.md) §3 (operator-as-decision-steward) by making the operator's decision queue a **first-class resource**. Today, open questions live as scattered markdown bullets across individual issues, RFC bodies, DoR clarifications, and emergent findings — there is no global view, no priority signal, no actor-routing rubric, and no decision-support surface beyond the operator's intuition and Claude Code's basic options prompt.
+This RFC operationalizes [`VISION.md`](../../VISION.md) §3 (operator-as-decision-steward) by making the operator's decision queue a **first-class resource**. Today, open questions live as scattered markdown bullets across individual issues, RFC bodies, DoR clarifications, and emergent findings — there is no global view, no priority signal, no actor-routing rubric, and no decision-support surface beyond the operator's intuition and GitHub Copilot CLI's basic options prompt.
 
 This RFC introduces:
 
@@ -105,7 +105,7 @@ A decision system that ignores capacity violates the operator's stated preferenc
 
 ### 2.3 The current decision-prompt UX is too low-fidelity
 
-Claude Code's `AskUserQuestion` (and the framework's various clarification prompts) presents 2–4 labeled options with one-line descriptions. This is sufficient for trivial choices but insufficient for load-bearing decisions where the operator needs:
+GitHub Copilot CLI's `AskUserQuestion` (and the framework's various clarification prompts) presents 2–4 labeled options with one-line descriptions. This is sufficient for trivial choices but insufficient for load-bearing decisions where the operator needs:
 
 - A **framework recommendation** with its rationale and confidence
 - **Counter-arguments** to the recommendation (steel-manned alternatives)
@@ -143,7 +143,7 @@ This RFC is largely about **composition**, not invention. The deterministic-firs
 
 ### 3.2 Non-Goals
 
-- **N1.** Replacing Claude Code's `AskUserQuestion` tool. This RFC defines the framework's operator-decision surface; in-IDE prompts continue to use Claude Code's native UX. (Note: per G0, `AskUserQuestion` is only used when the catalog has *already* prioritized and surfaced a Decision — never as a real-time pipeline interrupt.)
+- **N1.** Replacing GitHub Copilot CLI's `AskUserQuestion` tool. This RFC defines the framework's operator-decision surface; in-IDE prompts continue to use GitHub Copilot CLI's native UX. (Note: per G0, `AskUserQuestion` is only used when the catalog has *already* prioritized and surfaced a Decision — never as a real-time pipeline interrupt.)
 - **N2.** Auto-deciding load-bearing decisions without operator sign-off. Per `VISION.md` §6 ("You decide. We don't override."), the framework recommends; the operator decides. (G0 still applies: load-bearing decisions sit in the prioritized queue with timeboxed defaults; they don't halt the pipeline.)
 - **N3.** Cross-organization actor routing. Single-workspace v1, mirroring [RFC-0023 §10](RFC-0023-operator-tui-pipeline-monitoring.md) (single-workspace OQ resolution).
 - **N4.** Generating the operator UI itself. RFC-0023 owns the TUI; this RFC owns the data the TUI reads.
@@ -471,7 +471,7 @@ The backlog already has issues, and PPA already prioritizes them. Why not just f
 
 Decisions and issues are related but distinct resources, like RFCs and issues are related but distinct.
 
-### 13.3 Alternative C — Use Claude Code's `AskUserQuestion` for everything; no catalog
+### 13.3 Alternative C — Use GitHub Copilot CLI's `AskUserQuestion` for everything; no catalog
 
 Status quo. Rejected because:
 

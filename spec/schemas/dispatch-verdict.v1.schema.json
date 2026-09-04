@@ -80,17 +80,17 @@
     "workerId": {
       "type": "string",
       "minLength": 1,
-      "description": "Identifier of the Worker that produced this verdict (e.g. 'worker-<pid>-<rand>' for in-session-agent, 'supervisor-<pid>-<rand>' for claude-p-shell)."
+      "description": "Identifier of the Worker that produced this verdict (e.g. 'worker-<pid>-<rand>' for in-session-agent, 'supervisor-<pid>-<rand>' for copilot-p-shell)."
     },
     "workerKind": {
       "type": "string",
-      "enum": ["in-session-agent", "claude-p-shell"],
+      "enum": ["in-session-agent", "copilot-p-shell"],
       "description": "Which Worker backend produced this verdict. Audit-only — the manifest already declared which kind claimed it."
     },
     "retryAfter": {
       "type": "integer",
       "minimum": 0,
-      "description": "OQ-7 — when outcome is 'quota-exhausted', how many seconds the Conductor should wait before re-emitting (Anthropic Retry-After header value, default 600)."
+      "description": "OQ-7 — when outcome is 'quota-exhausted', how many seconds the Conductor should wait before re-emitting (GitHub Models Retry-After header value, default 600)."
     },
     "cause": {
       "type": "string",
@@ -109,7 +109,7 @@
     "sessionId": {
       "type": "string",
       "minLength": 1,
-      "description": "Phase 1.5 (AISDLC-377.2) — claude -p --session-id captured by a claude-p-shell Worker. Stored on the verdict so the Conductor can promote it onto the next iteration's manifest as manifest.lastSessionId. in-session-agent Workers leave this null."
+      "description": "Phase 1.5 (AISDLC-377.2) — copilot -p --session-id captured by a copilot-p-shell Worker. Stored on the verdict so the Conductor can promote it onto the next iteration's manifest as manifest.lastSessionId. in-session-agent Workers leave this null."
     },
     "reviewerStartedAt": {
       "type": "string",

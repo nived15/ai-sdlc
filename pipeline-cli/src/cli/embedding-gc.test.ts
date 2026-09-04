@@ -20,7 +20,7 @@ import { runGc, collectStats, runEmbeddingGcCli } from './embedding-gc.js';
 function makeJsonlEntry(
   text: string,
   daysAgo: number,
-  provider = 'openai-text-embedding-3-small',
+  provider = 'github-models-embedding-small',
   modelVersion = '2024-01-25',
 ): string {
   const d = new Date();
@@ -65,7 +65,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
 
   it('AC#4: removes entries older than retention threshold', () => {
     const embDir = makeEmbeddingsDir(tmpDir);
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     const filePath = writeJsonlFile(embDir, slug, [
       makeJsonlEntry('old-text', 100), // 100 days old — should be removed
       makeJsonlEntry('new-text', 30), // 30 days old — should be retained
@@ -87,7 +87,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
 
   it('AC#4: per-org gcRetentionDays override — 30 days removes more entries', () => {
     const embDir = makeEmbeddingsDir(tmpDir);
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     const filePath = writeJsonlFile(embDir, slug, [
       makeJsonlEntry('very-old', 100), // removed at both 90d and 30d
       makeJsonlEntry('medium', 60), // retained at 90d, removed at 30d
@@ -107,7 +107,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
 
   it('AC#4: 90d retention retains a 60d-old entry but not a 100d-old one', () => {
     const embDir = makeEmbeddingsDir(tmpDir);
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     const filePath = writeJsonlFile(embDir, slug, [
       makeJsonlEntry('very-old', 100),
       makeJsonlEntry('medium', 60),
@@ -131,14 +131,14 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
     // and runGc() recomputed it later, causing a ~40% flake rate when the two
     // computations straddled a clock tick.
     const embDir = makeEmbeddingsDir(tmpDir);
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 90);
 
     const atBoundary = JSON.stringify({
       vector: [0.1],
-      embeddingProvider: 'openai-text-embedding-3-small',
+      embeddingProvider: 'github-models-embedding-small',
       embeddingModelVersion: '2024-01-25',
       writtenAt: cutoff.toISOString(),
       text: 'at-boundary',
@@ -146,7 +146,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
     });
     const justBefore = JSON.stringify({
       vector: [0.1],
-      embeddingProvider: 'openai-text-embedding-3-small',
+      embeddingProvider: 'github-models-embedding-small',
       embeddingModelVersion: '2024-01-25',
       writtenAt: new Date(cutoff.getTime() - 60_000).toISOString(), // 1 min before cutoff
       text: 'just-before',
@@ -184,10 +184,10 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
 
   it('does not remove entries without a writtenAt field (legacy/corrupt protection)', () => {
     const embDir = makeEmbeddingsDir(tmpDir);
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     const legacyLine = JSON.stringify({
       vector: [0.1],
-      embeddingProvider: 'openai-text-embedding-3-small',
+      embeddingProvider: 'github-models-embedding-small',
       embeddingModelVersion: '2024-01-25',
       text: 'no-date',
       textHash: 'h-legacy',
@@ -205,19 +205,19 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
 
   it('provider filter restricts GC to matching entries', () => {
     const embDir = makeEmbeddingsDir(tmpDir);
-    const slugSmall = 'openai-text-embedding-3-small-2024-01-25';
-    const slugLarge = 'openai-text-embedding-3-large-2024-01-25';
+    const slugSmall = 'github-models-embedding-small-2024-01-25';
+    const slugLarge = 'github-models-embedding-large-2024-01-25';
 
     const oldSmall = makeJsonlEntry(
       'old-small',
       100,
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
       '2024-01-25',
     );
     const oldLarge = makeJsonlEntry(
       'old-large',
       100,
-      'openai-text-embedding-3-large',
+      'github-models-embedding-large',
       '2024-01-25',
     );
 
@@ -225,7 +225,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
     const largePath = writeJsonlFile(embDir, slugLarge, [oldLarge]);
 
     // GC only the small-provider entries.
-    const result = runGc(embDir, 90, 'openai-text-embedding-3-small');
+    const result = runGc(embDir, 90, 'github-models-embedding-small');
     expect(result.removed).toBe(1);
 
     // small file should now be empty; large file should still have its entry.
@@ -242,7 +242,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
 
   it('collectStats() reports per-(provider, modelVersion) counts and timestamps', () => {
     const embDir = makeEmbeddingsDir(tmpDir);
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     writeJsonlFile(embDir, slug, [
       makeJsonlEntry('a', 5),
       makeJsonlEntry('b', 30),
@@ -253,7 +253,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
 
     expect(stats).toHaveLength(1);
     const row = stats[0]!;
-    expect(row.provider).toBe('openai-text-embedding-3-small');
+    expect(row.provider).toBe('github-models-embedding-small');
     expect(row.modelVersion).toBe('2024-01-25');
     expect(row.count).toBe(3);
     expect(row.oldestWrittenAt).not.toBeNull();
@@ -265,7 +265,7 @@ describe('cli-embedding-gc (unit tests via module import)', () => {
 
   it('atomic rewrite: only rewrites files when something was actually removed', () => {
     const embDir = makeEmbeddingsDir(tmpDir);
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     const filePath = writeJsonlFile(embDir, slug, [makeJsonlEntry('fresh', 5)]);
 
     const beforeContents = readFileSync(filePath, 'utf-8');
@@ -349,7 +349,7 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
 
   it('run --dry-run (text format) reports the count without modifying files', async () => {
     const artifactsDir = makeArtifactsDir();
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     const filePath = seedJsonl(artifactsDir, slug, [
       makeJsonlEntry('old', 100),
       makeJsonlEntry('fresh', 10),
@@ -369,7 +369,7 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
 
   it('run --dry-run --format json emits a JSON payload with wouldRemove', async () => {
     const artifactsDir = makeArtifactsDir();
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     seedJsonl(artifactsDir, slug, [
       makeJsonlEntry('old-1', 100),
       makeJsonlEntry('old-2', 95),
@@ -393,11 +393,11 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
 
   it('run --dry-run with --provider scopes the dry-run scan to one provider', async () => {
     const artifactsDir = makeArtifactsDir();
-    seedJsonl(artifactsDir, 'openai-text-embedding-3-small-2024-01-25', [
-      makeJsonlEntry('old-small', 100, 'openai-text-embedding-3-small'),
+    seedJsonl(artifactsDir, 'github-models-embedding-small-2024-01-25', [
+      makeJsonlEntry('old-small', 100, 'github-models-embedding-small'),
     ]);
-    seedJsonl(artifactsDir, 'openai-text-embedding-3-large-2024-01-25', [
-      makeJsonlEntry('old-large', 100, 'openai-text-embedding-3-large'),
+    seedJsonl(artifactsDir, 'github-models-embedding-large-2024-01-25', [
+      makeJsonlEntry('old-large', 100, 'github-models-embedding-large'),
     ]);
 
     setArgv(
@@ -408,7 +408,7 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
       '--artifacts-dir',
       artifactsDir,
       '--provider',
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
     );
     await runEmbeddingGcCli();
 
@@ -419,7 +419,7 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
 
   it('run (apply mode, text format) removes stale entries and prints summary', async () => {
     const artifactsDir = makeArtifactsDir();
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     const filePath = seedJsonl(artifactsDir, slug, [
       makeJsonlEntry('old', 100),
       makeJsonlEntry('fresh', 10),
@@ -441,7 +441,7 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
 
   it('run --format json emits a JSON payload with the result counts', async () => {
     const artifactsDir = makeArtifactsDir();
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     seedJsonl(artifactsDir, slug, [makeJsonlEntry('old', 100), makeJsonlEntry('fresh', 10)]);
 
     setArgv('run', '--format', 'json', '--artifacts-dir', artifactsDir);
@@ -461,7 +461,7 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
 
   it('run with --retention-days override changes the cutoff', async () => {
     const artifactsDir = makeArtifactsDir();
-    const slug = 'openai-text-embedding-3-small-2024-01-25';
+    const slug = 'github-models-embedding-small-2024-01-25';
     seedJsonl(artifactsDir, slug, [
       makeJsonlEntry('60d-old', 60), // retained at 90d, removed at 30d
       makeJsonlEntry('fresh', 5),
@@ -505,12 +505,12 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
 
   it('stats (table) prints a header + one row per (provider, modelVersion)', async () => {
     const artifactsDir = makeArtifactsDir();
-    seedJsonl(artifactsDir, 'openai-text-embedding-3-small-2024-01-25', [
+    seedJsonl(artifactsDir, 'github-models-embedding-small-2024-01-25', [
       makeJsonlEntry('a', 5),
       makeJsonlEntry('b', 30),
     ]);
-    seedJsonl(artifactsDir, 'openai-text-embedding-3-large-2024-01-25', [
-      makeJsonlEntry('c', 5, 'openai-text-embedding-3-large'),
+    seedJsonl(artifactsDir, 'github-models-embedding-large-2024-01-25', [
+      makeJsonlEntry('c', 5, 'github-models-embedding-large'),
     ]);
 
     setArgv('stats', '--artifacts-dir', artifactsDir);
@@ -520,13 +520,13 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
     expect(out).toMatch(/Provider/);
     expect(out).toMatch(/ModelVersion/);
     expect(out).toMatch(/Count/);
-    expect(out).toMatch(/openai-text-embedding-3-small/);
-    expect(out).toMatch(/openai-text-embedding-3-large/);
+    expect(out).toMatch(/github-models-embedding-small/);
+    expect(out).toMatch(/github-models-embedding-large/);
   });
 
   it('stats --format json emits an array of per-file stats', async () => {
     const artifactsDir = makeArtifactsDir();
-    seedJsonl(artifactsDir, 'openai-text-embedding-3-small-2024-01-25', [
+    seedJsonl(artifactsDir, 'github-models-embedding-small-2024-01-25', [
       makeJsonlEntry('a', 5),
       makeJsonlEntry('b', 30),
       makeJsonlEntry('c', 60),
@@ -537,7 +537,7 @@ describe('runEmbeddingGcCli (yargs router coverage)', () => {
 
     const payload = stdoutJson<Array<{ provider: string; modelVersion: string; count: number }>>();
     expect(payload).toHaveLength(1);
-    expect(payload[0]!.provider).toBe('openai-text-embedding-3-small');
+    expect(payload[0]!.provider).toBe('github-models-embedding-small');
     expect(payload[0]!.modelVersion).toBe('2024-01-25');
     expect(payload[0]!.count).toBe(3);
   });

@@ -20,14 +20,14 @@ allowed-tools:
 model: inherit
 ---
 
-Run one autonomous orchestrator tick in the current Claude Code session as
+Run one autonomous orchestrator tick in the current Copilot CLI session as
 **Conductor** (RFC-0041 §4.2).
 
 This command shifted in RFC-0041 Phase 1 (AISDLC-377.1). The previous behavior
 invoked `Agent` directly to dispatch dev subagents in-session. The original
 RFC-0041 §2.1 rationale cited a "600s background-agent watchdog (~85% kill
 rate)" — **that claim was a misdiagnosis** (forensic re-measurement
-2026-05-21 via `python3 ~/.claude/skills/audit-subagent/audit.py` found 0
+2026-05-21 via `python3 ~/.copilot/skills/audit-subagent/audit.py` found 0
 watchdog kills and 80.8% clean completion across 73 dev subagents, median
 16 min, max 2.5 h). The Conductor/Worker decoupling pattern provides real
 benefits (operator-controlled parallelism, billing visibility, cost-pool
@@ -37,7 +37,7 @@ The cost-pool comparison should be re-evaluated against the corrected
 baseline.
 
 > **Why this lives in the slash command body (not a subagent).** Plugin
-> subagents cannot use the `Agent` tool — Claude Code filters it out one
+> subagents cannot use the `Agent` tool — GitHub Copilot CLI filters it out one
 > level deep. The reviewer fan-out per verdict must therefore happen here.
 
 ## Hard rules (identical to `/ai-sdlc execute`)
@@ -139,10 +139,10 @@ isn't a JS event loop.
 # (including the self-location last resort, AISDLC-557 AC#3) and (b) a
 # NAMED, actionable error at the very top of the tick — before any frontier
 # work — when nothing resolves at all.
-if [ -n "${CLAUDE_PLUGIN_DIR:-}" ]; then
-  PLUGIN_SCRIPTS_DIR="$CLAUDE_PLUGIN_DIR/scripts"
-elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
-  PLUGIN_SCRIPTS_DIR="$CLAUDE_PLUGIN_ROOT/scripts"
+if [ -n "${COPILOT_PLUGIN_DIR:-}" ]; then
+  PLUGIN_SCRIPTS_DIR="$COPILOT_PLUGIN_DIR/scripts"
+elif [ -n "${COPILOT_PLUGIN_ROOT:-}" ]; then
+  PLUGIN_SCRIPTS_DIR="$COPILOT_PLUGIN_ROOT/scripts"
 else
   PLUGIN_SCRIPTS_DIR="$(pwd)/ai-sdlc-plugin/scripts"
 fi
@@ -277,7 +277,7 @@ The Conductor's failed/ poll (Step 4) then escalates.
 the slash command body operates as a two-phase reconciler.
 
 - **Phase A — RECONCILE completions.** For every dev `Agent(developer)`
-  call previously dispatched via `run_in_background:true`, Claude Code
+  call previously dispatched via `run_in_background:true`, GitHub Copilot CLI
   delivers a `<task-notification>` completion event to the parent CC
   session as a system-reminder when the bg Agent finishes. The slash
   command body parses the Agent's return JSON (the standard developer
@@ -370,7 +370,7 @@ For each request in the `requests` array (parse with `node -e ...`):
    B of a prior tick already fired this Agent; Phase A is waiting on its
    completion).
 2. **Fire a background `Agent` call** to the `developer` subagent with:
-   - `subagent_type`: `developer` — always Claude-native sonnet (AISDLC-483;
+   - `subagent_type`: `developer` — always GitHub Copilot-native sonnet (AISDLC-483;
      the `developer` agent frontmatter pins `model: sonnet`; the dispatch path
      does NOT override this. To force a different model per invocation, set
      `AI_SDLC_DEV_MODEL=<model>` before the tick — that env var is forwarded
@@ -500,39 +500,21 @@ For each verdict in the array with `outcome === 'success'`:
    via ONE foreground `Agent` operation (AISDLC-418 AC #2 — single fan-out
    call, not 3 sequential ones). Only reviewers whose cache MISSed need to run.
 
-   **AISDLC-483 — default-Codex reviewer routing.** Before spawning, resolve
-   the canonical agent name per role using the same harness-selection logic as
-   `/ai-sdlc execute` Step 7b. Default: code-review and test-review route to
-   `code-reviewer-codex` / `test-reviewer-codex` (Codex plan, zero Claude
-   tokens). Security always stays on `security-reviewer` (claude-native, opus).
-   Override: `AI_SDLC_REVIEWER_HARNESS=claude` forces all three to claude-native.
+   **AISDLC-483 — reviewer routing.** Before spawning, resolve the canonical
+   agent name per role using the same logic as `/ai-sdlc execute` Step 7b.
+   Every role dispatches through the GitHub Copilot CLI in its own fresh
+   session; code and test review run on the balanced tier and security review
+   on the reasoning tier. `AI_SDLC_REVIEWER_MODEL_TIER` pins all three.
 
    ```bash
    # AISDLC-483: resolve agent name for each role.
    _resolve_reviewer_agent() {
      local role="$1"
-     local force_claude="${AI_SDLC_REVIEWER_HARNESS:-}"
      case "$role" in
-       code-reviewer)
-         if [ "$(echo "$force_claude" | tr '[:upper:]' '[:lower:]')" = "claude" ]; then
-           echo "code-reviewer"
-         else
-           echo "code-reviewer-codex"
-         fi
-         ;;
-       test-reviewer)
-         if [ "$(echo "$force_claude" | tr '[:upper:]' '[:lower:]')" = "claude" ]; then
-           echo "test-reviewer"
-         else
-           echo "test-reviewer-codex"
-         fi
-         ;;
-       security-reviewer)
-         echo "security-reviewer"
-         ;;
-       *)
-         echo "$role"
-         ;;
+       code-reviewer)     echo "code-reviewer" ;;
+       test-reviewer)     echo "test-reviewer" ;;
+       security-reviewer) echo "security-reviewer" ;;
+       *)                 echo "$role" ;;
      esac
    }
    CODE_AGENT=$(_resolve_reviewer_agent code-reviewer)
@@ -541,9 +523,9 @@ For each verdict in the array with `outcome === 'success'`:
    ```
 
    Roles:
-   - `$CODE_AGENT` (default: `code-reviewer-codex`) — reviews the diff
-   - `$TEST_AGENT` (default: `test-reviewer-codex`) — focuses on test coverage + ACs
-   - `$SEC_AGENT` (always: `security-reviewer`) — security audit
+   - `$CODE_AGENT` (`code-reviewer`) — reviews the diff
+   - `$TEST_AGENT` (`test-reviewer`) — focuses on test coverage + ACs
+   - `$SEC_AGENT` (`security-reviewer`) — security audit
 
    Reviewer subagents are short-lived (read diff JSON, emit verdict JSON, exit).
    Foreground `Agent` calls are well-suited regardless of duration.
@@ -588,7 +570,7 @@ For each verdict in the array with `outcome === 'success'`:
    # the worktree's .ai-sdlc/transcripts/ dir is missing them. The Agent
    # tool returns an agentId per call; capture them into a JSON map.
    # AISDLC-483: use resolved agent names in the ID map so reconcile can
-   # find transcripts under the correct agent name (e.g. code-reviewer-codex).
+   # find transcripts under the correct agent name (e.g. code-reviewer-copilot).
    AGENT_IDS_JSON="{\"${CODE_AGENT}\":\"<id>\",\"${TEST_AGENT}\":\"<id>\",\"${SEC_AGENT}\":\"<id>\"}"
    node "$PIPELINE_CLI_BIN/ai-sdlc-pipeline.mjs" reconcile "<task-id>" \
      --reviewer-agent-ids "$AGENT_IDS_JSON" \
@@ -941,15 +923,15 @@ stays in inflight/ for the next tick to pick up.
 
 Each manifest declares `workerKind: in-session-agent` (the default per
 `.ai-sdlc/dispatch-config.yaml`). The Conductor MAY override to
-`claude-p-shell` for tasks the operator wants run headlessly (Phase 2 only
-— Phase 1 Worker sessions ignore `claude-p-shell` manifests).
+`copilot-p-shell` for tasks the operator wants run headlessly (Phase 2 only
+— Phase 1 Worker sessions ignore `copilot-p-shell` manifests).
 
 ### Operator escalation X → Y → Z
 
 | Trigger                                        | Switch to                                                                                                     |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Default                                        | Pattern X (this command alone, single session, in-session Agent dispatch)                                     |
-| Subscription quota exhausted mid-drain         | Pattern Y (`cli-orchestrator tick --spawner claude` — shells out to `claude -p`, draws Agent SDK credit pool) |
+| Subscription quota exhausted mid-drain         | Pattern Y (`cli-orchestrator tick --spawner copilot` — shells out to `copilot -p`, draws Agent SDK credit pool) |
 | N>4 parallel devs needed (large backlog burst) | Pattern Z (open N sibling sessions running `/ai-sdlc dispatch-worker`)                                        |
 
 Patterns coexist — the same Dispatch Board accepts manifests from any
@@ -1214,7 +1196,7 @@ The Conductor:
 **Historical note (2026-05-21):** RFC-0041 §2.1 originally documented a "600s
 background-agent watchdog" as the reason to avoid `Agent(... run_in_background)`.
 That claim was a misdiagnosis — forensic re-measurement found 0 watchdog kills
-in 73 dev subagents (`python3 ~/.claude/skills/audit-subagent/audit.py`). The
+in 73 dev subagents (`python3 ~/.copilot/skills/audit-subagent/audit.py`). The
 Conductor/Worker decoupling still provides useful properties (operator-controlled
 parallelism, billing-pool isolation), so this command continues to use the
 pattern; the watchdog-avoidance framing has been removed.
@@ -1225,13 +1207,13 @@ recovery: see RFC-0041 §5.2 (WorkerStaleHeartbeat row).
 
 ---
 
-## Implementation note — legacy `claude-cli` inline-manifest path (removed)
+## Implementation note — legacy `copilot` inline-manifest path (removed)
 
-The pre-RFC-0041 path (`cli-orchestrator tick --spawner claude-cli` +
-in-session `Agent` dispatch via `ClaudeCliInlineSpawner`) was removed in
+The pre-RFC-0041 path (`cli-orchestrator tick --spawner copilot` +
+in-session `Agent` dispatch via `CopilotHarnessAdapter`) was removed in
 RFC-0041 Phase 3.3 (AISDLC-377.6) after the AISDLC-377.4 deprecation-warning
 window elapsed. The Dispatch Board path described above is the supported way
 to drive autonomous drain on subscription billing.
 
 Migration breadcrumb:
-[`docs/operations/claude-cli-spawner-removed.md`](../../docs/operations/claude-cli-spawner-removed.md).
+[`docs/operations/copilot-spawner.md`](../../docs/operations/copilot-spawner.md).

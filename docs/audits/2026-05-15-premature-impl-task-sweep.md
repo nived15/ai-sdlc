@@ -87,7 +87,7 @@ The root structural fix is AISDLC-296 (upstream-OQ gate in the DoR shim), which 
 
 | Status | Detail |
 |---|---|
-| **Walkthrough completed** | ✅ 2026-05-15 — operator + Claude session resolved all 10 §13 OQs |
+| **Walkthrough completed** | ✅ 2026-05-15 — operator + GitHub Copilot session resolved all 10 §13 OQs |
 | **All 10 OQs resolved** | ✅ Resolution markers present in RFC-0025 §13 (OQ-1 through OQ-10) |
 | **RFC lifecycle** | `Ready for Review` — awaiting Signed Off by relevant owners |
 | **Implementation path** | Superseded AISDLC-270 replaced by Refit chain: AISDLC-302 (substrate), 303 (OQ-1 classifier), 304 (OQ-3/8 recurrence/MTTR), 305 (OQ-2/4 severity + attribution), 306 (OQ-6/7/9 coverage + determinism + cost), 307 (OQ-5/10 upstream reporting + namespace) |

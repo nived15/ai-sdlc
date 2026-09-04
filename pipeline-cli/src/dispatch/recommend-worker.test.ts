@@ -39,18 +39,18 @@ describe('loadDispatchConfig', () => {
     expect(loadDispatchConfig(tmp)).toBeUndefined();
   });
 
-  it('returns claudePShellMaxConcurrent when present', () => {
+  it('returns copilotPShellMaxConcurrent when present', () => {
     writeDispatchConfig(`
 spec:
   defaultWorkerKind: in-session-agent
   parallelism:
-    claudePShellMaxConcurrent: 2
+    copilotPShellMaxConcurrent: 2
 `);
     const cfg = loadDispatchConfig(tmp);
-    expect(cfg).toEqual({ claudePShellMaxConcurrent: 2, inSessionAgentMaxSessions: undefined });
+    expect(cfg).toEqual({ copilotPShellMaxConcurrent: 2, inSessionAgentMaxSessions: undefined });
   });
 
-  it('defaults claudePShellMaxConcurrent to 0 when the field is absent (and returns parsed inSessionAgentMaxSessions)', () => {
+  it('defaults copilotPShellMaxConcurrent to 0 when the field is absent (and returns parsed inSessionAgentMaxSessions)', () => {
     writeDispatchConfig(`
 spec:
   defaultWorkerKind: in-session-agent
@@ -61,7 +61,7 @@ spec:
     // inSessionAgentMaxSessions so the CLI can default --max-sessions
     // from yaml instead of unconditionally hard-coding to 4.
     expect(loadDispatchConfig(tmp)).toEqual({
-      claudePShellMaxConcurrent: 0,
+      copilotPShellMaxConcurrent: 0,
       inSessionAgentMaxSessions: 4,
     });
   });
@@ -72,7 +72,7 @@ spec:
   defaultWorkerKind: in-session-agent
 `);
     expect(loadDispatchConfig(tmp)).toEqual({
-      claudePShellMaxConcurrent: 0,
+      copilotPShellMaxConcurrent: 0,
       inSessionAgentMaxSessions: undefined,
     });
   });
@@ -80,19 +80,19 @@ spec:
   it('defaults both to 0/undefined when spec is missing', () => {
     writeDispatchConfig(`apiVersion: ai-sdlc.io/v1alpha1\nkind: DispatchConfig\n`);
     expect(loadDispatchConfig(tmp)).toEqual({
-      claudePShellMaxConcurrent: 0,
+      copilotPShellMaxConcurrent: 0,
       inSessionAgentMaxSessions: undefined,
     });
   });
 
-  it('returns claudePShellMaxConcurrent=0 when value is a non-numeric string', () => {
+  it('returns copilotPShellMaxConcurrent=0 when value is a non-numeric string', () => {
     writeDispatchConfig(`
 spec:
   parallelism:
-    claudePShellMaxConcurrent: "bogus"
+    copilotPShellMaxConcurrent: "bogus"
 `);
     expect(loadDispatchConfig(tmp)).toEqual({
-      claudePShellMaxConcurrent: 0,
+      copilotPShellMaxConcurrent: 0,
       inSessionAgentMaxSessions: undefined,
     });
   });
@@ -101,10 +101,10 @@ spec:
     writeDispatchConfig(`
 spec:
   parallelism:
-    claudePShellMaxConcurrent: -1
+    copilotPShellMaxConcurrent: -1
 `);
     expect(loadDispatchConfig(tmp)).toEqual({
-      claudePShellMaxConcurrent: 0,
+      copilotPShellMaxConcurrent: 0,
       inSessionAgentMaxSessions: undefined,
     });
   });
@@ -116,7 +116,7 @@ spec:
     inSessionAgentMaxSessions: "four"
 `);
     const cfg = loadDispatchConfig(tmp);
-    expect(cfg).toEqual({ claudePShellMaxConcurrent: 0, inSessionAgentMaxSessions: undefined });
+    expect(cfg).toEqual({ copilotPShellMaxConcurrent: 0, inSessionAgentMaxSessions: undefined });
   });
 
   it('respects inSessionAgentMaxSessions=0 (operator opts out of Pattern X entirely)', () => {
@@ -126,7 +126,7 @@ spec:
     inSessionAgentMaxSessions: 0
 `);
     const cfg = loadDispatchConfig(tmp);
-    expect(cfg).toEqual({ claudePShellMaxConcurrent: 0, inSessionAgentMaxSessions: 0 });
+    expect(cfg).toEqual({ copilotPShellMaxConcurrent: 0, inSessionAgentMaxSessions: 0 });
   });
 
   it('returns both knobs together when both are present', () => {
@@ -134,11 +134,11 @@ spec:
 spec:
   defaultWorkerKind: in-session-agent
   parallelism:
-    claudePShellMaxConcurrent: 2
+    copilotPShellMaxConcurrent: 2
     inSessionAgentMaxSessions: 6
 `);
     expect(loadDispatchConfig(tmp)).toEqual({
-      claudePShellMaxConcurrent: 2,
+      copilotPShellMaxConcurrent: 2,
       inSessionAgentMaxSessions: 6,
     });
   });
@@ -149,19 +149,19 @@ spec:
     // js-yaml is forgiving — assert one of {undefined, zero} so the test
     // documents the contract without locking to library internals.
     const cfg = loadDispatchConfig(tmp);
-    if (cfg !== undefined) expect(cfg.claudePShellMaxConcurrent).toBe(0);
+    if (cfg !== undefined) expect(cfg.copilotPShellMaxConcurrent).toBe(0);
   });
 
   it('handles an empty-document yaml file', () => {
     writeDispatchConfig('');
     const cfg = loadDispatchConfig(tmp);
-    if (cfg !== undefined) expect(cfg.claudePShellMaxConcurrent).toBe(0);
+    if (cfg !== undefined) expect(cfg.copilotPShellMaxConcurrent).toBe(0);
   });
 
   it('handles a bare scalar document', () => {
     writeDispatchConfig('"just a string"\n');
     const cfg = loadDispatchConfig(tmp);
-    if (cfg !== undefined) expect(cfg.claudePShellMaxConcurrent).toBe(0);
+    if (cfg !== undefined) expect(cfg.copilotPShellMaxConcurrent).toBe(0);
   });
 });
 
@@ -179,7 +179,7 @@ describe('readQuotaUtilization', () => {
     const dir = join(tmp, 'artifacts', '_ledger');
     mkdirSync(dir, { recursive: true });
     writeFileSync(
-      join(dir, 'claude-code-abcd1234-tenant1.json'),
+      join(dir, 'copilot-abcd1234-tenant1.json'),
       JSON.stringify({ windowStart: '2026-01-01T00:00:00Z', consumedTokens: 500_000 }),
     );
     const util = readQuotaUtilization(join(tmp, 'artifacts'));
@@ -191,7 +191,7 @@ describe('readQuotaUtilization', () => {
     const dir = join(tmp, 'artifacts', '_ledger');
     mkdirSync(dir, { recursive: true });
     writeFileSync(
-      join(dir, 'claude-code-abcd1234-default.json'),
+      join(dir, 'copilot-abcd1234-default.json'),
       JSON.stringify({ consumedTokens: MAX_20X_ROLLING_WINDOW_TOKENS * 2 }),
     );
     expect(readQuotaUtilization(join(tmp, 'artifacts'))).toBe(1);
@@ -291,21 +291,21 @@ describe('extractEstimatedTokens', () => {
 
 describe('recommendWorkerKind', () => {
   // AC #3 — heuristic shape per §Scope:
-  //   big AND tight AND headless-available → claude-p-shell
+  //   big AND tight AND headless-available → copilot-p-shell
   //   no estimatedTokens → any
   //   otherwise → in-session-agent
   //
-  // AC #4 — when claudePShellMaxConcurrent is 0, even big+tight returns in-session-agent.
+  // AC #4 — when copilotPShellMaxConcurrent is 0, even big+tight returns in-session-agent.
   // AC #5 — when estimatedTokens is undefined, returns 'any'.
 
-  it('returns claude-p-shell when big AND tight AND supervisor configured', () => {
+  it('returns copilot-p-shell when big AND tight AND supervisor configured', () => {
     expect(
       recommendWorkerKind({
         estimatedTokens: BIG_TOKEN_THRESHOLD + 1,
         quotaUtilization: TIGHT_QUOTA_THRESHOLD + 0.05,
-        claudePShellMaxConcurrent: 2,
+        copilotPShellMaxConcurrent: 2,
       }),
-    ).toBe('claude-p-shell');
+    ).toBe('copilot-p-shell');
   });
 
   it('returns in-session-agent when small (under threshold) even with tight quota + supervisor', () => {
@@ -313,7 +313,7 @@ describe('recommendWorkerKind', () => {
       recommendWorkerKind({
         estimatedTokens: BIG_TOKEN_THRESHOLD,
         quotaUtilization: 0.95,
-        claudePShellMaxConcurrent: 4,
+        copilotPShellMaxConcurrent: 4,
       }),
     ).toBe('in-session-agent');
   });
@@ -323,27 +323,27 @@ describe('recommendWorkerKind', () => {
       recommendWorkerKind({
         estimatedTokens: BIG_TOKEN_THRESHOLD + 50_000,
         quotaUtilization: 0.5,
-        claudePShellMaxConcurrent: 2,
+        copilotPShellMaxConcurrent: 2,
       }),
     ).toBe('in-session-agent');
   });
 
-  it('AC #4: returns in-session-agent when claudePShellMaxConcurrent is 0 (even big+tight)', () => {
+  it('AC #4: returns in-session-agent when copilotPShellMaxConcurrent is 0 (even big+tight)', () => {
     expect(
       recommendWorkerKind({
         estimatedTokens: BIG_TOKEN_THRESHOLD + 100_000,
         quotaUtilization: 0.99,
-        claudePShellMaxConcurrent: 0,
+        copilotPShellMaxConcurrent: 0,
       }),
     ).toBe('in-session-agent');
   });
 
-  it('AC #4: returns in-session-agent when claudePShellMaxConcurrent is negative', () => {
+  it('AC #4: returns in-session-agent when copilotPShellMaxConcurrent is negative', () => {
     expect(
       recommendWorkerKind({
         estimatedTokens: BIG_TOKEN_THRESHOLD + 100_000,
         quotaUtilization: 0.99,
-        claudePShellMaxConcurrent: -1,
+        copilotPShellMaxConcurrent: -1,
       }),
     ).toBe('in-session-agent');
   });
@@ -353,7 +353,7 @@ describe('recommendWorkerKind', () => {
       recommendWorkerKind({
         estimatedTokens: undefined,
         quotaUtilization: 0.99,
-        claudePShellMaxConcurrent: 4,
+        copilotPShellMaxConcurrent: 4,
       }),
     ).toBe('any');
   });
@@ -363,7 +363,7 @@ describe('recommendWorkerKind', () => {
       recommendWorkerKind({
         estimatedTokens: undefined,
         quotaUtilization: 0.99,
-        claudePShellMaxConcurrent: 0,
+        copilotPShellMaxConcurrent: 0,
       }),
     ).toBe('any');
   });
@@ -373,7 +373,7 @@ describe('recommendWorkerKind', () => {
       recommendWorkerKind({
         estimatedTokens: BIG_TOKEN_THRESHOLD + 1,
         quotaUtilization: undefined,
-        claudePShellMaxConcurrent: 2,
+        copilotPShellMaxConcurrent: 2,
       }),
     ).toBe('in-session-agent');
   });
@@ -383,7 +383,7 @@ describe('recommendWorkerKind', () => {
       recommendWorkerKind({
         estimatedTokens: BIG_TOKEN_THRESHOLD + 1,
         quotaUtilization: TIGHT_QUOTA_THRESHOLD,
-        claudePShellMaxConcurrent: 2,
+        copilotPShellMaxConcurrent: 2,
       }),
     ).toBe('in-session-agent');
   });
@@ -393,7 +393,7 @@ describe('recommendWorkerKind', () => {
       recommendWorkerKind({
         estimatedTokens: BIG_TOKEN_THRESHOLD,
         quotaUtilization: TIGHT_QUOTA_THRESHOLD + 0.05,
-        claudePShellMaxConcurrent: 2,
+        copilotPShellMaxConcurrent: 2,
       }),
     ).toBe('in-session-agent');
   });

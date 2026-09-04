@@ -4,7 +4,7 @@
  * (AISDLC-74).
  *
  * Backs `/ai-sdlc init-signing-key` — the plugin command resolves the path to
- * this script via `${CLAUDE_PLUGIN_ROOT}/scripts/init-signing-key.mjs` and
+ * this script via `${COPILOT_PLUGIN_ROOT}/scripts/init-signing-key.mjs` and
  * invokes it. Self-contained Node script so the plugin doesn't need a
  * `pnpm install` to bootstrap.
  *

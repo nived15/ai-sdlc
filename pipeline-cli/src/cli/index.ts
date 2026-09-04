@@ -32,7 +32,7 @@ import { executeCommand } from './execute.js';
 import { aggregateVerdicts } from '../steps/08-aggregate-verdicts.js';
 import { evaluateIssue, type IssueInput } from '../dor/index.js';
 import { runStageACorpus } from '../dor/corpus.js';
-import { refineBacklogTask } from '../dor/ingress-claude.js';
+import { refineBacklogTask } from '../dor/ingress.js';
 import { decideStaleness } from '../dor/staleness.js';
 import { loadDorConfig } from '../dor/dor-config.js';
 import { appendCalibrationEntry } from '../dor/calibration-log.js';
@@ -152,11 +152,11 @@ export function buildCli(): Argv {
             .option('reviewer-model', {
               type: 'string',
               describe:
-                "Override the model passed to `cli-attestation emit-leaf` (default: 'claude-sonnet-4-6').",
+                "Override the model passed to `cli-attestation emit-leaf` (default: 'balanced').",
             })
             .option('harness', {
               type: 'string',
-              describe: "Override the harness label (default: 'claude-code').",
+              describe: "Override the harness label (default: 'copilot').",
             }),
         async (argv) => {
           const opts: RunReconcileOptions = {
@@ -780,7 +780,7 @@ export function buildCli(): Argv {
           if (report.failed > 0) process.exit(1);
         },
       )
-      // RFC-0011 Phase 3 (AISDLC-115.4) — Claude Code subagent ingress shim.
+      // RFC-0011 Phase 3 (AISDLC-115.4) — GitHub Copilot CLI subagent ingress shim.
       .command(
         'dor-refine-task <task-id>',
         'RFC-0011 Phase 3 — run the DoR gate against a backlog task and write the calibration log entry. Stage A only (hermetic) — Stage B is layered in by the slash command body via subagent dispatch.',
@@ -829,7 +829,7 @@ export function buildCli(): Argv {
       )
       // RFC-0011 Phase 3 — render the DoR comment from a verdict file.
       // Single source of truth for comment composition: GitHub Action shim,
-      // Claude Code subagent shim, and any future Slack/Forge shim all call
+      // GitHub Copilot CLI subagent shim, and any future Slack/Forge shim all call
       // this so the `redactSecrets()` pass in `comment-loop.ts` runs against
       // every render path. Avoids re-implementing the renderer inline in
       // `actions/github-script` (which previously bypassed redaction and

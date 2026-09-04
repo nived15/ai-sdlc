@@ -94,7 +94,7 @@ array at the top of the script and re-run.
 |---|---|
 | `pipeline-cli/src/dor/pr-violations.test.ts` | Unit tests for `computePrViolations()` — clean / override / blocking / mixed-batch / missing-file / absolute-path / empty-input branches. |
 | `pipeline-cli/src/cli/index.test.ts` (`dor-pr-has-violations` block) | CLI envelope shape + `--fail-on-violations` exit behavior. |
-| `.github/workflows/__tests__/dor-ingress.test.mjs` | Workflow YAML structure — `Compute has_violations` step wiring, `Fail check on unresolved violations` step `exit 1` + `::error::` annotation, step order (comment-post BEFORE fail), CLI invocation via direct node bin path (CLAUDE.md CI rule). |
+| `.github/workflows/__tests__/dor-ingress.test.mjs` | Workflow YAML structure — `Compute has_violations` step wiring, `Fail check on unresolved violations` step `exit 1` + `::error::` annotation, step order (comment-post BEFORE fail), CLI invocation via direct node bin path (.github/copilot-instructions.md CI rule). |
 
 Run locally:
 

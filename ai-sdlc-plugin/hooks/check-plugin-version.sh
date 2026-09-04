@@ -2,8 +2,8 @@
 #
 # AI-SDLC Plugin Version-Check Hook (AISDLC-89)
 #
-# Thin shim that invokes the Node implementation. Lets Claude Code's
-# `bash "${CLAUDE_PLUGIN_ROOT}/hooks/check-plugin-version.sh"` invocation
+# Thin shim that invokes the Node implementation. Lets GitHub Copilot CLI's
+# `bash "${COPILOT_PLUGIN_ROOT}/hooks/check-plugin-version.sh"` invocation
 # stay consistent with every other hook in this plugin.
 #
 

@@ -413,7 +413,7 @@ describe('commitDorAnswerCaptures', () => {
         metBehindThreshold: true,
         effectiveThreshold: 0.7,
         corpusEntryId: 'corpus-id-stub',
-        model: 'claude-haiku-4-5',
+        model: 'gpt-5-mini',
       },
       aboveThreshold: true,
       corpusEntryId: 'corpus-id-stub',
@@ -711,7 +711,7 @@ One more thing — the session-token cache doesn't handle clock skew between nod
       `from './upstream-oq-gate.js'`,
       `from './escalation.js'`,
       `from './bypass.js'`,
-      `from './ingress-claude.js'`,
+      `from './ingress.js'`,
     ];
     for (const forbidden of forbiddenImports) {
       expect(moduleSource).not.toContain(forbidden);

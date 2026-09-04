@@ -200,7 +200,7 @@ Dogfood disruption, version skew during PR review, first-release chicken-and-egg
 The gate's reason-for-being is the V5 rebase-kicks pattern. RFC-0042 v6 (now active as of 2026-05-22 cutover) replaces that pattern with Merkle-signed leaves — no more contentHash-kicks-on-rebase, no more re-sign chains. The gate becomes vestigial once v6 is the only path.
 
 - **Now → 383.7 ships**: keep as-is. Still useful during the soak window as v5 envelopes age out.
-- **383.7 deletes v5 signer code**: include `scripts/squash-attestation-chores.sh` deletion + `.husky/pre-push` line removal + CLAUDE.md doc update in the same PR. Dependency is explicit; no separate cleanup PR needed.
+- **383.7 deletes v5 signer code**: include `scripts/squash-attestation-chores.sh` deletion + `.husky/pre-push` line removal + .github/copilot-instructions.md doc update in the same PR. Dependency is explicit; no separate cleanup PR needed.
 
 ### Estimated payoff
 

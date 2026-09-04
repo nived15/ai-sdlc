@@ -120,9 +120,9 @@ describe('CLI router', () => {
 
   it('aggregate-verdicts returns APPROVED for clean verdicts', async () => {
     const verdicts = JSON.stringify([
-      { agentId: 'code-reviewer', harness: 'claude-code', approved: true, findings: [] },
-      { agentId: 'test-reviewer', harness: 'claude-code', approved: true, findings: [] },
-      { agentId: 'security-reviewer', harness: 'claude-code', approved: true, findings: [] },
+      { agentId: 'code-reviewer', harness: 'copilot', approved: true, findings: [] },
+      { agentId: 'test-reviewer', harness: 'copilot', approved: true, findings: [] },
+      { agentId: 'security-reviewer', harness: 'copilot', approved: true, findings: [] },
     ]);
     setArgv('aggregate-verdicts', '--verdicts', verdicts, '--work-dir', tmp);
     await buildCli().parseAsync();
@@ -174,7 +174,7 @@ describe('CLI router', () => {
     // Build the secret marker via template-literal concatenation so GH
     // secret-scanning doesn't flag the test source. Same trick as
     // comment-loop.test.ts.
-    const fakeAnthropicToken = `sk-ant-` + `api03-` + 'A'.repeat(60);
+    const fakeInferenceToken = `sk-ant-` + `api03-` + 'A'.repeat(60);
     const verdict = {
       issueId: 'AISDLC-render-1',
       rubricVersion: 'v1',
@@ -186,7 +186,7 @@ describe('CLI router', () => {
           severity: 'block',
           stage: 'A',
           confidence: 'high',
-          finding: `1 reference(s) failed to resolve: https://example.test/?token=${fakeAnthropicToken}`,
+          finding: `1 reference(s) failed to resolve: https://example.test/?token=${fakeInferenceToken}`,
         },
       ],
       questions: [],
@@ -205,8 +205,8 @@ describe('CLI router', () => {
     );
     await buildCli().parseAsync();
     const out = stdoutChunks.join('');
-    expect(out).not.toContain(fakeAnthropicToken);
-    expect(out).toContain('[REDACTED:ANTHROPIC]');
+    expect(out).not.toContain(fakeInferenceToken);
+    expect(out).toContain('[REDACTED:INFERENCE_KEY_SCOPED]');
     expect(out).toContain('### Gate 3');
     expect(out).toContain('<!-- ai-sdlc:dor-comment channel="author" -->');
   });
@@ -337,7 +337,7 @@ describe('CLI router', () => {
   it('dor-render-pr-summary redacts secrets in per-task findings', async () => {
     const { writeFileSync } = await import('node:fs');
     const file = join(tmp, 'results.jsonl');
-    const fakeAnthropicToken = `sk-ant-` + `api03-` + 'A'.repeat(60);
+    const fakeInferenceToken = `sk-ant-` + `api03-` + 'A'.repeat(60);
     const v1 = {
       issueId: 'AISDLC-x',
       rubricVersion: 'v1',
@@ -349,7 +349,7 @@ describe('CLI router', () => {
           severity: 'block',
           stage: 'A',
           confidence: 'high',
-          finding: `path: apps/${fakeAnthropicToken}/file.ts`,
+          finding: `path: apps/${fakeInferenceToken}/file.ts`,
         },
       ],
       signedAt: '2026-05-01T12:00:00.000Z',
@@ -360,8 +360,8 @@ describe('CLI router', () => {
     setArgv('dor-render-pr-summary', '--verdicts-file', file, '--work-dir', tmp);
     await buildCli().parseAsync();
     const out = stdoutChunks.join('');
-    expect(out).not.toContain(fakeAnthropicToken);
-    expect(out).toContain('[REDACTED:ANTHROPIC]');
+    expect(out).not.toContain(fakeInferenceToken);
+    expect(out).toContain('[REDACTED:INFERENCE_KEY_SCOPED]');
     expect(out).toContain('## Backlog tasks: DoR clarifications needed');
   });
 });

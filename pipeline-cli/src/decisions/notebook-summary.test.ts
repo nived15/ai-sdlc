@@ -86,11 +86,11 @@ describe('writeNotebookSummary / readNotebookSummary', () => {
       workDir,
       decisionId: 'DEC-0294',
       summaryMarkdown: '## TL;DR\n\n- Persist findings\n',
-      model: 'claude-sonnet-4-5',
+      model: 'balanced',
       now: new Date('2026-05-27T16:00:00.000Z'),
     });
     expect(r.path).toMatch(/\.ai-sdlc\/_decisions\/summaries\/DEC-0294\.md$/);
-    expect(readFileSync(r.path, 'utf8')).toContain('<!-- model: claude-sonnet-4-5 -->');
+    expect(readFileSync(r.path, 'utf8')).toContain('<!-- model: balanced -->');
 
     const back = readNotebookSummary(workDir, 'DEC-0294');
     expect(back?.path).toBe(r.path);
@@ -148,7 +148,7 @@ describe('runNotebookSummary', () => {
     };
     const invoker = vi.fn().mockResolvedValue({
       summaryMarkdown: '## TL;DR\n- short',
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       inputTokens: 800,
       outputTokens: 200,
     });
@@ -163,7 +163,7 @@ describe('runNotebookSummary', () => {
     expect(r.generated).toBe(true);
     expect(r.artifact?.path).toMatch(/DEC-0294\.md$/);
     expect(ledger).toHaveLength(1);
-    expect(ledger[0].model).toBe('claude-haiku-4-5');
+    expect(ledger[0].model).toBe('gpt-5-mini');
   });
 
   it('returns invoker-error when invoker throws', async () => {

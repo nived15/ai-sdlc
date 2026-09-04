@@ -178,7 +178,7 @@ export async function validateTask(opts: ValidateTaskOptions): Promise<ValidateR
     // RFC-0011 §7.3 + Phase 4 (AISDLC-115.5) — refuse with a pointer to
     // the DoR clarification comment in the task body so the operator can
     // resolve before re-running. The actual gate list / link is rendered
-    // by `refusalMessage()` in `pipeline-cli/src/dor/ingress-claude.ts`
+    // by `refusalMessage()` in `pipeline-cli/src/dor/ingress.ts`
     // when the slash command body has access to the loaded verdict; here
     // we surface a stable reason string the slash command reuses verbatim.
     return {

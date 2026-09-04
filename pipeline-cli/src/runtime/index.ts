@@ -1,7 +1,7 @@
 /**
  * Runtime barrel — exports the SubagentSpawner interface + MockSpawner +
- * the Phase 2 production spawners (ShellClaudePSpawner / ClaudeCodeSDKSpawner)
- * + the `defaultSpawner()` resolver, plus the Runner abstraction (and
+ * the GitHub Copilot production spawner (`CopilotHarnessAdapter`) + the
+ * `defaultSpawner()` resolver, plus the Runner abstraction (and
  * defaultRunner) that every step accepts for shelling out to git/gh/etc.
  *
  * Phase 5 consumers (e.g. dogfood/watch.ts) import `Runner` / `defaultRunner`
@@ -9,11 +9,10 @@
  * execution without reaching into deep paths.
  */
 export * from './subagent-spawner.js';
-export * from './shell-claude-p-spawner.js';
-export * from './claude-code-sdk-spawner.js';
 export * from './default-spawner.js';
 export * from './exec.js';
-// AISDLC-202.2 — Codex harness adapter (Phase 2 of the Codex execution path).
-export * from './spawners/codex-harness.js';
+// AISDLC-429.2 — GitHub Copilot harness adapter (the framework's only
+// production spawner).
+export * from './spawners/copilot-harness.js';
 // AISDLC-460 — CI-failure watcher (auto-rebase agent + cool-down + dedup comment).
 export * from './ci-failure-watcher.js';

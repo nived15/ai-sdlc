@@ -159,7 +159,7 @@ a forged "approved" signal cannot trick the signer even if injection partially s
 **Integration gap (NOT YET VERIFIED — requires live LLM API key):**
 
 - `injection-detected-flag`: the real Stage 3 reviewer detecting `promptInjectionDetected:true`
-  requires a live `ANTHROPIC_API_KEY` and a running model. The harness verifies the proxy
+  requires a live `GITHUB_MODELS_TOKEN` and a running model. The harness verifies the proxy
   lifecycle (port binding, session token withholding) but marks this property as NOT-YET-VERIFIED
   (`unverifiedProperties` in the conformance JSON).
 - `consensus-rejected`: cannot verify without a real LLM reviewer call.
@@ -298,7 +298,7 @@ verified. They are documented here per AC#4 + the task brief's honesty requireme
 | Real filesystem isolation (read-only root fs + tmpfs workspace) | Linux kernel mount namespace + overlay FS | Same as above |
 | Real wall-clock enforcement (AbortController + `docker kill`) | Requires a running process that actually blocks | Same as above |
 | Real inference.local proxy binding (port allocation) | Requires `net.createServer()` bind on a live network interface | Same as above |
-| Real LLM reviewer call (prompt injection detection in production) | Requires a live Anthropic/OpenAI API key and a running model | Operator-run; costs real API tokens |
+| Real LLM reviewer call (prompt injection detection in production) | Requires a live GitHub Models/GitHub Copilot API key and a running model | Operator-run; costs real API tokens |
 
 ## How to Run the Integration Harness
 

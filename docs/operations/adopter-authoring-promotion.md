@@ -417,7 +417,7 @@ existing adopters without a re-init step.
 
 After the parser lands + the default is ON, update:
 
-- `CLAUDE.md` — add an `AI_SDLC_ADOPTER_AUTHORING` bullet to the
+- `.github/copilot-instructions.md` — add an `AI_SDLC_ADOPTER_AUTHORING` bullet to the
   Feature flags section mirroring the RFC-0014 / RFC-0015 bullet
   shape ("On by default since AISDLC-XXX...").
 - `docs/operations/adopter-authoring-promotion.md` (this file) — flip

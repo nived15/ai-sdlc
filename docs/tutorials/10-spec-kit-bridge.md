@@ -2,7 +2,7 @@
 
 > See [RFC-0036](../../spec/rfcs/RFC-0036-spec-kit-bridge-adopter-authoring.md) for the normative spec and [`docs/concepts/spec-driven.md`](../concepts/spec-driven.md) for the three-tier authoring model.
 
-AI-SDLC is the **contract-to-shipped** half of a spec-driven development stack. The recommended front-of-funnel companion is [GitHub Spec Kit](https://github.com/github/spec-kit) — a mature, 30+ AI-tool-integration toolkit that takes an idea through `/speckit.constitution` → `/speckit.specify` → `/speckit.clarify` → `/speckit.plan` → `/speckit.tasks`. AI-SDLC's `cli-import-spec` (also available as `/ai-sdlc import-spec` inside Claude Code) translates the resulting `tasks.md` into backlog tasks that pass the DoR Gate, dispatch through the autonomous orchestrator, and merge with attestations.
+AI-SDLC is the **contract-to-shipped** half of a spec-driven development stack. The recommended front-of-funnel companion is [GitHub Spec Kit](https://github.com/github/spec-kit) — a mature, 30+ AI-tool-integration toolkit that takes an idea through `/speckit.constitution` → `/speckit.specify` → `/speckit.clarify` → `/speckit.plan` → `/speckit.tasks`. AI-SDLC's `cli-import-spec` (also available as `/ai-sdlc import-spec` inside GitHub Copilot CLI) translates the resulting `tasks.md` into backlog tasks that pass the DoR Gate, dispatch through the autonomous orchestrator, and merge with attestations.
 
 This tutorial walks the full loop end-to-end: install spec-kit, author a feature spec, import to ai-sdlc, dispatch, and ship.
 
@@ -30,7 +30,7 @@ This tutorial walks the full loop end-to-end: install spec-kit, author a feature
 - AI-SDLC installed (`npm install -g @ai-sdlc/orchestrator`) — see [Getting Started](../getting-started/README.md).
 - A repo initialised with `ai-sdlc init` (gives you `backlog/`, `.ai-sdlc/`, and the plugin scaffolding).
 - The [GitHub Spec Kit](https://github.com/github/spec-kit) CLI installed (instructions in step 1 below).
-- Node.js ≥ 20 and a working `claude` (Claude Code) install if you want to use the `/ai-sdlc import-spec` slash-command surface alongside the CLI.
+- Node.js ≥ 20 and a working `copilot` (GitHub Copilot CLI) install if you want to use the `/ai-sdlc import-spec` slash-command surface alongside the CLI.
 
 This tutorial assumes you've read [`docs/concepts/spec-driven.md`](../concepts/spec-driven.md) and understand the three-tier authoring model (RFC → Spec → Task). The spec-kit bridge sits at the Spec → Task seam.
 
@@ -38,7 +38,7 @@ This tutorial assumes you've read [`docs/concepts/spec-driven.md`](../concepts/s
 
 ## Step 1 — Install spec-kit
 
-Spec-kit ships as a Python CLI and as Claude Code slash commands. Follow the [upstream install instructions](https://github.com/github/spec-kit#installation); the quickest path is:
+Spec-kit ships as a Python CLI and as GitHub Copilot CLI slash commands. Follow the [upstream install instructions](https://github.com/github/spec-kit#installation); the quickest path is:
 
 ```bash
 pipx install specify-cli
@@ -54,15 +54,15 @@ This creates a `.specify/` directory at the repo root with `constitution.md` and
 
 > **Spec-kit is recommended, not required.** Any front-of-funnel tool (Linear, Notion, plain markdown) that produces a spec-kit-style `tasks.md` can feed `cli-import-spec`. The bridge's seam contract is the `tasks.md` format itself — bring your own translator, or use spec-kit's first-party output directly.
 
-### Constitution vs CLAUDE.md
+### Constitution vs .github/copilot-instructions.md
 
-Spec-kit's `constitution.md` and AI-SDLC's `CLAUDE.md` cover overlapping ground (rebase-vs-merge policy, branch-naming convention, review cadence). **Keep them separate.** RFC-0036 OQ-8 resolved that each tool owns its constitution surface; the bridge's drift detector surfaces shared-norm-section divergence as a Decision in the catalog (never blocks). The pattern means the spec-kit project can evolve `constitution.md` on its own cadence and AI-SDLC continues to honour `CLAUDE.md` as the framework-norm source of truth.
+Spec-kit's `constitution.md` and AI-SDLC's `.github/copilot-instructions.md` cover overlapping ground (rebase-vs-merge policy, branch-naming convention, review cadence). **Keep them separate.** RFC-0036 OQ-8 resolved that each tool owns its constitution surface; the bridge's drift detector surfaces shared-norm-section divergence as a Decision in the catalog (never blocks). The pattern means the spec-kit project can evolve `constitution.md` on its own cadence and AI-SDLC continues to honour `.github/copilot-instructions.md` as the framework-norm source of truth.
 
 ---
 
 ## Step 2 — Author a feature spec upstream
 
-Open Claude Code (or your spec-kit-integrated agent) inside the repo and run the canonical spec-kit flow against a real feature. Use `auth-feature` as the running example:
+Open GitHub Copilot CLI (or your spec-kit-integrated agent) inside the repo and run the canonical spec-kit flow against a real feature. Use `auth-feature` as the running example:
 
 ```text
 /speckit.specify
@@ -117,7 +117,7 @@ Run the import command from your repo root:
 node pipeline-cli/bin/cli-import-spec.mjs --from .specify/specs/auth-feature/
 ```
 
-Equivalent slash-command form (inside Claude Code):
+Equivalent slash-command form (inside GitHub Copilot CLI):
 
 ```text
 /ai-sdlc import-spec --from .specify/specs/auth-feature/
@@ -456,7 +456,7 @@ The Decision Catalog (`/ai-sdlc decisions list`) shows every open `import-blocke
 
 ### Two PRs touching `tasks.md` create conflict during import
 
-Per CLAUDE.md "Git Flow", always rebase. If you imported in branch A and rebased the spec-kit project in branch B, the reconciler will see the rebase as drift on the next tick. Most cases auto-sync (cosmetic); semantic / scope drift opens a Decision per the [Step 7](#step-7--handling-spec-drift-after-import) flow.
+Per .github/copilot-instructions.md "Git Flow", always rebase. If you imported in branch A and rebased the spec-kit project in branch B, the reconciler will see the rebase as drift on the next tick. Most cases auto-sync (cosmetic); semantic / scope drift opens a Decision per the [Step 7](#step-7--handling-spec-drift-after-import) flow.
 
 ---
 
@@ -473,11 +473,11 @@ Every default in this tutorial maps back to an Open Question resolution captured
 | OQ-5 | RFC template variants | One template in v1. Demand for variants becomes a future Decision. | (companion tutorial) |
 | OQ-6 | Cross-tool bridges | Spec-kit first-party adapter only; non-spec-kit upstreams write their own translator under `.ai-sdlc/translators/`. | [Troubleshooting](#my-non-spec-kit-upstream-linear--notion--plain-markdown-cant-feed-the-bridge) |
 | OQ-7 | Analyze overlap with DoR | Full DoR runs; analyze metadata auto-resolves matching gates via catalog. Only NEW gaps reach the operator. | [Step 4 — analyze auto-resolution](#analyze-metadata-auto-resolution-oq-7) |
-| OQ-8 | Constitution composition | Separate (`constitution.md` ↔ `CLAUDE.md`); drift detection on shared-norm sections via Decision Catalog; never blocks. | [Step 1 — Constitution vs CLAUDE.md](#constitution-vs-claudemd) |
+| OQ-8 | Constitution composition | Separate (`constitution.md` ↔ `.github/copilot-instructions.md`); drift detection on shared-norm sections via Decision Catalog; never blocks. | [Step 1 — Constitution vs .github/copilot-instructions.md](#constitution-vs-copilot-instructions) |
 | OQ-9 | Positioning leadership | "Decision Engine" primary; "spec-driven AI workflows" secondary. | [Concepts: spec-driven development](../concepts/spec-driven.md) |
 | OQ-10 | DoR rejection path | Refuse import (no stub task); emit clarification back upstream; log Decision. | [Step 4 — Outcome C](#outcome-c--refused-dor-failed-under-strict-mode) + [Step 5](#step-5--the-upstream-clarification-feedback-loop) |
 | OQ-11 | Versioning the seam | Auto-detect schema; refuse unknown via Decision routing. | [Troubleshooting](#upstream-schema-unknown--spec-kit-version-mismatch) |
-| OQ-12 | CLI vs slash command | Both. CLI for scripting; `/ai-sdlc import-spec` slash command for in-Claude-Code use. | [Step 3](#step-3--import-into-the-ai-sdlc-backlog) |
+| OQ-12 | CLI vs slash command | Both. CLI for scripting; `/ai-sdlc import-spec` slash command for in-GitHub Copilot-Code use. | [Step 3](#step-3--import-into-the-ai-sdlc-backlog) |
 
 All twelve resolutions compose with the [RFC-0035 G0 non-blocking pipeline contract](../../spec/rfcs/RFC-0035-decision-catalog-operator-routing.md): rigor preserved (every quality contract intact, every gate strict by default), zero blocking (Decisions accumulate in the catalog; the autonomous pipeline continues running on whatever else is dispatchable).
 

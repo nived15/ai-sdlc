@@ -46,7 +46,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import type { PrTaskVerdict } from './comment-loop.js';
 import { extractBlockedReason } from './upstream-oq-gate.js';
-import { stripFrontmatter } from './ingress-claude.js';
+import { stripFrontmatter } from './ingress.js';
 
 /**
  * One per-task verdict's contribution to the workflow gate decision.

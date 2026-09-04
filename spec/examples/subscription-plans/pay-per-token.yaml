@@ -6,7 +6,7 @@ kind: SubscriptionPlan
 metadata:
   name: pay-per-token
 spec:
-  harness: generic-api
+  harness: copilot
   billingMode: pay-per-token
   pacingTarget: 1.0
   hardCap: 1.0

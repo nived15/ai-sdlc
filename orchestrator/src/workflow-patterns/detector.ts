@@ -1,6 +1,6 @@
 /**
  * Workflow pattern detector — mines frequent n-gram sequences
- * from tool call histories across Claude Code sessions.
+ * from tool call histories across Copilot CLI sessions.
  */
 
 import { createHash } from 'node:crypto';

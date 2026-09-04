@@ -3,7 +3,7 @@
  * module at runtime (RFC-0024 Refit Phase 3 — AISDLC-275).
  *
  * Pipeline-cli is SDK-free by design — the substrate (AISDLC-321) takes
- * an `LlmInvoker` injection so production callers wire an Anthropic
+ * an `LlmInvoker` injection so production callers wire an GitHub
  * Haiku adapter from a downstream consumer module, and tests inject a
  * `FakeLlmInvoker`. The `cli-capture` CLI runs in operator/CI/agent
  * contexts where there's no obvious place to thread an invoker instance,
@@ -18,10 +18,10 @@
  *      skipping auto-classification entirely.
  *
  * **Why dynamic import + env var** (rather than a static dependency):
- * pipeline-cli MUST NOT depend on `@anthropic-ai/sdk` (build size, audit
+ * pipeline-cli MUST NOT depend on `@github/copilot` (build size, audit
  * surface, multi-harness portability — same reasoning that produced
  * `LlmInvoker` in the first place). The env-var shim lets operators wire
- * whatever invoker fits their harness (Anthropic SDK, Vertex, mock)
+ * whatever invoker fits their harness (GitHub SDK, Vertex, mock)
  * without amending pipeline-cli.
  *
  * The resolution is cached per-process so multiple `cli-capture file`

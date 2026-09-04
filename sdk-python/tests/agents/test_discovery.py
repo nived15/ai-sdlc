@@ -115,7 +115,7 @@ async def test_discover_from_a2a_card() -> None:
         url="https://agents.example.com/remote",
         description="A remote agent",
         skills=[{"id": "summarize", "description": "Summarizes text"}],
-        tools=["gpt-4"],
+        tools=["gpt-5"],
     )
     fetcher = create_stub_agent_card_fetcher(
         {"https://agents.example.com/remote/.well-known/agent.json": card}

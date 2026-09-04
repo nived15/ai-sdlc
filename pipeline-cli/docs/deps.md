@@ -359,10 +359,10 @@ Values:
   RFC-0041 §4.3.1). Recommended when the task is small OR the
   subscription quota is plentiful OR no headless supervisor is
   configured.
-- `claude-p-shell` — headless Worker (RFC-0041 §4.5). Recommended
+- `copilot-p-shell` — headless Worker (RFC-0041 §4.5). Recommended
   ONLY when ALL THREE of: the task's `estimatedTokens > 100_000`,
   subscription quota utilization > 80%, AND
-  `claudePShellMaxConcurrent > 0` in the DispatchConfig.
+  `copilotPShellMaxConcurrent > 0` in the DispatchConfig.
 - `any` — no clear preference. Emitted when the task lacks an
   `estimatedTokens` declaration (no size signal — the operator + the
   Conductor have full latitude).
@@ -372,7 +372,7 @@ Inputs to the heuristic:
 | Input | Source | Missing → |
 |---|---|---|
 | `estimatedTokens` | Task frontmatter `estimatedTokens: { input, output }` (RFC-0010 §6.5 shape) | `any` |
-| `claudePShellMaxConcurrent` | `<workDir>/.ai-sdlc/dispatch-config.yaml` `spec.parallelism.claudePShellMaxConcurrent` | `in-session-agent` (cost-preferred fallback when headless unavailable) |
+| `copilotPShellMaxConcurrent` | `<workDir>/.ai-sdlc/dispatch-config.yaml` `spec.parallelism.copilotPShellMaxConcurrent` | `in-session-agent` (cost-preferred fallback when headless unavailable) |
 | Quota utilization | Sum of `consumedTokens` across `$ARTIFACTS_DIR/_ledger/*.json` divided by the Max-20x rolling cap (~1M tokens) | treated as `0` (plentiful) |
 
 Override the artifacts dir for the heuristic with `--artifacts-dir`,
@@ -601,8 +601,8 @@ appendCalibrationEntry({
 
 See `pipeline-cli/src/dor/blast-radius.ts` for the full type reference.
 The renderers + library helpers are pure (no I/O); the consumer
-(typically `evaluateAndCommentBacklogTaskClaude` in
-`ingress-claude.ts`) is the integration point for stitching snapshot →
+(typically `evaluateAndCommentBacklogTask` in
+`ingress.ts`) is the integration point for stitching snapshot →
 verdict → comment → log.
 
 ## Phase 5 — soak corpus + hybrid promotion (AISDLC-167.5, RFC-0014 §11)

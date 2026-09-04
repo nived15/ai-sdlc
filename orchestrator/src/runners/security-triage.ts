@@ -3,17 +3,17 @@
  * Read-only: never modifies files.
  *
  * Two execution paths:
- *   - **API path** (default for backward-compat): direct Anthropic Messages API call,
- *     billed against ANTHROPIC_API_KEY. Used by the public GitHub-issue workflow.
- *   - **Harness path**: invoke a HarnessAdapter (e.g. ClaudeCodeAdapter) that drives the
- *     `claude` CLI subscription. Used by the internal backlog workflow so triage runs
+ *   - **API path** (default for backward-compat): direct GitHub Models Messages API call,
+ *     billed against GITHUB_MODELS_TOKEN. Used by the public GitHub-issue workflow.
+ *   - **Harness path**: invoke a HarnessAdapter (e.g. CopilotAdapter) that drives the
+ *     `copilot` CLI subscription. Used by the internal backlog workflow so triage runs
  *     under the Pro/Max plan instead of pay-per-token.
  */
 
 import type { AgentRunner, AgentContext, AgentResult, TokenUsage } from './types.js';
 import {
-  DEFAULT_ANTHROPIC_API_URL,
-  DEFAULT_ANTHROPIC_MODEL,
+  DEFAULT_GITHUB_MODELS_API_URL,
+  DEFAULT_GITHUB_MODELS_MODEL,
   DEFAULT_LLM_TIMEOUT_MS,
 } from '../defaults.js';
 import type { HarnessAdapter } from '../harness/types.js';
@@ -34,19 +34,19 @@ export interface TriageVerdict {
 }
 
 export interface SecurityTriageConfig {
-  /** Anthropic API URL. Defaults to https://api.anthropic.com/v1/messages */
+  /** GitHub Models API URL. Defaults to https://models.github.ai/inference/chat/completions */
   apiUrl?: string;
-  /** Anthropic API key. Defaults to ANTHROPIC_API_KEY env var. */
+  /** GitHub Models API key. Defaults to GITHUB_MODELS_TOKEN env var. */
   apiKey?: string;
-  /** Model to use. Defaults to claude-sonnet-4-5. */
+  /** Model to use. Defaults to balanced. */
   model?: string;
   /** Request timeout in ms. Defaults to 120_000. */
   timeoutMs?: number;
   /** Risk score threshold at or above which issues are auto-rejected. Defaults to 6. */
   rejectThreshold?: number;
   /**
-   * When set, triage routes through this harness instead of the Anthropic Messages API.
-   * Lets the internal backlog pipeline run triage under the Claude Code subscription.
+   * When set, triage routes through this harness instead of the GitHub Models Messages API.
+   * Lets the internal backlog pipeline run triage under the GitHub Copilot CLI subscription.
    */
   harness?: HarnessAdapter;
   /** Working directory for harness invocations. Defaults to process.cwd(). */
@@ -142,10 +142,10 @@ export class SecurityTriageRunner implements AgentRunner {
   private async callApiPath(
     userContent: string,
   ): Promise<TriageVerdict & { _tokenUsage?: TokenUsage }> {
-    const apiKey = this.config.apiKey ?? process.env.ANTHROPIC_API_KEY;
+    const apiKey = this.config.apiKey ?? process.env.GITHUB_MODELS_TOKEN;
     if (!apiKey) {
       throw new Error(
-        'ANTHROPIC_API_KEY is not set and no harness is configured. Set the env var or pass `harness` in SecurityTriageConfig (recommended for the subscription-billed backlog workflow).',
+        'GITHUB_MODELS_TOKEN is not set and no harness is configured. Set the env var or pass `harness` in SecurityTriageConfig (recommended for the subscription-billed backlog workflow).',
       );
     }
     return this.callAPI(apiKey, userContent);
@@ -155,7 +155,7 @@ export class SecurityTriageRunner implements AgentRunner {
     harness: HarnessAdapter,
     userContent: string,
   ): Promise<TriageVerdict & { _tokenUsage?: TokenUsage }> {
-    const model = this.config.model ?? DEFAULT_ANTHROPIC_MODEL;
+    const model = this.config.model ?? DEFAULT_GITHUB_MODELS_MODEL;
     const result = await harness.invoke({
       prompt: `${TRIAGE_SYSTEM_PROMPT}\n\n${userContent}`,
       cwd: this.config.harnessCwd ?? process.cwd(),
@@ -183,8 +183,8 @@ export class SecurityTriageRunner implements AgentRunner {
     apiKey: string,
     userContent: string,
   ): Promise<TriageVerdict & { _tokenUsage?: TokenUsage }> {
-    const apiUrl = this.config.apiUrl ?? DEFAULT_ANTHROPIC_API_URL;
-    const model = this.config.model ?? DEFAULT_ANTHROPIC_MODEL;
+    const apiUrl = this.config.apiUrl ?? DEFAULT_GITHUB_MODELS_API_URL;
+    const model = this.config.model ?? DEFAULT_GITHUB_MODELS_MODEL;
     const timeoutMs = this.config.timeoutMs ?? DEFAULT_LLM_TIMEOUT_MS;
 
     const controller = new AbortController();
@@ -196,7 +196,7 @@ export class SecurityTriageRunner implements AgentRunner {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+          'x-github-api-version': '2023-06-01',
         },
         body: JSON.stringify({
           model,
@@ -209,7 +209,7 @@ export class SecurityTriageRunner implements AgentRunner {
 
       if (!res.ok) {
         const text = await res.text().catch(() => '');
-        throw new Error(`Anthropic API error ${res.status}: ${text.slice(0, 200)}`);
+        throw new Error(`GitHub Models API error ${res.status}: ${text.slice(0, 200)}`);
       }
 
       const body = (await res.json()) as {

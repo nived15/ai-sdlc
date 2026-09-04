@@ -477,7 +477,7 @@ The three reviewers (`code-reviewer`, `test-reviewer`, `security-reviewer`) run
 **inside the same sandbox as Stage 2** so they are subject to the same
 credential-stripping and network isolation. Provider credentials are injected
 by the `inference.local` proxy out-of-process — the reviewer process connects
-to `inference.local` for model inference and never holds the `ANTHROPIC_API_KEY`
+to `inference.local` for model inference and never holds the `GITHUB_MODELS_TOKEN`
 directly. This matches RFC-0043's credential-withholding design intent and keeps
 the agentic-review upgrade path open.
 

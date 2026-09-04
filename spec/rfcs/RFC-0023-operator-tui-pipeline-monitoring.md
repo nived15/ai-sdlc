@@ -143,7 +143,7 @@ The TUI is **stateless** — all data sources are external. Restart loses no ope
 | `backlog/tasks/`, `backlog/completed/` | Re-read on demand (filesystem watch optional) | Pipeline journey overview |
 | `.ai-sdlc/*.yaml` | Re-read on edit; validate via reference schema | Config pane |
 
-The TUI never writes to these sources directly except via well-defined CLIs (e.g., `task_edit` MCP for task changes — invoked through the operator's main Claude Code session, not the TUI process itself).
+The TUI never writes to these sources directly except via well-defined CLIs (e.g., `task_edit` MCP for task changes — invoked through the operator's main Copilot CLI session, not the TUI process itself).
 
 ### 6.3 Render boundary
 

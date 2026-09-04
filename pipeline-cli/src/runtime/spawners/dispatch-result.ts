@@ -6,7 +6,7 @@
  * The `cli-orchestrator tick --continue-from-result` flag (AISDLC-225) reads a
  * pre-completed Agent result from disk and feeds it back into `executePipeline()`
  * as the developer's spawn output. The original producer was the
- * `ClaudeCliInlineSpawner` (AISDLC-198) inline-manifest path, removed in
+ * `CopilotHarnessAdapter` (AISDLC-198) inline-manifest path, removed in
  * RFC-0041 Phase 3.3 (AISDLC-377.6). The result-file half of the protocol is
  * retained because:
  *

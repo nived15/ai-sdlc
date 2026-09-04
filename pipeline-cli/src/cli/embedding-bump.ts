@@ -49,14 +49,14 @@ export interface VectorStoreEntry {
  * Operators with private/discounted rates can override via `--rate-per-1m-tokens`.
  */
 export const DEFAULT_PROVIDER_RATES_PER_1M_TOKENS_USD: Record<string, number> = {
-  'openai-text-embedding-3-small': 0.02,
-  'openai-text-embedding-3-large': 0.13,
-  'openai-text-embedding-ada-002': 0.1,
-  'cohere-embed-v3': 0.1,
+  'github-models-embedding-small': 0.02,
+  'github-models-embedding-large': 0.13,
+  'github-models-embedding-legacy': 0.1,
+  'self-hosted-embed-v3': 0.1,
 };
 
 /**
- * Conservative tokens-per-character estimate. OpenAI tokenizers run ~3.5-4
+ * Conservative tokens-per-character estimate. GitHub Copilot tokenizers run ~3.5-4
  * characters per token on average English text. We use 4 to slightly
  * UNDER-estimate token counts (and therefore over-state per-character density),
  * which then OVER-estimates cost on the conservative side — operators get a
@@ -206,7 +206,7 @@ export type ReEmbedFn = (texts: string[]) => Promise<number[][]>;
 
 /**
  * Default stub re-embed function — produces deterministic zero-vectors of
- * length 1536 (matching the openai-text-embedding-3-small dimensions). Used
+ * length 1536 (matching the github-models-embedding-small dimensions). Used
  * when the CLI is invoked without a wired re-embed function (which is the
  * dry-run-only path in pipeline-cli today; the orchestrator wires real
  * adapters in Phase 4).

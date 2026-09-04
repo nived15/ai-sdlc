@@ -41,7 +41,7 @@ name: AI-SDLC PR Review
 #    `actions/setup-node@v4`, `actions/github-script@v7`,
 #    `actions/upload-artifact@v4`).
 #
-# 5. Secrets: `secrets.ANTHROPIC_API_KEY` is used only by the analyze
+# 5. Secrets: `secrets.GITHUB_MODELS_TOKEN` is used only by the analyze
 #    job, which runs the dogfood reviewer subagent. The reviewer reads
 #    `/tmp/review-diff.txt` (data — fork diff content as a string) as
 #    LLM input. Even if a malicious fork PR attempts a prompt-injection
@@ -249,7 +249,7 @@ jobs:
   # job below.
   #
   # This is the COST-SAVING side: when local attestation is valid, we skip
-  # the CI-side reviewer fan-out (~$X of Anthropic credits per run). The
+  # the CI-side reviewer fan-out (~$X of GitHub credits per run). The
   # merge-gate side is also restored as of AISDLC-193 — `verify-attestation.yml`
   # posts `ai-sdlc/attestation` as a required status; `Post Review Results`
   # remains required as the second-line check that CI-side review fired
@@ -376,7 +376,7 @@ jobs:
           fi
 
   # ── Job 1: Parallel Review Analysis (sandboxed) ──────────────────
-  # Has ANTHROPIC_API_KEY but NO GitHub write access.
+  # Has GITHUB_MODELS_TOKEN but NO GitHub write access.
   # Defense: even if the LLM is compromised, it cannot modify the repo.
   #
   # AISDLC-193: attestation is REQUIRED again (verify-attestation.yml posts
@@ -427,7 +427,7 @@ jobs:
       incremental_last_reviewed_sha: ${{ steps.incremental.outputs.last_reviewed_sha }}
       incremental_delta_size: ${{ steps.incremental.outputs.delta_size }}
       # AISDLC-147 patch 2: budget-exhaustion aggregate decision. Drives the
-      # report job's "suppress CHANGES_REQUESTED on uniform Anthropic credit
+      # report job's "suppress CHANGES_REQUESTED on uniform GitHub credit
       # exhaustion" branch. Values: 'skip-with-budget-comment' | 'proceed-as-normal'.
       budget_aggregate: ${{ steps.budget.outputs.aggregate }}
       budget_exhausted_count: ${{ steps.budget.outputs.exhausted_count }}
@@ -738,7 +738,7 @@ jobs:
       - name: Run conditional review agents (classifier-gated subset)
         id: review
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           # AISDLC-141: only spawn the reviewers the classifier selected. The
           # subset is space-separated names from {testing, critic, security}.
@@ -855,7 +855,7 @@ jobs:
           echo "critic=$CRITIC" >> "$GITHUB_OUTPUT"
           echo "security=$SECURITY" >> "$GITHUB_OUTPUT"
 
-      # ── AISDLC-147 patch 2: Anthropic API budget circuit breaker ─────
+      # ── AISDLC-147 patch 2: GitHub API budget circuit breaker ─────
       # When the API key's credit balance hits $0, every reviewer fails with
       # HTTP 400 invalid_request_error carrying "credit balance is too low"
       # in the body. Without this classifier the report job would post
@@ -864,7 +864,7 @@ jobs:
       # (3 stdout + 3 stderr) and emits a JSON aggregate decision:
       #   {"aggregate": "skip-with-budget-comment", "budgetExhaustedCount": 3, ...}
       # The report job below reads `aggregate` and branches on it.
-      - name: Classify reviewer outputs (Anthropic budget circuit breaker)
+      - name: Classify reviewer outputs (GitHub budget circuit breaker)
         id: budget
         run: |
           # Always-on, never-fails: missing files → empty strings → other-failure
@@ -906,7 +906,7 @@ jobs:
             # budget-exhausted (≥1 budget + 0 other-failure), not strictly
             # all 3. AISDLC-141's classifier may AUTO_APPROVE an unselected
             # reviewer (counted as ok), so the count below can be < 3.
-            echo "::warning::${EXHAUSTED}/3 reviewers failed with Anthropic credit-exhausted (the rest succeeded — no real failures to surface). Report job will suppress CHANGES_REQUESTED and post idempotent budget-skip comment instead."
+            echo "::warning::${EXHAUSTED}/3 reviewers failed with GitHub credit-exhausted (the rest succeeded — no real failures to surface). Report job will suppress CHANGES_REQUESTED and post idempotent budget-skip comment instead."
           fi
 
       - name: Upload classifier calibration log
@@ -919,7 +919,7 @@ jobs:
           retention-days: 30
 
   # ── Job 2: Post Reviews (write access, no LLM) ──────────────────
-  # Has GitHub write access but NO ANTHROPIC_API_KEY.
+  # Has GitHub write access but NO GITHUB_MODELS_TOKEN.
   # Defense: this job only reads structured JSON — no LLM interaction.
   # Dependabot review exemption (issue #791). Bot dependency bumps are gated by
   # build/test + the dependency-review CVE gate in pr-ready, NOT by CI-side LLM
@@ -999,7 +999,7 @@ jobs:
       issues: read
       # AISDLC-147 patch 2 + AISDLC-157: post `Post Review Results: success`
       # status via the GitHub commit-status API when every NON-OK reviewer
-      # failed with Anthropic credit-exhausted (suppress noisy
+      # failed with GitHub credit-exhausted (suppress noisy
       # CHANGES_REQUESTED). The classifier-skipped reviewers
       # (AUTO_APPROVED stubs from AISDLC-141) count as ok, so this branch
       # can fire with as few as 1 budget-exhausted reviewer.
@@ -1009,7 +1009,7 @@ jobs:
         if: needs.analyze.result == 'skipped'
         run: echo "Skipping review for release-please PR"
 
-      # ── AISDLC-147 patch 2 + AISDLC-157: Anthropic budget circuit breaker ─
+      # ── AISDLC-147 patch 2 + AISDLC-157: GitHub budget circuit breaker ─
       # When every NON-OK reviewer failed with credit-exhausted (i.e.
       # `budget_aggregate == skip-with-budget-comment` — at least one
       # budget-exhausted reviewer AND zero other-failure reviewers),
@@ -1027,7 +1027,7 @@ jobs:
       # unselected reviewer — that AUTO_APPROVED stub counts as `ok` here,
       # so a truly credit-exhausted run can have count<3 even when there's
       # nothing real to surface. The new rule handles that case cleanly.
-      - name: Post budget-skip status + comment (Anthropic credit exhausted)
+      - name: Post budget-skip status + comment (GitHub credit exhausted)
         if: needs.analyze.result == 'success' && needs.analyze.outputs.budget_aggregate == 'skip-with-budget-comment'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
@@ -1064,7 +1064,7 @@ jobs:
             const marker = '<!-- ai-sdlc:reviewer-skipped-by-budget -->';
             const body = [
               marker,
-              '## AI-SDLC: Reviewer Agents Skipped (Anthropic Budget Exhausted)',
+              '## AI-SDLC: Reviewer Agents Skipped (GitHub Budget Exhausted)',
               '',
               `${exhausted}/3 review agents failed with HTTP 400 \`invalid_request_error\``,
               '("credit balance is too low"). The remaining agent(s) either succeeded or were',
@@ -1078,7 +1078,7 @@ jobs:
               '  but the `Post Review Results` status was posted as `success` so the gate',
               '  does not deadlock.',
               '- A human reviewer should manually validate this PR before merging,',
-              '  or top up the Anthropic API credit balance and push again to re-trigger.',
+              '  or top up the GitHub API credit balance and push again to re-trigger.',
               '',
               '*Posted by [AI-SDLC Review Agents](https://github.com/ai-sdlc-framework/ai-sdlc) — budget circuit breaker*',
             ].join('\n');
@@ -1628,7 +1628,7 @@ jobs:
               '- Plugin version',
               '',
               'CI re-running the same 3 agents would produce the same verdict at the cost',
-              'of ~3 Anthropic API invocations. We trust the local attestation as a SOFT',
+              'of ~3 GitHub API invocations. We trust the local attestation as a SOFT',
               'signal and skip the duplicate review.',
               '',
               '_Note: attestation is required for code PRs (machine-enforced via the `ai-sdlc/pr-ready` rollup). Docs-only PRs skip the check entirely._',
@@ -1666,7 +1666,7 @@ jobs:
             // Post a fresh APPROVE PR review so branch protection's
             // `dismiss_stale_reviews: true` doesn't strand auto-merge after
             // a force-push (mirrors the AISDLC-74 force-push recovery
-            // documented in CLAUDE.md). We tolerate the 422 "approve your
+            // documented in .github/copilot-instructions.md). We tolerate the 422 "approve your
             // own PR" failure mode the same way the report job does.
             try {
               await github.rest.pulls.createReview({

@@ -102,7 +102,7 @@ describe('isValidTranscriptEvent', () => {
     const event = makeEvent({
       role: 'assistant',
       event: 'verdict-formed',
-      harness: 'codex',
+      harness: 'copilot',
     });
     expect(isValidTranscriptEvent(event)).toBe(true);
   });
@@ -230,18 +230,18 @@ describe('parseTranscriptFile', () => {
   });
 
   it('preserves event metadata fields (event, toolName, harness)', () => {
-    const filePath = join(tmpRoot, 'codex.jsonl');
+    const filePath = join(tmpRoot, 'copilot.jsonl');
     const codexEvent: TranscriptEvent = {
       role: 'assistant',
-      content: 'Codex review completed.',
+      content: 'GitHub Copilot review completed.',
       timestamp: '2026-05-21T11:00:00.000Z',
       event: 'verdict-formed',
-      harness: 'codex',
+      harness: 'copilot',
     };
     writeFileSync(filePath, toJsonlLine(codexEvent));
 
     const { events } = parseTranscriptFile(filePath);
-    expect(events[0]!.harness).toBe('codex');
+    expect(events[0]!.harness).toBe('copilot');
     expect(events[0]!.event).toBe('verdict-formed');
   });
 });

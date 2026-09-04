@@ -1,5 +1,5 @@
 /**
- * GitHub Actions runner — invokes Claude Code CLI in --print mode
+ * GitHub Actions runner — invokes GitHub Copilot CLI in --print mode
  * and collects the result via git diff.
  */
 
@@ -86,18 +86,18 @@ async function gitExec(workDir: string, args: string[]): Promise<string> {
 
 // Defaults imported from ../orchestrator/defaults.js
 
-interface RunClaudeOptions {
+interface RunCopilotOptions {
   allowedTools?: string[];
   timeoutMs?: number;
 }
 
-function runClaude(prompt: string, workDir: string, opts?: RunClaudeOptions): Promise<string> {
+function runCopilot(prompt: string, workDir: string, opts?: RunCopilotOptions): Promise<string> {
   const tools = opts?.allowedTools?.join(',') ?? DEFAULT_ALLOWED_TOOLS;
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_RUNNER_TIMEOUT_MS;
 
   return new Promise((resolve, reject) => {
     const model = process.env.AI_SDLC_MODEL ?? DEFAULT_MODEL;
-    const child = spawn('claude', ['-p', '--model', model, '--allowedTools', tools], {
+    const child = spawn('copilot', ['-p', '--model', model, '--allow-tool', tools], {
       cwd: workDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env },
@@ -116,7 +116,7 @@ function runClaude(prompt: string, workDir: string, opts?: RunClaudeOptions): Pr
         resolve(stdout);
       } else {
         const stderr = Buffer.concat(errChunks).toString('utf-8');
-        reject(new Error(`claude exited with code ${code}: ${stderr || stdout}`));
+        reject(new Error(`copilot exited with code ${code}: ${stderr || stdout}`));
       }
     });
 
@@ -128,13 +128,13 @@ function runClaude(prompt: string, workDir: string, opts?: RunClaudeOptions): Pr
   });
 }
 
-export class GitHubActionsRunner implements AgentRunner {
+export class CopilotRunner implements AgentRunner {
   async run(ctx: AgentContext): Promise<AgentResult> {
     const prompt = buildPrompt(ctx);
 
     try {
-      // Invoke Claude Code CLI in print mode, sending prompt via stdin
-      const stdout = await runClaude(prompt, ctx.workDir, {
+      // Invoke GitHub Copilot CLI in print mode, sending prompt via stdin
+      const stdout = await runCopilot(prompt, ctx.workDir, {
         allowedTools: ctx.allowedTools,
         timeoutMs: ctx.timeoutMs,
       });
@@ -166,7 +166,7 @@ export class GitHubActionsRunner implements AgentRunner {
       await gitExec(ctx.workDir, [
         'commit',
         '-m',
-        `fix: resolve issue #${ctx.issueNumber}\n\n${ctx.issueTitle}\n\nCo-Authored-By: Claude <noreply@anthropic.com>`,
+        `fix: resolve issue #${ctx.issueNumber}\n\n${ctx.issueTitle}\n\nCo-Authored-By: GitHub Copilot <copilot@github.com>`,
       ]);
 
       return {

@@ -88,18 +88,18 @@ describe('HUSKY_PREPUSH_SIGN_SNIPPET — executed as bash (AISDLC-555)', () => {
     writeFileSync(join(repo, '.ai-sdlc', 'verdicts', 'aisdlc-1.json'), '[]');
   }
 
-  it('resolves and runs the signer via CLAUDE_PLUGIN_ROOT', () => {
+  it('resolves and runs the signer via COPILOT_PLUGIN_ROOT', () => {
     const plugin = makePluginDir('root');
     withVerdict();
-    const { stdout, stderr } = runSnippet({ CLAUDE_PLUGIN_ROOT: plugin });
+    const { stdout, stderr } = runSnippet({ COPILOT_PLUGIN_ROOT: plugin });
     expect(stdout).toContain('SIGNED-BY-root');
     expect(stderr).toContain('attestation signer:');
   });
 
-  it('resolves via CLAUDE_PLUGIN_DIR when CLAUDE_PLUGIN_ROOT is unset', () => {
+  it('resolves via COPILOT_PLUGIN_DIR when COPILOT_PLUGIN_ROOT is unset', () => {
     const plugin = makePluginDir('dir');
     withVerdict();
-    const { stdout } = runSnippet({ CLAUDE_PLUGIN_DIR: plugin });
+    const { stdout } = runSnippet({ COPILOT_PLUGIN_DIR: plugin });
     expect(stdout).toContain('SIGNED-BY-dir');
   });
 
@@ -110,7 +110,7 @@ describe('HUSKY_PREPUSH_SIGN_SNIPPET — executed as bash (AISDLC-555)', () => {
     withVerdict();
     const { stderr } = runSnippet();
     expect(stderr).toContain('NO attestation signer');
-    expect(stderr).toContain('CLAUDE_PLUGIN_ROOT');
+    expect(stderr).toContain('COPILOT_PLUGIN_ROOT');
   });
 
   it('stays quiet when there is nothing to sign', () => {
@@ -137,7 +137,7 @@ describe('HUSKY_PREPUSH_SIGN_SNIPPET — executed as bash (AISDLC-555)', () => {
     const plugin = makePluginDir('skip');
     withVerdict();
     const { stdout } = runSnippet({
-      CLAUDE_PLUGIN_ROOT: plugin,
+      COPILOT_PLUGIN_ROOT: plugin,
       AI_SDLC_SKIP_ATTESTATION_SIGN: '1',
     });
     expect(stdout).not.toContain('SIGNED-BY-skip');
@@ -149,7 +149,7 @@ describe('HUSKY_PREPUSH_SIGN_SNIPPET — executed as bash (AISDLC-555)', () => {
   it('takes the FIRST plugin-cache match, not the last', () => {
     const home = join(repo, 'fake-home');
     for (const marker of ['aaa-first', 'zzz-last']) {
-      const dir = join(home, '.claude', 'plugins', 'cache', marker, 'ai-sdlc', '1.0.0', 'scripts');
+      const dir = join(home, '.copilot', 'plugins', 'cache', marker, 'ai-sdlc', '1.0.0', 'scripts');
       mkdirSync(dir, { recursive: true });
       const signer = join(dir, 'check-attestation-sign.sh');
       writeFileSync(signer, `#!/usr/bin/env bash\necho "SIGNED-BY-${marker}"\n`);
@@ -206,7 +206,7 @@ describe('attestation hook install — real git push, husky v9 layout (AISDLC-55
    * Round-3 test review caught this: the first version of this helper passed
    * no `env`, so the spawned `git push` inherited the REAL HOME — and the
    * installed hook's last resort is a glob over the plugin cache under
-   * `$HOME/.claude/plugins/cache`.
+   * `$HOME/.copilot/plugins/cache`.
    * On any machine with a cached plugin install (which this very PR causes to
    * exist) the hook would find and RUN the operator's real signer as a side
    * effect of `pnpm test`, and the assertion below would flip. It passed only

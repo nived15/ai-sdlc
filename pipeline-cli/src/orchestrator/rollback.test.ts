@@ -651,12 +651,12 @@ describe('isReallyStale — Signal 2: active sentinel (<6h old)', () => {
   });
 });
 
-describe('isReallyStale — Signal 3: live claude --print subprocess', () => {
+describe('isReallyStale — Signal 3: live copilot -p subprocess', () => {
   /**
-   * A live `claude --print` process whose argv contains the task ID means
+   * A live `copilot -p` process whose argv contains the task ID means
    * the dev subagent is still running.
    */
-  it('returns not-stale when a live claude --print subprocess references the task ID', async () => {
+  it('returns not-stale when a live copilot -p subprocess references the task ID', async () => {
     const { runner } = makeRunner({
       responses: {
         // Signal 1: upstream present, not ahead
@@ -677,7 +677,7 @@ describe('isReallyStale — Signal 3: live claude --print subprocess', () => {
     // Signal 3: live subprocess in process table
     const fakePs = [
       '    1 /sbin/launchd',
-      '12345 /usr/local/bin/claude --print AISDLC-70 some-prompt',
+      '12345 /usr/local/bin/copilot -p AISDLC-70 some-prompt',
       '99999 /usr/bin/vim',
     ].join('\n');
 
@@ -694,7 +694,7 @@ describe('isReallyStale — Signal 3: live claude --print subprocess', () => {
     );
 
     expect(result.stale).toBe(false);
-    expect(result.reason).toMatch(/live claude.*subprocess.*AISDLC-70.*PID 12345/i);
+    expect(result.reason).toMatch(/live copilot.*subprocess.*AISDLC-70.*PID 12345/i);
   });
 
   /**

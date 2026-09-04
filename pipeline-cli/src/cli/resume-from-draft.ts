@@ -317,7 +317,7 @@ export async function runResumeFromDraft(
   // Refuse to operate against main/master. The branch is computed from the
   // task ID + branching pattern, so the only path to main/master here is a
   // catastrophically misconfigured `branching.pattern`. Refuse early to
-  // honor CLAUDE.md's "Never force-push to main/master" rule.
+  // honor .github/copilot-instructions.md's "Never force-push to main/master" rule.
   if (PROTECTED_BRANCHES.has(branch)) {
     return {
       ok: false,

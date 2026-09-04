@@ -222,8 +222,8 @@ jobs:
  * complete but never signed anything — the exact bug this task exists to
  * fix. `check-attestation-sign.sh` now also ships under
  * `ai-sdlc-plugin/scripts/` (AISDLC-555), so this snippet resolves it from
- * the PLUGIN INSTALL ONLY: `$CLAUDE_PLUGIN_ROOT` / `$CLAUDE_PLUGIN_DIR` (the
- * zero-config path when `git push` runs inside a Claude Code session), then a
+ * the PLUGIN INSTALL ONLY: `$COPILOT_PLUGIN_ROOT` / `$COPILOT_PLUGIN_DIR` (the
+ * zero-config path when `git push` runs inside a Copilot CLI session), then a
  * read-only plugin-cache probe (bare-terminal `git push`, which never inherits
  * those env vars).
  *
@@ -237,7 +237,7 @@ jobs:
  * 1. **It is no longer silent when nothing resolves.** The original ended in a
  *    bare `if [ -n "$HOOK" ]; then bash ...; fi` with no else, so an adopter
  *    who installed via `npm i -g @ai-sdlc/orchestrator` (the documented
- *    getting-started path) and never installed the Claude Code plugin got a
+ *    getting-started path) and never installed the GitHub Copilot CLI plugin got a
  *    hook that could never fire and never said so — reproducing the exact
  *    defect this task exists to close, for a whole adopter persona.
  *    `ai-sdlc-plugin/` is not published to npm and orchestrator's `files` is
@@ -264,12 +264,12 @@ export const HUSKY_PREPUSH_SIGN_SNIPPET = `# ai-sdlc:attestation-sign-block
 # files exist. Skip with AI_SDLC_SKIP_ATTESTATION_SIGN=1.
 if [ -z "\${AI_SDLC_SKIP_ATTESTATION_SIGN:-}" ]; then
   AI_SDLC_ATTESTATION_HOOK=""
-  if [ -n "\${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "\${CLAUDE_PLUGIN_ROOT}/scripts/check-attestation-sign.sh" ]; then
-    AI_SDLC_ATTESTATION_HOOK="\${CLAUDE_PLUGIN_ROOT}/scripts/check-attestation-sign.sh"
-  elif [ -n "\${CLAUDE_PLUGIN_DIR:-}" ] && [ -f "\${CLAUDE_PLUGIN_DIR}/scripts/check-attestation-sign.sh" ]; then
-    AI_SDLC_ATTESTATION_HOOK="\${CLAUDE_PLUGIN_DIR}/scripts/check-attestation-sign.sh"
+  if [ -n "\${COPILOT_PLUGIN_ROOT:-}" ] && [ -f "\${COPILOT_PLUGIN_ROOT}/scripts/check-attestation-sign.sh" ]; then
+    AI_SDLC_ATTESTATION_HOOK="\${COPILOT_PLUGIN_ROOT}/scripts/check-attestation-sign.sh"
+  elif [ -n "\${COPILOT_PLUGIN_DIR:-}" ] && [ -f "\${COPILOT_PLUGIN_DIR}/scripts/check-attestation-sign.sh" ]; then
+    AI_SDLC_ATTESTATION_HOOK="\${COPILOT_PLUGIN_DIR}/scripts/check-attestation-sign.sh"
   else
-    for _ai_sdlc_dir in "$HOME"/.claude/plugins/cache/*/ai-sdlc/*/; do
+    for _ai_sdlc_dir in "$HOME"/.copilot/plugins/cache/*/ai-sdlc/*/; do
       if [ -f "\${_ai_sdlc_dir}scripts/check-attestation-sign.sh" ]; then
         AI_SDLC_ATTESTATION_HOOK="\${_ai_sdlc_dir}scripts/check-attestation-sign.sh"
         break
@@ -282,9 +282,9 @@ if [ -z "\${AI_SDLC_SKIP_ATTESTATION_SIGN:-}" ]; then
   elif [ -n "$(ls -A .ai-sdlc/verdicts 2>/dev/null)" ]; then
     echo "[ai-sdlc] ERROR: reviewer verdicts exist under .ai-sdlc/verdicts/ but NO attestation signer" >&2
     echo "[ai-sdlc]   could be found — this push will carry no attestation." >&2
-    echo "[ai-sdlc]   Searched CLAUDE_PLUGIN_ROOT, CLAUDE_PLUGIN_DIR, and" >&2
-    echo "[ai-sdlc]   ~/.claude/plugins/cache/*/ai-sdlc/*/scripts/check-attestation-sign.sh" >&2
-    echo "[ai-sdlc]   Install the ai-sdlc Claude Code plugin, or set CLAUDE_PLUGIN_ROOT." >&2
+    echo "[ai-sdlc]   Searched COPILOT_PLUGIN_ROOT, COPILOT_PLUGIN_DIR, and" >&2
+    echo "[ai-sdlc]   ~/.copilot/plugins/cache/*/ai-sdlc/*/scripts/check-attestation-sign.sh" >&2
+    echo "[ai-sdlc]   Install the ai-sdlc GitHub Copilot CLI plugin, or set COPILOT_PLUGIN_ROOT." >&2
   fi
 fi
 # end ai-sdlc:attestation-sign-block
@@ -442,7 +442,7 @@ spec:
  * `.github/workflows/ai-sdlc-review.yml` — CI-side PR review workflow.
  *
  * Posts `Post Review Results` as a commit status so branch-protection can
- * require it. Adopter repos that have not set up `ANTHROPIC_API_KEY` will
+ * require it. Adopter repos that have not set up `GITHUB_MODELS_TOKEN` will
  * see the job run but produce advisory-only output — the status check still
  * posts `success` so it does not block merges.
  *
@@ -783,7 +783,7 @@ export const EMBEDDING_CONFIG_YAML_STUB = `# Per-org embedding-framework default
 # Runbook:   docs/operations/embedding-providers.md
 
 embedding:
-  provider: openai-text-embedding-3-small   # default adapter (OQ-5 + Phase 1)
+  provider: github-models-embedding-small   # default adapter (OQ-5 + Phase 1)
 
   storage:                              # OQ-1 — JSONL backend + scale-escalation heuristic
     backend: jsonl
@@ -802,7 +802,7 @@ embedding:
                                         # of org default to preserve historical-trajectory fidelity)
 
   crossProviderPolicy:                  # OQ-3 — split (re-walkthrough refinement)
-    crossProvider: refuse               # ALWAYS strict no-op cross-PROVIDER (openai vs cohere)
+    crossProvider: refuse               # ALWAYS strict no-op cross-PROVIDER (github-copilot vs self-hosted)
                                         # → Decision: cross-provider-comparison-attempted
     crossVersionWithinProvider: delegate-to-staleVectorPolicy
                                         # cross-VERSION delegates to OQ-2 (resolves v0.2 conflict)
@@ -825,15 +825,15 @@ embedding:
       enabled: true                     # aggregates embeddingTokens + inputTokens + outputTokens +
                                         # SubscriptionLedger window cost; tagged by costModel
       costModelLabels:
-        - subscription-quota            # Claude Code Max / Codex
-        - pay-per-token                 # OpenAI / Cohere / future Anthropic embeddings if launched
+        - subscription-quota            # GitHub Copilot CLI Max / GitHub Copilot
+        - pay-per-token                 # GitHub Copilot / a third-party provider / future GitHub Models embeddings if launched
 
   subscriptionLedgerInteraction:        # OQ-7 — separation + per-adapter billingModel
     consumeQuotaDefault: false          # default for pay-per-token adapters
     adapterBillingModelRespected: true  # NEW (re-walkthrough): adapter declares
                                         # 'pay-per-token' | 'subscription-quota' in capability matrix;
                                         # subscription-quota adapters route through SubscriptionLedger
-                                        # (e.g., future Anthropic embeddings if shipped)
+                                        # (e.g., future GitHub Models embeddings if shipped)
 `;
 
 /**

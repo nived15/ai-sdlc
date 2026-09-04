@@ -30,7 +30,7 @@ function mockFetchResponse(verdict: Partial<ReviewVerdict>) {
     json: async () => ({
       content: [{ type: 'text', text: JSON.stringify(verdict) }],
       usage: { input_tokens: 100, output_tokens: 50 },
-      model: 'claude-sonnet-4-5-20250514',
+      model: 'balanced',
     }),
     text: async () => '',
   };
@@ -38,27 +38,27 @@ function mockFetchResponse(verdict: Partial<ReviewVerdict>) {
 
 describe('ReviewAgentRunner', () => {
   const originalFetch = globalThis.fetch;
-  const originalEnv = process.env.ANTHROPIC_API_KEY;
+  const originalEnv = process.env.GITHUB_MODELS_TOKEN;
 
   beforeEach(() => {
-    process.env.ANTHROPIC_API_KEY = 'test-key';
+    process.env.GITHUB_MODELS_TOKEN = 'test-key';
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
     if (originalEnv !== undefined) {
-      process.env.ANTHROPIC_API_KEY = originalEnv;
+      process.env.GITHUB_MODELS_TOKEN = originalEnv;
     } else {
-      delete process.env.ANTHROPIC_API_KEY;
+      delete process.env.GITHUB_MODELS_TOKEN;
     }
   });
 
   it('returns error when API key is missing', async () => {
-    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.GITHUB_MODELS_TOKEN;
     const runner = new ReviewAgentRunner({ reviewType: 'testing' });
     const result = await runner.run(makeContext());
     expect(result.success).toBe(false);
-    expect(result.error).toContain('ANTHROPIC_API_KEY');
+    expect(result.error).toContain('GITHUB_MODELS_TOKEN');
   });
 
   for (const type of ['testing', 'critic', 'security'] as ReviewType[]) {
@@ -415,7 +415,7 @@ describe('confidence-based filtering', () => {
 describe('ReviewAgentRunner — large-context escalation', () => {
   const originalFetch = globalThis.fetch;
   beforeEach(() => {
-    process.env.ANTHROPIC_API_KEY = 'test-key';
+    process.env.GITHUB_MODELS_TOKEN = 'test-key';
   });
   afterEach(() => {
     globalThis.fetch = originalFetch;
@@ -441,8 +441,8 @@ describe('ReviewAgentRunner — large-context escalation', () => {
     const runner = new ReviewAgentRunner({ reviewType: 'critic' });
     await runner.run(makeContext({ issueBody: 'small diff' }));
     const parsed = JSON.parse(captured.body);
-    expect(parsed.model).toBe('claude-sonnet-4-5-20250929');
-    expect(captured.headers['anthropic-beta']).toBeUndefined();
+    expect(parsed.model).toBe('gpt-5');
+    expect(captured.headers['github-models-beta']).toBeUndefined();
   });
 
   it('escalates to large-context model when input exceeds threshold', async () => {
@@ -450,14 +450,14 @@ describe('ReviewAgentRunner — large-context escalation', () => {
     const runner = new ReviewAgentRunner({
       reviewType: 'critic',
       largeContextThresholdChars: 1000,
-      largeContextModel: 'claude-opus-4-7',
+      largeContextModel: 'reasoning',
     });
     // Force input above threshold.
     const huge = 'x'.repeat(5000);
     await runner.run(makeContext({ issueBody: huge }));
     const parsed = JSON.parse(captured.body);
-    expect(parsed.model).toBe('claude-opus-4-7');
-    expect(captured.headers['anthropic-beta']).toBe('context-1m-2025-08-07');
+    expect(parsed.model).toBe('reasoning');
+    expect(captured.headers['github-models-beta']).toBe('context-1m-2025-08-07');
   });
 
   it('falls back to default large-context model when none configured', async () => {
@@ -468,9 +468,9 @@ describe('ReviewAgentRunner — large-context escalation', () => {
     });
     await runner.run(makeContext({ issueBody: 'x'.repeat(2000) }));
     const parsed = JSON.parse(captured.body);
-    // Default falls back to env var or 'claude-opus-4-7'
-    expect(parsed.model).not.toBe('claude-sonnet-4-5-20250929');
-    expect(captured.headers['anthropic-beta']).toBe('context-1m-2025-08-07');
+    // Default falls back to env var or the reasoning tier
+    expect(parsed.model).not.toBe('gpt-5');
+    expect(captured.headers['github-models-beta']).toBe('context-1m-2025-08-07');
   });
 
   it('does not escalate when input is exactly at threshold', async () => {
@@ -481,6 +481,6 @@ describe('ReviewAgentRunner — large-context escalation', () => {
       largeContextThresholdChars: 10_000_000, // very high — never escalates
     });
     await runner.run(makeContext({ issueBody: 'x'.repeat(50_000) }));
-    expect(captured.headers['anthropic-beta']).toBeUndefined();
+    expect(captured.headers['github-models-beta']).toBeUndefined();
   });
 });

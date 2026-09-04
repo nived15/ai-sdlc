@@ -83,7 +83,7 @@ export interface ReviewerEntry {
   agentId: string;
   /** sha256 of the reviewer agent's `.md` file at the time of review. */
   agentFileHash: string;
-  /** Harness used for the review (e.g. `codex`, `claude-code`). */
+  /** Harness used for the review (always `copilot`). */
   harness: string;
   /** Verdict — true if the reviewer approved, false otherwise. */
   approved: boolean;
@@ -224,15 +224,14 @@ export interface AttestationPredicate {
   pipelineVersion?: string;
   /**
    * Harness that produced the developer + reviewer verdicts (AISDLC-202.3).
-   * Populated by the calling adapter (e.g. `CodexHarnessAdapter` sets
-   * `{ name: 'codex', version: '0.128.0' }` when signing a Codex-run task).
-   * Claude Code paths omit this field or set `{ name: 'claude-code' }`.
+   * Populated by the calling adapter (`CopilotHarnessAdapter` sets
+   * `{ name: 'copilot', version: '<cli-version>' }`).
    *
    * Optional for backward compatibility: envelopes produced before
    * AISDLC-202.3 carry no `harness` field; the verifier accepts them and
    * logs `<unknown>` when the field is absent. Downstream trust decisions
-   * (e.g. "require Codex review for Claude-developed PRs") can filter on
-   * `harness.name` without failing envelopes that predate this field.
+   * can filter on `harness.name` without failing envelopes that predate
+   * this field.
    *
    * `name` is constrained to `SHORT_ID` (letters, digits, dot, dash,
    * underscore) to prevent CR/LF injection into GITHUB_OUTPUT. `version`
@@ -242,9 +241,9 @@ export interface AttestationPredicate {
   /** Iteration count — how many dev rounds the work went through. */
   iterationCount: number;
   /**
-   * Free-form harness note — empty string when independence was enforced,
-   * `'⚠ INDEPENDENCE NOT ENFORCED (codex unavailable, fell back to ...)'`
-   * when not. Surfaced in PR body so the reviewer-of-the-reviewer sees it.
+   * Free-form harness note — empty string when the review harness was
+   * available, `'⚠ REVIEW HARNESS UNAVAILABLE (...)'` when not. Surfaced in
+   * the PR body so the reviewer-of-the-reviewer sees it.
    */
   harnessNote: string;
   /** ISO 8601 timestamp at signing. */
@@ -563,14 +562,10 @@ export const REQUIRED_REVIEWER_AGENT_IDS: readonly string[] = Object.freeze([
  * Name-equivalence map for the reviewer-set completeness check (AISDLC-252).
  *
  * A "role" is satisfied when any of the listed agentIds is present in the
- * envelope's reviewer set. This lets codex-harness variants (`code-reviewer-codex`,
- * `test-reviewer-codex`) satisfy the same role as their Claude counterparts,
- * enabling the bidirectional cross-harness review goal without requiring a
- * redundant Claude review on Codex-reviewed PRs.
- *
- * Security stays Claude-only: `security-reviewer` has no codex variant per
- * `feedback_subagent_model_selection.md` (Claude Opus for security reasoning
- * depth is not yet validated for Codex o4-mini).
+ * envelope's reviewer set. Every reviewer dispatches through the GitHub
+ * Copilot CLI, so each role currently has exactly one canonical agentId;
+ * the map is kept so a future role alias can be added without changing
+ * every caller.
  *
  * The map is keyed by role name (= the canonical agentId), each value is the
  * set of ALL agentIds that satisfy the role (including the canonical one).
@@ -579,19 +574,18 @@ export const REQUIRED_REVIEWER_AGENT_IDS: readonly string[] = Object.freeze([
  */
 export const REVIEWER_ROLE_EQUIVALENCES: Readonly<Record<string, readonly string[]>> =
   Object.freeze({
-    'code-reviewer': Object.freeze(['code-reviewer', 'code-reviewer-codex']),
-    'test-reviewer': Object.freeze(['test-reviewer', 'test-reviewer-codex']),
+    'code-reviewer': Object.freeze(['code-reviewer']),
+    'test-reviewer': Object.freeze(['test-reviewer']),
     'security-reviewer': Object.freeze(['security-reviewer']),
   });
 
 /**
- * When the implementer ran in Codex (`predicate.harness.name === 'codex'`),
- * these reviewer roles MUST be satisfied by a reviewer whose `harness` field
- * differs from `codex`. Per RFC-0010 §13.10 `requiresIndependentHarnessFrom`:
- * code and test reviewers must come from a different harness than the
- * implementer to preserve cross-harness independence.
+ * Reviewer roles that MUST be satisfied by a reviewer session distinct from
+ * the implementer's session. Per RFC-0010 §13.10
+ * `requiresIndependentHarnessFrom`: code and test reviewers must run in a
+ * fresh session so the implementer's context cannot bias the verdict.
  *
- * Security is excluded — it is always Claude-only regardless.
+ * Security is excluded — it always runs in its own dedicated session.
  *
  * Frozen to discourage callers from mutating it.
  */
@@ -1024,7 +1018,7 @@ export interface BuildPredicateInputs {
    * Optional — when omitted, the predicate carries no `harness` field
    * (back-compat with pre-202.3 envelopes). When provided, the adapter
    * populates both `name` (required, SHORT_ID) and optionally `version`
-   * (SEMVER). Example: `{ name: 'codex', version: '0.128.0' }`.
+   * (SEMVER). Example: `{ name: 'copilot', version: '1.0.0' }`.
    *
    * The signing script (`sign-attestation.mjs`) passes this via
    * `--harness-name` + `--harness-version` CLI flags.
@@ -1625,7 +1619,7 @@ export function buildPredicate(inputs: BuildPredicateInputs): AttestationPredica
     predicate.pipelineVersion = inputs.pipelineVersion;
   }
   // AISDLC-202.3: include `harness` only when the caller provided it.
-  // Omitted on legacy / Claude Code paths so pre-202.3 envelopes round-trip
+  // Omitted on legacy / GitHub Copilot CLI paths so pre-202.3 envelopes round-trip
   // cleanly through validatePredicateShape (which treats absence as back-compat).
   if (inputs.harness && typeof inputs.harness.name === 'string' && inputs.harness.name.length > 0) {
     predicate.harness = { name: inputs.harness.name };
@@ -1918,9 +1912,7 @@ export function verifyAttestation(opts: VerifyOptions): VerifyResult {
   // ── Reviewer-set completeness (AISDLC-252) ──────────────────────
   // Every attestation MUST cover all three required reviewer ROLES (code,
   // test, security). Each role is satisfied by ANY agentId in its
-  // equivalence group — so `code-reviewer-codex` satisfies the `code-reviewer`
-  // role, enabling cross-harness reviews without a redundant Claude review.
-  // Security stays Claude-only (no codex variant, per policy).
+  // equivalence group.
   const presentIds = new Set(predicate.reviewers.map((r) => r.agentId));
   for (const [role, variants] of Object.entries(REVIEWER_ROLE_EQUIVALENCES)) {
     const satisfied = variants.some((v) => presentIds.has(v));
@@ -1932,28 +1924,10 @@ export function verifyAttestation(opts: VerifyOptions): VerifyResult {
     }
   }
 
-  // ── Independence enforcement (AISDLC-252, RFC-0010 §13.10) ──────
-  // When the implementer ran in codex (`predicate.harness.name === 'codex'`),
-  // the code-reviewer and test-reviewer MUST NOT also be codex — that would
-  // defeat the cross-harness independence goal. Security is exempt because it
-  // is always Claude-only.
-  const implementerHarness = predicate.harness?.name?.toLowerCase();
-  if (implementerHarness === 'codex') {
-    for (const role of INDEPENDENCE_REQUIRED_ROLES) {
-      // Find the reviewer entry that satisfied this role.
-      const satisfyingVariants = REVIEWER_ROLE_EQUIVALENCES[role] ?? [];
-      const reviewerEntry = predicate.reviewers.find((r) => satisfyingVariants.includes(r.agentId));
-      if (reviewerEntry) {
-        const reviewerHarness = reviewerEntry.harness?.toLowerCase();
-        if (reviewerHarness === 'codex') {
-          return {
-            valid: false,
-            reason: `independence violation: implementer harness is 'codex' but reviewer '${reviewerEntry.agentId}' also uses codex (requiresIndependentHarnessFrom per RFC-0010 §13.10)`,
-          };
-        }
-      }
-    }
-  }
+  // Independence (AISDLC-252, RFC-0010 §13.10) is enforced at dispatch time:
+  // every reviewer runs in its own fresh Copilot CLI session, so no reviewer
+  // inherits the implementer's context. There is no cross-harness check to
+  // perform here — the framework dispatches a single harness.
 
   return { valid: true, predicate, trustedReviewer: matchedReviewer };
 }

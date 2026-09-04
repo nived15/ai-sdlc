@@ -56,7 +56,7 @@ function mkManifest(taskId: string): DispatchManifest {
     branch: `ai-sdlc/${taskId.toLowerCase()}`,
     worktree: `.worktrees/${taskId.toLowerCase()}`,
     baseSha: 'abc',
-    workerKind: 'claude-p-shell',
+    workerKind: 'copilot-p-shell',
     dispatchedAt: '2026-05-20T10:00:00.000Z',
     dispatchedBy: 'conductor-test',
     spec: {
@@ -475,7 +475,7 @@ describe('runDispatchSupervisorCli', () => {
   it('runs `start --once` end-to-end through the top-level CLI router (empty queue → no spawn)', async () => {
     // Drive the top-level router's `start` branch with --once and an
     // empty queue so the production `child_process.spawn` is never
-    // invoked (avoiding ENOENT on `claude` in CI). Covers the argv
+    // invoked (avoiding ENOENT on `copilot` in CI). Covers the argv
     // parsing + maxConcurrent/pollIntervalSec/staleMs defaults branch.
     const boardDir = mkBoard();
     const pidFile = mkPidFile();
@@ -513,7 +513,7 @@ describe('runDispatchSupervisorCli', () => {
     // a brief delay so the loop exits cleanly. Covers the process.once
     // SIGTERM/SIGINT handler installation branch (lines 278-281 in
     // dispatch-supervisor.ts). maxConcurrent: 0 + empty queue ensures
-    // no real `claude` spawn is attempted.
+    // no real `copilot` spawn is attempted.
     const boardDir = mkBoard();
     const pidFile = mkPidFile();
     cleanup.push(() => rmSync(path.dirname(pidFile), { recursive: true, force: true }));

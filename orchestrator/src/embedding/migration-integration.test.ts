@@ -112,10 +112,10 @@ describe('AC#11 — full deprecation lifecycle (integration)', () => {
       const today = new Date(ANCHOR);
       today.setUTCDate(today.getUTCDate() + offset);
       phasesByOffset[offset] = evaluateDeprecationLifecycle({
-        adapterName: 'openai-text-embedding-ada-002',
+        adapterName: 'github-models-embedding-legacy',
         deprecatedAt: daysFromIso(ANCHOR, 0),
         removedAt: daysFromIso(ANCHOR, 90),
-        replacementAlias: 'openai-text-embedding-3-small',
+        replacementAlias: 'github-models-embedding-small',
         today,
       });
     }
@@ -159,7 +159,7 @@ describe('AC#11 — full deprecation lifecycle (integration)', () => {
     // collapse them to exactly 1 emission.
     for (let i = 0; i < 1000; i++) {
       const r = evaluateDeprecationLifecycle({
-        adapterName: 'openai-text-embedding-ada-002',
+        adapterName: 'github-models-embedding-legacy',
         deprecatedAt,
         removedAt,
         today,
@@ -236,7 +236,7 @@ describe('AC#11 — JSONL backend read stability across repeated reads', () => {
 describe('AC#11 + AC#5 — per-consumer staleVectorPolicy respected at API site (RE-WALKTHROUGH OQ-2)', () => {
   const stored: VectorStoreEntry = makeEntry(
     'old-text',
-    'openai-text-embedding-3-small',
+    'github-models-embedding-small',
     '2024-01-25',
   );
 
@@ -250,7 +250,7 @@ describe('AC#11 + AC#5 — per-consumer staleVectorPolicy respected at API site 
     expect(() =>
       applyStaleVectorPolicy(
         stored,
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2025-01-25',
         policy,
         'rfc-0009-tessellation-drift',
@@ -264,7 +264,7 @@ describe('AC#11 + AC#5 — per-consumer staleVectorPolicy respected at API site 
 
     const result = applyStaleVectorPolicy(
       stored,
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
       '2025-01-25',
       policy,
       'rfc-0008-ppa-similarity',
@@ -278,7 +278,7 @@ describe('AC#11 + AC#5 — per-consumer staleVectorPolicy respected at API site 
 
     const result = applyStaleVectorPolicy(
       stored,
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
       '2025-01-25',
       policy,
     );
@@ -302,9 +302,9 @@ describe('AC#11 + AC#5 — per-consumer staleVectorPolicy respected at API site 
 describe('AC#11 + AC#6 + AC#7 — cross-PROVIDER vs cross-VERSION handled independently', () => {
   it('AC#6: cross-PROVIDER always refuses + builds migration-task payload', () => {
     const compat = checkProviderCompatibility(
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
       '2024-01-25',
-      'cohere-embed-v3',
+      'self-hosted-embed-v3',
       '2024-12-01',
     );
     expect(compat).toBe('cross-provider');
@@ -313,15 +313,15 @@ describe('AC#11 + AC#6 + AC#7 — cross-PROVIDER vs cross-VERSION handled indepe
     expect(
       () =>
         new CrossProviderComparisonError(
-          'openai-text-embedding-3-small',
-          'cohere-embed-v3',
+          'github-models-embedding-small',
+          'self-hosted-embed-v3',
           'hash-x',
         ),
     ).not.toThrow();
 
     const payload = buildCrossProviderDecisionPayload(
-      'openai-text-embedding-3-small',
-      'cohere-embed-v3',
+      'github-models-embedding-small',
+      'self-hosted-embed-v3',
     );
     expect(payload.severity).toBe('high');
     expect(payload.autoAction).toBe('emit-migration-task');
@@ -329,9 +329,9 @@ describe('AC#11 + AC#6 + AC#7 — cross-PROVIDER vs cross-VERSION handled indepe
 
   it('AC#7: cross-VERSION-within-provider delegates to staleVectorPolicy (lazy → re-embed)', () => {
     const compat = checkProviderCompatibility(
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
       '2024-01-25',
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
       '2025-01-25',
     );
     expect(compat).toBe('cross-version');
@@ -342,11 +342,11 @@ describe('AC#11 + AC#6 + AC#7 — cross-PROVIDER vs cross-VERSION handled indepe
   });
 
   it('AC#7: cross-VERSION with fail-loud per-consumer override throws (drift trajectory protected)', () => {
-    const stored = makeEntry('legacy', 'openai-text-embedding-3-small', '2024-01-25');
+    const stored = makeEntry('legacy', 'github-models-embedding-small', '2024-01-25');
     const compat = checkProviderCompatibility(
       stored.embeddingProvider,
       stored.embeddingModelVersion,
-      'openai-text-embedding-3-small',
+      'github-models-embedding-small',
       '2025-01-25',
     );
     expect(compat).toBe('cross-version');
@@ -355,7 +355,7 @@ describe('AC#11 + AC#6 + AC#7 — cross-PROVIDER vs cross-VERSION handled indepe
     expect(() =>
       applyStaleVectorPolicy(
         stored,
-        'openai-text-embedding-3-small',
+        'github-models-embedding-small',
         '2025-01-25',
         policy,
         'rfc-0009-tessellation-drift',
@@ -371,7 +371,7 @@ describe('AC#11 + AC#8 — three-layer grace-period precedence (RE-WALKTHROUGH O
 
   it('AC#8: framework default (90d) when no overrides declared', () => {
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'openai-text-embedding-3-small',
+      adapterName: 'github-models-embedding-small',
       deprecatedAt: daysFromIso(TODAY, 100), // BEFORE 90d window
       today: TODAY,
     });
@@ -382,7 +382,7 @@ describe('AC#11 + AC#8 — three-layer grace-period precedence (RE-WALKTHROUGH O
   it('AC#8: adapter declares 60d → narrower warning window', () => {
     // 75 days before deprecatedAt with 60d adapter window → pre-warning.
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'cohere-embed-v3',
+      adapterName: 'self-hosted-embed-v3',
       deprecatedAt: daysFromIso(TODAY, 75),
       adapterDefaultGracePeriodDays: 60,
       today: TODAY,
@@ -394,7 +394,7 @@ describe('AC#11 + AC#8 — three-layer grace-period precedence (RE-WALKTHROUGH O
   it('AC#8: per-org override 180d beats adapter 60d (operator wins)', () => {
     // 100 days before deprecatedAt with org 180d window → in warning.
     const r = evaluateDeprecationLifecycle({
-      adapterName: 'cohere-embed-v3',
+      adapterName: 'self-hosted-embed-v3',
       deprecatedAt: daysFromIso(TODAY, 100),
       adapterDefaultGracePeriodDays: 60,
       orgGracePeriodDays: 180,

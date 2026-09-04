@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   # ── Job 1: Analyze ─────────────────────────────────────────────────
-  # Has ANTHROPIC_API_KEY only. No GitHub write access.
+  # Has GITHUB_MODELS_TOKEN only. No GitHub write access.
   # Even if the LLM response is compromised, this job cannot touch the repo.
   analyze:
     name: Analyze Issue
@@ -40,7 +40,7 @@ jobs:
       - name: Run triage analysis
         id: triage
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
           # Run triage with --body-file to avoid shell quoting issues
@@ -68,7 +68,7 @@ jobs:
           echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
 
   # ── Job 2: Report ──────────────────────────────────────────────────
-  # Has GITHUB_TOKEN only. No Anthropic key. Cannot call any LLM.
+  # Has GITHUB_TOKEN only. No GitHub key. Cannot call any LLM.
   # Posts the verdict comment and applies labels.
   report:
     name: Post Results

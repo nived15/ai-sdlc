@@ -1,6 +1,6 @@
 /**
  * AgentRunner abstraction — decouples agent invocation from execution environment.
- * The ClaudeCodeRunner is the initial implementation; swap to
+ * The CopilotRunner is the initial implementation; swap to
  * Codespaces / devcontainers by implementing this interface.
  */
 

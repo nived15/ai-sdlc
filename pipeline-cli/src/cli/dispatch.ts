@@ -179,7 +179,7 @@ export async function runDispatchCli(
         process.stderr.write('cli-dispatch claim: --worker-kind is required\n');
         return 2;
       }
-      if (kind !== 'in-session-agent' && kind !== 'claude-p-shell') {
+      if (kind !== 'in-session-agent' && kind !== 'copilot-p-shell') {
         process.stderr.write(`cli-dispatch claim: invalid --worker-kind '${kind}'\n`);
         return 2;
       }
@@ -661,7 +661,7 @@ Usage:
 
 Subcommands:
   peek
-  claim --worker-kind {in-session-agent|claude-p-shell}
+  claim --worker-kind {in-session-agent|copilot-p-shell}
   collect-verdicts [--include-failed]
   write-verdict --task-id <id> --outcome <enum> [--commit-sha <s>]
                 [--iterations-attempted <n>] [--session-id <uuid>] ...

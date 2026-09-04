@@ -40,7 +40,7 @@ import {
   type DorAtImportPerTaskResult,
   type RunDorAtImportOpts,
 } from './dor-at-import.js';
-import type { RefineBacklogTaskResult } from '../dor/ingress-claude.js';
+import type { RefineBacklogTaskResult } from '../dor/ingress.js';
 
 export type ImportOutcome =
   | {

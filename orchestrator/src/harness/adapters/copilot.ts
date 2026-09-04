@@ -1,8 +1,10 @@
 /**
- * CodexAdapter — wraps OpenAI Codex CLI behind the HarnessAdapter contract.
- * Phase 2.7 ships the adapter shell; the actual end-to-end Codex invocation against a
- * fixture worktree is deferred to Phase 3 dispatcher integration. The adapter's
- * capabilities, version probe, and account-id derivation are wired and tested here.
+ * CopilotAdapter — wraps the GitHub Copilot CLI behind the HarnessAdapter contract.
+ *
+ * The adapter declares the capabilities, binary requirement, and account-id
+ * derivation the orchestrator needs at pipeline-load time. End-to-end dispatch
+ * against a fixture worktree is wired through the dispatcher integration; tests
+ * inject `deps.invoke`.
  */
 
 import { createHash } from 'node:crypto';
@@ -18,29 +20,29 @@ import type {
   HarnessResult,
 } from '../types.js';
 
-const DEFAULT_AVAILABLE_MODELS = ['gpt-5', 'gpt-5-mini', 'o3', 'o3-mini'];
+const DEFAULT_AVAILABLE_MODELS = ['gpt-5', 'gpt-5-mini'];
 
-export interface CodexAdapterDeps {
+export interface CopilotAdapterDeps {
   env?: NodeJS.ProcessEnv;
   invoke?: (input: HarnessInput, onEvent?: (e: HarnessEvent) => void) => Promise<HarnessResult>;
   probe?: () => Promise<HarnessAvailability>;
 }
 
-export class CodexAdapter implements HarnessAdapter {
-  readonly name: HarnessName = 'codex';
+export class CopilotAdapter implements HarnessAdapter {
+  readonly name: HarnessName = 'copilot';
 
   readonly capabilities: HarnessCapabilities = {
     freshContext: true,
-    customTools: false, // Phase 2.7: partial MCP support; track via capability declaration.
+    customTools: true,
     streaming: true,
     worktreeAwareCwd: true,
-    skills: false,
+    skills: true,
     artifactWrites: true,
     maxContextTokens: 200_000,
   };
 
   readonly requires: HarnessRequires = {
-    binary: 'codex',
+    binary: 'copilot',
     versionRange: '>=0.1.0',
     versionProbe: {
       args: ['--version'],
@@ -50,14 +52,14 @@ export class CodexAdapter implements HarnessAdapter {
 
   private cachedAvailability: HarnessAvailability | null = null;
 
-  constructor(private readonly deps: CodexAdapterDeps = {}) {}
+  constructor(private readonly deps: CopilotAdapterDeps = {}) {}
 
   async getAccountId(): Promise<string | null> {
     const env = this.deps.env ?? process.env;
-    const tokenSources = [env.OPENAI_API_KEY, env.CODEX_API_KEY];
+    const tokenSources = [env.GH_TOKEN, env.GITHUB_TOKEN];
     for (const source of tokenSources) {
       if (source && source.length > 0) {
-        return createHash('sha256').update(`codex:${source}`).digest('hex').slice(0, 16);
+        return createHash('sha256').update(`copilot:${source}`).digest('hex').slice(0, 16);
       }
     }
     return null;
@@ -73,8 +75,9 @@ export class CodexAdapter implements HarnessAdapter {
   async invoke(input: HarnessInput, onEvent?: (e: HarnessEvent) => void): Promise<HarnessResult> {
     if (this.deps.invoke) return this.deps.invoke(input, onEvent);
     throw new Error(
-      'CodexAdapter.invoke is not wired into dispatch yet (Phase 3 work). ' +
-        'Tests should inject deps.invoke; production code should not call this method directly until Phase 3.',
+      'CopilotAdapter.invoke is not wired into dispatch yet. ' +
+        'Tests should inject deps.invoke; production dispatch goes through ' +
+        'CopilotHarnessAdapter in @ai-sdlc/pipeline-cli.',
     );
   }
 

@@ -1,6 +1,6 @@
 # Remote-sandbox read-only constraint (AISDLC-442)
 
-CCR (Claude Code Remote) sandboxes are **read-only by design** with respect to the AI-SDLC execution pipeline. This document covers what CCR can and cannot do, why the constraint exists, and the supported handoff workflow that bridges CCR tasks to local execution.
+CCR (GitHub Copilot CLI Remote) sandboxes are **read-only by design** with respect to the AI-SDLC execution pipeline. This document covers what CCR can and cannot do, why the constraint exists, and the supported handoff workflow that bridges CCR tasks to local execution.
 
 ## Why CCR is read-only
 
@@ -16,7 +16,7 @@ CCR (Claude Code Remote) sandboxes are **read-only by design** with respect to t
 Without all four, running `/ai-sdlc execute` in CCR produces cryptic downstream errors (missing signing key at Step 10, worktree creation failures at Step 3, plugin tool calls failing silently). AISDLC-442 adds an early-exit guard that detects the CCR environment and refuses with this message instead:
 
 ```
-ERROR: /ai-sdlc execute cannot run in a CCR remote sandbox. (CLAUDE_CODE_ENV=ccr detected)
+ERROR: /ai-sdlc execute cannot run in a CCR remote sandbox. (COPILOT_CLI_ENV=ccr detected)
 
 Remote sandboxes are read-only by design — they lack:
   - ~/.ai-sdlc/signing-key.pem (operator-machine-local, never in CCR)
@@ -29,7 +29,7 @@ Supported alternatives from a CCR sandbox:
        Use mcp__backlog__task_create (works fine in CCR)
   2. File a GitHub issue for local pickup:
        Use mcp__github__create_issue (works fine in CCR)
-  Then run /ai-sdlc execute <task-id> from a LOCAL Claude Code session.
+  Then run /ai-sdlc execute <task-id> from a LOCAL Copilot CLI session.
 
 See: docs/operations/remote-agents-readonly.md
 ```
@@ -104,9 +104,9 @@ On the next `/ai-sdlc orchestrator-tick`, the autonomous orchestrator reads the 
 
 The guard runs before any other step (before even path resolution). It checks three signals in order:
 
-1. **`CLAUDE_CODE_ENV=ccr`** — canonical env var injected by Claude Code in CCR sessions. Exact, case-sensitive match.
-2. **`CLAUDE_REMOTE_EXECUTION=1`** — alternative injection used in some operator configurations.
-3. **`CLAUDE_CODE_ENV` set (any value) + `~/.ai-sdlc/signing-key.pem` absent** — conservative fallback. Fires only when BOTH hold, to avoid false-positives on local sessions that haven't run `/ai-sdlc init-signing-key` yet.
+1. **`COPILOT_CLI_ENV=ccr`** — canonical env var injected by GitHub Copilot CLI in CCR sessions. Exact, case-sensitive match.
+2. **`COPILOT_REMOTE_EXECUTION=1`** — alternative injection used in some operator configurations.
+3. **`COPILOT_CLI_ENV` set (any value) + `~/.ai-sdlc/signing-key.pem` absent** — conservative fallback. Fires only when BOTH hold, to avoid false-positives on local sessions that haven't run `/ai-sdlc init-signing-key` yet.
 
 ### Override for test environments
 
@@ -122,7 +122,7 @@ Use sparingly. The guard protects against confusing downstream failures; bypassi
 
 The read-only constraint is not an arbitrary policy — it reflects a deliberate security boundary:
 
-- **Signing keys must stay operator-local.** Transporting `~/.ai-sdlc/signing-key.pem` into a managed sandbox would allow the sandbox operator (Anthropic, or whichever cloud provider runs CCR) to forge review attestations. The Merkle-transcript attestation model (RFC-0042) is specifically designed so the operator's key never leaves the local machine.
+- **Signing keys must stay operator-local.** Transporting `~/.ai-sdlc/signing-key.pem` into a managed sandbox would allow the sandbox operator (GitHub Models, or whichever cloud provider runs CCR) to forge review attestations. The Merkle-transcript attestation model (RFC-0042) is specifically designed so the operator's key never leaves the local machine.
 - **Worktree isolation is Pattern C.** The `.worktrees/<task-id>/` layout assumes a local filesystem with full git-worktree support. Sandbox environments may not expose the underlying `.git` directory in a way that supports `git worktree add`.
 - **Plugin MCP server is not installed in sandboxes.** The `mcp__plugin_ai-sdlc_ai-sdlc__*` tools (task lifecycle management, permittedExternalPaths enforcement) require the plugin's MCP server to be running, which requires the plugin to be installed.
 
@@ -130,7 +130,7 @@ For the architectural paths that WOULD enable `/ai-sdlc execute` from CCR (signi
 
 ## Related
 
-- `CLAUDE.md` — "Remote agents (`/schedule`) — read-only by design" section
+- `.github/copilot-instructions.md` — "Remote agents (`/schedule`) — read-only by design" section
 - `ai-sdlc-plugin/commands/execute.md` — "Remote-sandbox guard (AISDLC-442)" section
 - `docs/operations/init.md` — how to run `/ai-sdlc init-signing-key` on a local session
 - RFC-0042 — v6 attestation schema (Merkle-transcript model, operator-local signing)

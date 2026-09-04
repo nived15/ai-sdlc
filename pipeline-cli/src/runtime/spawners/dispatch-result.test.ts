@@ -129,7 +129,7 @@ describe('isDispatchResult', () => {
         subagentType: 'developer',
         // Anything other than 'success' | 'error' must be rejected; the
         // legacy `'manifest-emitted'` value (emitted only by the removed
-        // ClaudeCliInlineSpawner, RFC-0041 Phase 3.3 / AISDLC-377.6) is one
+        // CopilotHarnessAdapter, RFC-0041 Phase 3.3 / AISDLC-377.6) is one
         // such case but the type-guard rejects any non-listed string.
         status: 'pending',
         output: '',

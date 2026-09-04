@@ -17,7 +17,7 @@
  *
  * Pattern: Stage A (deterministic) first; Stage B (LLM diagnosis) only when
  * Stage A finds nothing — emit a structured markdown prompt the operator can
- * paste into Claude Code instead of letting the agent investigate from
+ * paste into GitHub Copilot CLI instead of letting the agent investigate from
  * scratch every time.
  *
  * Mirrors the cli-deps shape exactly: a small module of pure functions, a
@@ -375,7 +375,7 @@ async function applyRebase(opts: ResolveOptions): Promise<void> {
 async function applyNoOpPush(opts: ResolveOptions): Promise<void> {
   // `git commit --allow-empty` requires a working tree. For --all sweeps this
   // would normally be the operator's main worktree which is read-only by
-  // contract (CLAUDE.md). We require the operator to be sitting in the PR's
+  // contract (.github/copilot-instructions.md). We require the operator to be sitting in the PR's
   // own worktree (cwd) — fail loudly otherwise so we don't accidentally push
   // an empty commit on main.
   const branchOut = await opts.runner('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
@@ -399,9 +399,9 @@ async function applyNoOpPush(opts: ResolveOptions): Promise<void> {
 // ── Stage B prompt — LLM-fallback diagnosis ──────────────────────────
 
 /**
- * Render a markdown prompt the operator can paste into Claude when Stage A
+ * Render a markdown prompt the operator can paste into GitHub Copilot when Stage A
  * found no matches but the PR is still stuck. Encodes every signal Stage A
- * gathered so Claude doesn't have to re-discover it via gh / git.
+ * gathered so GitHub Copilot doesn't have to re-discover it via gh / git.
  */
 export function renderStageBPrompt(pr: PrInfo): string {
   const lines: string[] = [];

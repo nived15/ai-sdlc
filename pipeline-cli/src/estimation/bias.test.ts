@@ -215,7 +215,7 @@ describe('computeBiasStats() — AC #2 per-agent stratification', () => {
       taskId: 'AISDLC-1',
       class: 'bug',
       bucketMiss: 2,
-      predictedBy: 'claude-opus-4-7',
+      predictedBy: 'reasoning',
     });
     writeCalibrationRow(workdir, {
       taskId: 'AISDLC-2',
@@ -227,15 +227,15 @@ describe('computeBiasStats() — AC #2 per-agent stratification', () => {
       taskId: 'AISDLC-3',
       class: 'bug',
       bucketMiss: 1,
-      predictedBy: 'claude-opus-4-7',
+      predictedBy: 'reasoning',
     });
 
     const result = computeBiasStats({ taskClass: 'bug', artifactsDir: workdir });
     expect(result.n).toBe(3);
     expect(result.byAgent).toHaveLength(2);
 
-    // claude-opus-4-7 has 2 samples (miss 2 + miss 1 → mean 1.5)
-    const opusAgent = result.byAgent.find((a) => a.predictedBy === 'claude-opus-4-7');
+    // reasoning has 2 samples (miss 2 + miss 1 → mean 1.5)
+    const opusAgent = result.byAgent.find((a) => a.predictedBy === 'reasoning');
     expect(opusAgent).toBeDefined();
     expect(opusAgent!.n).toBe(2);
     expect(opusAgent!.meanBucketMiss).toBe(1.5);

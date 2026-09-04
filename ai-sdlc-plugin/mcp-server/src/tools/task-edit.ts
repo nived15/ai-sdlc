@@ -52,7 +52,7 @@ export function registerTaskEdit(server: McpServer, deps: ToolDeps): void {
         // `deps.projectDir` injected by the server when it points at a
         // valid backlog root (this lets tests inject a tmpdir without
         // mucking with env vars). Otherwise re-run the env+cwd resolver,
-        // which sidesteps the broken `${CLAUDE_PLUGIN_DATA}` default the
+        // which sidesteps the broken `${COPILOT_PLUGIN_DATA}` default the
         // plugin manifest sets for `AI_SDLC_PROJECT_ROOT`.
         const projectDir = pickProjectRoot(deps.projectDir);
         if (typeof projectDir !== 'string') return projectDir; // error result

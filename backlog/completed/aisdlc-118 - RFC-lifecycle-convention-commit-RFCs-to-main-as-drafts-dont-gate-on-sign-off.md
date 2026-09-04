@@ -15,7 +15,7 @@ dependencies: []
 references:
   - spec/rfcs/README.md
   - spec/rfcs/RFC-0001-template.md
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 priority: high
 ---
 

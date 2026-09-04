@@ -20,7 +20,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { refineBacklogTask } from '../dor/ingress-claude.js';
+import { refineBacklogTask } from '../dor/ingress.js';
 import { renderClarificationComment } from '../dor/comment-loop.js';
 import { loadDorConfig } from '../dor/dor-config.js';
 

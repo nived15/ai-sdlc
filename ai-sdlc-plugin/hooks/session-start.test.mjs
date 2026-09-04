@@ -56,10 +56,10 @@ function runHook(projectDir, extraEnv = {}) {
   // default so tests stay hermetic regardless of what the ambient shell
   // running the suite happens to have set — the hook itself is the only
   // thing that's supposed to set this var (on a real self-heal failure).
-  const env = { ...process.env, CLAUDE_PROJECT_DIR: projectDir };
+  const env = { ...process.env, COPILOT_PROJECT_DIR: projectDir };
   delete env.__AI_SDLC_INSTALL_RUNTIME_DEPS_ERROR;
-  // AISDLC-557 round-3 review: CLAUDE_PLUGIN_ROOT/DIR must go too. The hook's
-  // real self-heal block fires on CLAUDE_PLUGIN_ROOT + a plugin.json at that
+  // AISDLC-557 round-3 review: COPILOT_PLUGIN_ROOT/DIR must go too. The hook's
+  // real self-heal block fires on COPILOT_PLUGIN_ROOT + a plugin.json at that
   // path, and sets the module-local runtimeDepsError, which
   // buildRuntimeDepsWarning() PREFERS over the env fallback via `??`. So an
   // ambient value silently replaces the fixture a redaction test injected —
@@ -68,8 +68,8 @@ function runHook(projectDir, extraEnv = {}) {
   // including this repo's own dogfood flow, so the leak is the normal case
   // rather than an edge one. Deleted BEFORE extraEnv so a test can still opt
   // in deliberately.
-  delete env.CLAUDE_PLUGIN_ROOT;
-  delete env.CLAUDE_PLUGIN_DIR;
+  delete env.COPILOT_PLUGIN_ROOT;
+  delete env.COPILOT_PLUGIN_DIR;
   Object.assign(env, extraEnv);
   try {
     const output = execFileSync('node', [hookScript], {
@@ -241,9 +241,9 @@ describe('ai-sdlc-plugin session-start hook', () => {
     );
     chmodSync(join(fakePlugin, 'scripts', 'install-runtime-deps.sh'), 0o755);
 
-    // Opt IN to CLAUDE_PLUGIN_ROOT (runHook strips it by default) and inject
+    // Opt IN to COPILOT_PLUGIN_ROOT (runHook strips it by default) and inject
     // NO env fixture — so anything in the banner came from the local capture.
-    const result = runHook(tempDirEmpty, { CLAUDE_PLUGIN_ROOT: fakePlugin });
+    const result = runHook(tempDirEmpty, { COPILOT_PLUGIN_ROOT: fakePlugin });
     const ctx = JSON.parse(result.output).hookSpecificOutput?.additionalContext ?? '';
     assert.ok(
       ctx.includes('Plugin runtime-dependency install failed'),

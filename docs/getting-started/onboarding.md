@@ -14,9 +14,9 @@ discovered during guide development are listed in [Found Gaps](#found-gaps).
 
 > **Substrate boundary note:** AI-SDLC's pipeline harness — the autonomous
 > orchestrator, three-tier reviewer fan-out, and DSSE attestation signer — requires
-> **Claude Code** (`claude` on PATH) today. Validation steps (schema checks,
+> **GitHub Copilot CLI** (`copilot` on PATH) today. Validation steps (schema checks,
 > resource building, lint) are harness-neutral and run in any Node.js environment.
-> Section [Step 5 — What Requires Claude Code](#step-5--what-requires-claude-code-today)
+> Section [Step 5 — What Requires GitHub Copilot CLI](#step-5--what-requires-copilot-today)
 > calls out the exact boundary so adopters on other substrates know where the
 > current limit is.
 
@@ -29,7 +29,7 @@ discovered during guide development are listed in [Found Gaps](#found-gaps).
 3. [Step 2 — Clone or initialize your target repository](#step-2--clone-or-initialize-your-target-repository)
 4. [Step 3 — Scaffold the `.ai-sdlc/` resource tree](#step-3--scaffold-the-ai-sdlc-resource-tree)
 5. [Step 4 — Initialize a signing key](#step-4--initialize-a-signing-key)
-6. [Step 5 — What requires Claude Code today](#step-5--what-requires-claude-code-today)
+6. [Step 5 — What requires GitHub Copilot CLI today](#step-5--what-requires-copilot-today)
 7. [Step 6 — Run your first task through the pipeline](#step-6--run-your-first-task-through-the-pipeline)
 8. [Step 7 — Verify the attested PR](#step-7--verify-the-attested-pr)
 9. [Step 8 — Wire GitHub Actions (optional but recommended)](#step-8--wire-github-actions-optional-but-recommended)
@@ -49,7 +49,7 @@ Before you begin, confirm you have these on the machine running the pipeline:
 | git | any recent | `git --version` |
 | GitHub CLI | 2.x | `gh --version` |
 | OpenSSL | 3.x | `openssl version` |
-| Claude Code CLI | latest | `claude --version` *(Claude Code path only)* |
+| GitHub Copilot CLI | latest | `copilot --version` *(GitHub Copilot CLI path only)* |
 
 **No pre-existing `~/.ai-sdlc/` directory should be present** when you start. If one
 exists from a previous install, rename it aside:
@@ -158,7 +158,7 @@ Expected output (paths may vary):
 [ai-sdlc:init] write .github/workflows/verify-attestation.yml
 [ai-sdlc:init] write .github/workflows/ai-sdlc-review.yml
 [ai-sdlc:init] write .github/workflows/auto-enable-auto-merge.yml
-[ai-sdlc:init] write CLAUDE.md
+[ai-sdlc:init] write .github/copilot-instructions.md
 [ai-sdlc:init] branch protection applied to main
 [ai-sdlc:init] done — see next steps below
 ```
@@ -173,7 +173,7 @@ ai-sdlc health
 Commit the scaffold:
 
 ```bash
-git add .ai-sdlc .github CLAUDE.md
+git add .ai-sdlc .github .github/copilot-instructions.md
 git commit -m "chore: bootstrap AI-SDLC config"
 git push -u origin main
 ```
@@ -190,7 +190,7 @@ The attestation pipeline signs review envelopes with an ed25519 key stored in
 /ai-sdlc init-signing-key
 ```
 
-This command (a Claude Code slash command — see the boundary note in the
+This command (a GitHub Copilot CLI slash command — see the boundary note in the
 introduction):
 
 1. Generates an ed25519 key pair under `~/.ai-sdlc/`
@@ -241,36 +241,36 @@ cat ~/.ai-sdlc/signing-key.pub.pem
 
 ---
 
-## Step 5 — What Requires Claude Code Today
+## Step 5 — What Requires GitHub Copilot CLI Today
 
 AI-SDLC has a substrate boundary: some steps run on any Node.js environment;
-others require the `claude` CLI (Claude Code). This table maps every step in the
+others require the `copilot` CLI (GitHub Copilot CLI). This table maps every step in the
 pipeline to its current requirement:
 
-| Step | Requires Claude Code? | Notes |
+| Step | Requires GitHub Copilot CLI? | Notes |
 |---|---|---|
 | `ai-sdlc init` (scaffold) | No | Plain Node.js CLI |
 | `ai-sdlc health` (validation) | No | Plain Node.js CLI |
 | `@ai-sdlc/reference` SDK validation | No | Node.js + TypeScript |
 | Conformance suite (`conformance/`) | No | Language-agnostic fixture runner |
 | `ai-sdlc run --issue <n>` (single issue) | No | SDK spawner; can use API key |
-| `/ai-sdlc init-signing-key` | **Yes** | Claude Code slash command |
+| `/ai-sdlc init-signing-key` | **Yes** | GitHub Copilot CLI slash command |
 | `/ai-sdlc execute <task-id>` (full pipeline) | **Yes** | Orchestrator + worktree + attestation |
 | Three-tier reviewer fan-out | **Yes** | `developer`, `code-reviewer`, `test-reviewer`, `security-reviewer` agents |
 | DSSE attestation signing | **Yes** | Operator's machine + signing key |
 | `/ai-sdlc orchestrator-tick` | **Yes** | Autonomous loop requires CC session |
 
-**Adopters on other substrates** (GitHub Copilot, Cursor, Codex, OpenAI API)
+**Adopters on other substrates** (GitHub Copilot, GitHub Copilot, GitHub Copilot, GitHub Copilot API)
 can use the `pnpm --filter @ai-sdlc/dogfood watch --issue <id>` path which
-dispatches via `ANTHROPIC_API_KEY` — but this command is only available inside
+dispatches via `GITHUB_MODELS_TOKEN` — but this command is only available inside
 the **ai-sdlc monorepo checkout** (`@ai-sdlc/dogfood` is a private workspace
 package that is not published to npm). Adopters who do not have the monorepo
-checked out locally must use the Claude Code path above or wait for a standalone
+checked out locally must use the GitHub Copilot CLI path above or wait for a standalone
 API-key spawner CLI (tracked as a follow-up). The signing key and attestation
 signing also remain operator-machine-local today regardless of substrate.
 
 The framework is designed to be substrate-agnostic at the pipeline orchestration
-level (RFC-0041 Conductor/Worker Architecture). The Claude Code coupling exists
+level (RFC-0041 Conductor/Worker Architecture). The GitHub Copilot CLI coupling exists
 in the subscription-billed autonomous drain path; the API-key path (`api-key`
 spawner) is available for adopters who cannot use the CC CLI directly.
 
@@ -320,9 +320,9 @@ git commit -m "docs(backlog): add MY-TASK-1 hello-world smoke-test task"
 git push
 ```
 
-### Step 6.2 — Dispatch via the autonomous pipeline (Claude Code path)
+### Step 6.2 — Dispatch via the autonomous pipeline (GitHub Copilot CLI path)
 
-Inside a Claude Code session, run:
+Inside a Copilot CLI session, run:
 
 ```bash
 /ai-sdlc execute MY-TASK-1
@@ -345,22 +345,22 @@ subagents (code, test, security), signs the attestation envelope, and flips the
 PR from draft to ready-for-review — triggering CI exactly once on the
 fully-attested HEAD.
 
-### Step 6.3 — Alternative: API-key path (no Claude Code required)
+### Step 6.3 — Alternative: API-key path (no GitHub Copilot CLI required)
 
-If you are not using Claude Code and you have the **ai-sdlc monorepo** checked
+If you are not using GitHub Copilot CLI and you have the **ai-sdlc monorepo** checked
 out locally, dispatch via the watcher:
 
 ```bash
 # Set the key in your shell environment first (do NOT inline secrets into
 # shell commands — they land in shell history and process lists).
-export ANTHROPIC_API_KEY=sk-ant-...
+export GITHUB_MODELS_TOKEN=sk-ant-...
 pnpm --filter @ai-sdlc/dogfood watch --issue <github-issue-number>
 ```
 
-This path uses the API key spawner and does not require `claude` on PATH.
+This path uses the API key spawner and does not require `copilot` on PATH.
 Note that `@ai-sdlc/dogfood` is a **private workspace package inside the
 ai-sdlc monorepo** — it is not available from npm. Adopters without the
-monorepo checked out must use the Claude Code path in Step 6.2.
+monorepo checked out must use the GitHub Copilot CLI path in Step 6.2.
 
 Attestation signing is still operator-local; you will need to sign manually
 after the agent commits (see
@@ -418,7 +418,7 @@ the attestation envelope was committed:
 # Inside the PR's worktree (or after checking out the branch):
 ls .ai-sdlc/attestations/
 
-# Expected for a Claude Code / /ai-sdlc execute run (v6 default, AISDLC-409):
+# Expected for a GitHub Copilot CLI / /ai-sdlc execute run (v6 default, AISDLC-409):
 #   <patch-id>.v6.dsse.json   (primary, content-addressed by git patch-id)
 #
 # When no patch-id is available (empty diff after exclusions, or git
@@ -478,7 +478,7 @@ gh secret set AI_SDLC_PAT --body-file path/to/token.txt
 ```
 
 > **Shell-history hygiene:** never pass live secrets as inline arguments
-> (`--body "ghp_..."`, `ANTHROPIC_API_KEY=sk-ant-... command`) — they appear in
+> (`--body "ghp_..."`, `GITHUB_MODELS_TOKEN=sk-ant-... command`) — they appear in
 > `~/.zsh_history` / `~/.bash_history`, `ps aux`, and OS audit logs. Use the
 > interactive form or environment variables set from a secrets manager.
 
@@ -533,9 +533,9 @@ requires adding the remote before running init to avoid the placeholder entirely
 `.ai-sdlc/pipeline.yaml` and replace `your-org` with your real org and repo name,
 then re-commit.
 
-### Gap 2 — `/ai-sdlc init-signing-key` is a Claude Code slash command; no standalone CLI equivalent for the signing-key wizard
+### Gap 2 — `/ai-sdlc init-signing-key` is a GitHub Copilot CLI slash command; no standalone CLI equivalent for the signing-key wizard
 
-**Observed:** adopters on non-Claude Code substrates have no CLI equivalent for
+**Observed:** adopters on non-GitHub Copilot CLI substrates have no CLI equivalent for
 `/ai-sdlc init-signing-key`. The [manual key generation](#alternative-manual-key-generation)
 section in Step 4 covers the workaround (direct `openssl genpkey` commands), but
 it requires manually constructing the `trusted-reviewers.yaml` YAML block.
@@ -555,15 +555,15 @@ CI contexts without the sibling repo. The guide documents `pnpm docs:check` as
 the relevant command; the actual drift is caught when the maintainer runs it with
 both repos checked out side by side. No change needed for adopters.
 
-### Gap 4 — Claude Code must be authenticated before `/ai-sdlc execute` dispatches
+### Gap 4 — GitHub Copilot CLI must be authenticated before `/ai-sdlc execute` dispatches
 
-**Observed:** a fresh machine with `claude` on PATH but not authenticated (no
-`~/.claude/` session state) fails at the `Agent(developer)` dispatch step with an
+**Observed:** a fresh machine with `copilot` on PATH but not authenticated (no
+`~/.copilot/` session state) fails at the `Agent(developer)` dispatch step with an
 auth error, not a meaningful pipeline error.
 
-**Status:** Mechanical — the fix is `claude auth` (or completing the interactive
-auth flow the first time `claude` is invoked). The Prerequisites section now
-calls out `claude --version` as the check to run, which implicitly surfaces the
+**Status:** Mechanical — the fix is `copilot /login` (or completing the interactive
+auth flow the first time `copilot` is invoked). The Prerequisites section now
+calls out `copilot --version` as the check to run, which implicitly surfaces the
 auth requirement.
 
 ---
@@ -643,7 +643,7 @@ git commit -m "docs: sync MDX from ai-sdlc source"
   rollup architecture.
 - **[Operations: Attestation Troubleshooting](../operations/attestation-troubleshooting.md)** — diagnose
   and resolve `ai-sdlc/attestation` check failures; includes the manual signing
-  recovery flow for ad-hoc or non-Claude-Code situations.
+  recovery flow for ad-hoc or non-GitHub Copilot-Code situations.
 - **[Conformance Suite](../../conformance/README.md)** — validate your schema
   resources against the fixture suite.
 - **[Architecture](../architecture.md)** — package structure, data flow, and

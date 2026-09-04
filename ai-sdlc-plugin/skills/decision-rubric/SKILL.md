@@ -49,7 +49,7 @@ The point of this part is **forcing yourself to actually understand the question
 A short, evidence-loaded paragraph or table. What do comparable systems do? Cite specific products, conventions, or published patterns. Examples:
 
 - "Pinecone / Weaviate refuse cross-vectorizer comparison; LangChain in-process stores re-embed silently."
-- "Kubernetes API deprecation policy: 12 months GA, 9 months beta. Stripe: 1 year for breaking changes. OpenAI: 12-15 months on embeddings."
+- "Kubernetes API deprecation policy: 12 months GA, 9 months beta. Stripe: 1 year for breaking changes. GitHub Copilot: 12-15 months on embeddings."
 - "Tailwind / Material / Stripe / Vercel all use the design-tokens flat pattern; no major framework permits nested variant declarations."
 
 Don't fabricate. If you don't know, say so and constrain the question. Citing a real existing pattern is what makes the rubric real research vs. a vibes-based recommendation.
@@ -92,7 +92,7 @@ A real instance from the AI-SDLC framework's own RFC corpus, RFC-0019 OQ-1 (vect
 >
 > **Industry research.**
 > - LangChain / LlamaIndex default to in-process stores (FAISS, Chroma) — runtime-only, no operator-debuggable substrate
-> - OpenAI cookbook: pickle for tiny corpora, FAISS or pgvector for production
+> - GitHub Copilot cookbook: pickle for tiny corpora, FAISS or pgvector for production
 > - Existing AI-SDLC substrate: `_dor/`, `_deps/`, `_subscription-ledger/`, `_captures/`, `_decisions/` ALL use JSONL append-only — strong consistency principle
 > - Rough perf: 1536-dim cosine over 10K vectors ≈ 50ms in JS, 100K ≈ 500ms, 1M ≈ 5s
 >

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-sdlc.io/schemas/v1alpha1/dispatch-config.v1.schema.json",
   "title": "AI-SDLC DispatchConfig",
-  "description": "Per-project configuration for the Dispatch Board (RFC-0041 §4.3.3). Lives on disk at .ai-sdlc/dispatch-config.yaml. Declares the default Worker kind, parallelism caps, and per-kind tuning knobs. Phase 1 fields under spec.inSessionAgent are consumed; spec.claudePShell is declared for forward-compat with Phase 2 (AISDLC-377.3).",
+  "description": "Per-project configuration for the Dispatch Board (RFC-0041 §4.3.3). Lives on disk at .ai-sdlc/dispatch-config.yaml. Declares the default Worker kind, parallelism caps, and per-kind tuning knobs. Phase 1 fields under spec.inSessionAgent are consumed; spec.copilotPShell is declared for forward-compat with Phase 2 (AISDLC-377.3).",
   "type": "object",
   "required": ["apiVersion", "kind", "spec"],
   "properties": {
@@ -15,7 +15,7 @@
       "properties": {
         "defaultWorkerKind": {
           "type": "string",
-          "enum": ["in-session-agent", "claude-p-shell"],
+          "enum": ["in-session-agent", "copilot-p-shell"],
           "default": "in-session-agent",
           "description": "Which Worker kind the Conductor assigns when a manifest does not declare one explicitly. Phase 1 default is in-session-agent (subscription-preserving)."
         },
@@ -29,11 +29,11 @@
               "default": 4,
               "description": "Operator's expected open-terminal count for in-session-agent Workers. The Conductor sizes its dispatch batch against this cap. Set to 0 to disable in-session-agent dispatch entirely."
             },
-            "claudePShellMaxConcurrent": {
+            "copilotPShellMaxConcurrent": {
               "type": "integer",
               "minimum": 0,
               "default": 0,
-              "description": "Supervisor concurrent claude -p Worker cap (Phase 2). 0 = supervisor disabled; bump to enable headless dispatch once Phase 2 ships."
+              "description": "Supervisor concurrent copilot -p Worker cap (Phase 2). 0 = supervisor disabled; bump to enable headless dispatch once Phase 2 ships."
             }
           },
           "additionalProperties": false
@@ -46,13 +46,13 @@
               "type": "integer",
               "minimum": 1,
               "default": 5,
-              "description": "RFC-0041 OQ-6 cost-first bias — in-session-agent Workers poll the queue every 5 seconds (faster than claude-p-shell at 15s) so they preferentially claim 'any' manifests."
+              "description": "RFC-0041 OQ-6 cost-first bias — in-session-agent Workers poll the queue every 5 seconds (faster than copilot-p-shell at 15s) so they preferentially claim 'any' manifests."
             },
             "quotaBackoffSec": {
               "type": "integer",
               "minimum": 1,
               "default": 600,
-              "description": "OQ-7 — base cool-down (seconds) after a subscription quota exhaustion (429) when Anthropic's Retry-After header is absent."
+              "description": "OQ-7 — base cool-down (seconds) after a subscription quota exhaustion (429) when GitHub Models's Retry-After header is absent."
             },
             "quotaBackoffMaxSec": {
               "type": "integer",
@@ -75,9 +75,9 @@
           },
           "additionalProperties": false
         },
-        "claudePShell": {
+        "copilotPShell": {
           "type": "object",
-          "description": "Tuning knobs for the claude-p-shell Worker kind. Read by Phase 2 (AISDLC-377.3); declared in Phase 1 for forward-compat.",
+          "description": "Tuning knobs for the copilot-p-shell Worker kind. Read by Phase 2 (AISDLC-377.3); declared in Phase 1 for forward-compat.",
           "properties": {
             "pollIntervalSec": {
               "type": "integer",
@@ -89,7 +89,7 @@
               "type": "integer",
               "minimum": 60000,
               "default": 1800000,
-              "description": "Per-Worker wall-clock watchdog (matches ShellClaudePSpawner.DEFAULT_TIMEOUT_MS per OQ-3)."
+              "description": "Per-Worker wall-clock watchdog (matches CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS per OQ-3)."
             },
             "supervisorPidFile": {
               "type": "string",
@@ -110,7 +110,7 @@
           "type": "integer",
           "minimum": 60,
           "default": 1800,
-          "description": "OQ-3 — inflight heartbeats older than this are presumed dead. 1800s (30 min) matches ShellClaudePSpawner.DEFAULT_TIMEOUT_MS."
+          "description": "OQ-3 — inflight heartbeats older than this are presumed dead. 1800s (30 min) matches CopilotHarnessAdapter.DEFAULT_TIMEOUT_MS."
         }
       },
       "additionalProperties": false

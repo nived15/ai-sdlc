@@ -10,8 +10,8 @@
  *    back to the placeholder only when no remote is configured.
  *  - Pin `@ai-sdlc/mcp-advisor` in generated `.mcp.json` to the
  *    orchestrator version that ran init, with an inline opt-out hint.
- *  - Skip `.cursor/mcp.json` unless Cursor is detected (project-local
- *    `.cursor/`, user-global `~/.cursor/`) or `--cursor` is passed.
+ *  - Generate MCP config for the GitHub Copilot CLI (`.mcp.json`) and,
+ *    when present, VS Code (`.vscode/mcp.json`).
  *
  * AISDLC-143 enhancements (Q4(b) of the quality-gate redesign):
  *  - Default invocation is now an interactive WIZARD (DoR / attestation /
@@ -38,7 +38,7 @@ import { resolveVersions, formatVersionBlock } from '../versions.js';
 import {
   applyFeatureSelection,
   buildProductionAdapters,
-  ensureClaudeMdPointer,
+  ensureCopilotInstructionsPointer,
   renderNextSteps,
   resolveFeatureSelection,
   resolveInstallTarget,
@@ -105,7 +105,7 @@ spec:
  *
  * Three named tiers map to escalating tool surfaces. The default (`coding`)
  * preserves pre-AISDLC-79 behavior plus `NotebookEdit` (parity with the
- * Claude Code SDK's filesystem editing surface). Higher tiers add tools only
+ * GitHub Copilot CLI's filesystem editing surface). Higher tiers add tools only
  * when their use-case justifies the additional surface area / risk.
  *
  * See `backlog/decisions/AISDLC-79-agent-role-tools-defaults.md` for rationale.
@@ -124,7 +124,7 @@ spec:
   # Tier: coding-agent (default).
   # Filesystem + shell editing surface only. No web access, no sub-agent
   # spawning, no Skill loading. This matches the pre-AISDLC-79 default
-  # plus NotebookEdit (parity with the Claude Code SDK's editing surface).
+  # plus NotebookEdit (parity with the GitHub Copilot CLI's editing surface).
   tools:
     - Edit          # write to existing files
     - Write         # create new files
@@ -555,7 +555,6 @@ export const initCommand = new Command('init')
   .description('Initialize AI-SDLC configuration in the current project')
   .option('--dry-run', 'Show what would be created without writing files')
   .option('--skip-mcp', 'Skip MCP server auto-configuration')
-  .option('--cursor', 'Force-install Cursor MCP config even if Cursor is not detected')
   .option('-d, --dir <path>', 'Config directory name', '.ai-sdlc')
   .option(
     '--role <tier>',
@@ -641,7 +640,6 @@ export const initCommand = new Command('init')
       return;
     }
     const tier = tierInput as AgentRoleTier;
-    const cursorOptIn = !!opts.cursor;
 
     // ── Validate --add early so we error before doing any work. ────────
     const addCheck = validateAddArg(opts.add);
@@ -776,7 +774,6 @@ export const initCommand = new Command('init')
         const { detected, skipped } = detectAgentsDetailed(projectDir, {
           isWorkspace: true,
           pinVersion: versions.orchestrator,
-          cursorOptIn,
         });
 
         console.log(`\nMCP server setup (workspace root):`);
@@ -809,7 +806,6 @@ export const initCommand = new Command('init')
       if (!opts.skipMcp) {
         const { detected, skipped } = detectAgentsDetailed(projectDir, {
           pinVersion: versions.orchestrator,
-          cursorOptIn,
         });
 
         console.log(`\nMCP server setup:`);
@@ -837,7 +833,7 @@ export const initCommand = new Command('init')
 /**
  * Run the AISDLC-143 wizard stage: prompt the user (or short-circuit on
  * --yes / --with-X), apply the chosen feature templates, append the
- * CLAUDE.md pointer, and render the "next steps" summary.
+ * .github/copilot-instructions.md pointer, and render the "next steps" summary.
  *
  * Pulled out of the inline action body so both the single-repo and
  * workspace-root branches share the same wiring. Adapters are built
@@ -859,7 +855,7 @@ async function runWizardStage(projectDir: string, flags: WizardFlags): Promise<v
   console.log('');
   console.log('Scaffolding selected features:');
   const result = await applyFeatureSelection(projectDir, selection, flags, adapters);
-  ensureClaudeMdPointer(projectDir, adapters, flags.dryRun);
+  ensureCopilotInstructionsPointer(projectDir, adapters, flags.dryRun);
   renderNextSteps(selection, result, adapters);
 
   // Reviewer feedback (round 2, suggestion #5): when branch-protection

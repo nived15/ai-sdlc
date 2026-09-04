@@ -2,7 +2,7 @@
  * `CopilotHarnessAdapter` — Phase 2 of the Copilot execution path (AISDLC-429.2).
  *
  * Implements the `SubagentSpawner` contract by bridging to a Copilot CLI's
- * `spawn_agent` host tool. Copilot does not expose Claude Code's plugin
+ * `spawn_agent` host tool. Copilot does not expose GitHub Copilot CLI's plugin
  * `Agent` system, so this adapter centralises the developer + reviewer
  * dispatch contract:
  *
@@ -37,7 +37,7 @@
 import { spawn as nodeSpawn, type ChildProcess } from 'node:child_process';
 import type { SpawnOpts, SubagentResult, SubagentSpawner, SubagentType } from '../../types.js';
 
-/** Default per-spawn timeout. Mirrors `ShellClaudePSpawner` (30 minutes). */
+/** Default per-spawn timeout. Mirrors `CopilotHarnessAdapter` (30 minutes). */
 const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000;
 
 /**
@@ -106,14 +106,14 @@ export interface CopilotHarnessAdapterOptions {
   spawnAgent: CopilotSpawnAgentFn;
   /**
    * Per-call default timeout in ms. Falls back to 30 minutes (matches
-   * `ShellClaudePSpawner`). Per-call `SpawnOpts.timeout` overrides this.
+   * `CopilotHarnessAdapter`). Per-call `SpawnOpts.timeout` overrides this.
    */
   defaultTimeoutMs?: number;
   /**
    * Per-`SubagentType` system prompt overrides. When omitted for a given
    * type the built-in `DEFAULT_SYSTEM_PROMPTS` value is used. Pass the
    * full plugin agent body here when you want the dispatched Copilot agent
-   * to honour the same JSON return contract that the Claude Code plugin
+   * to honour the same JSON return contract that the GitHub Copilot CLI plugin
    * agents enforce.
    */
   systemPrompts?: Partial<Record<SubagentType, string>>;
@@ -222,7 +222,7 @@ export class CopilotHarnessAdapter implements SubagentSpawner {
   /**
    * Copilot `spawn_agent` is single-task per call but cheap to invoke
    * concurrently — fan out the three reviewers via `Promise.all` so
-   * Step 7b sees the same parallel-dispatch latency as the Claude Code
+   * Step 7b sees the same parallel-dispatch latency as the GitHub Copilot CLI
    * path. If a host bridge needs serial fallback (e.g. rate limits) it
    * can implement that internally inside its `spawnAgent` callback.
    */

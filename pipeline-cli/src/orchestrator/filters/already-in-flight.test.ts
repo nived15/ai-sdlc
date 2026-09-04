@@ -11,7 +11,7 @@
  *   - Signal (b): fails when `.worktrees/<task-id-lower>/.active-task` exists;
  *     carries worktreePath in detail.
  *   - Signal (c): fails when `readProcessTable` output contains a matching
- *     `claude --print` line with the task ID; carries subprocessPid in detail.
+ *     `copilot -p` line with the task ID; carries subprocessPid in detail.
  *   - Signal (c): skipped when `detectSubprocess: false`.
  *   - Signal (c) -p short form: also matched.
  *   - Signal (c): case-insensitive task ID match.
@@ -202,11 +202,11 @@ describe('checkAlreadyInFlight — signal (b): active worktree sentinel', () => 
 // ─── Signal (c): live subprocess ─────────────────────────────────────────────
 
 describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
-  it('fails when ps output contains a claude --print line with the task ID', () => {
+  it('fails when ps output contains a copilot -p line with the task ID', () => {
     const psOutput = [
       '  100 /usr/bin/bash',
       '  200 node server.js',
-      '  300 claude --print "Implement AISDLC-202 per the following instructions..."',
+      '  300 copilot -p "Implement AISDLC-202 per the following instructions..."',
     ].join('\n');
 
     const result = checkAlreadyInFlight({
@@ -226,10 +226,10 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
     });
   });
 
-  it('fails when ps output contains a claude -p line with the task ID', () => {
+  it('fails when a differently-phrased copilot -p argv references the task ID', () => {
     const psOutput = [
       '  100 /usr/bin/bash',
-      '  400 claude -p "Run task AISDLC-202 end-to-end"',
+      '  400 copilot -p "Run task AISDLC-202 end-to-end"',
     ].join('\n');
 
     const result = checkAlreadyInFlight({
@@ -244,7 +244,7 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
   });
 
   it('matches task ID case-insensitively (lowercase in process table)', () => {
-    const psOutput = '  500 claude --print "implementing aisdlc-202"\n';
+    const psOutput = '  500 copilot -p "implementing aisdlc-202"\n';
     const result = checkAlreadyInFlight({
       taskId: 'AISDLC-202', // uppercase caller
       repoRoot: tmp,
@@ -257,7 +257,7 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
   });
 
   it('is skipped when detectSubprocess is false', () => {
-    const psOutput = '  300 claude --print "AISDLC-202 instructions"\n';
+    const psOutput = '  300 copilot -p "AISDLC-202 instructions"\n';
     const result = checkAlreadyInFlight({
       taskId: 'AISDLC-202',
       repoRoot: tmp,
@@ -270,7 +270,7 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
 
   it('is skipped when AI_SDLC_ORCHESTRATOR_DETECT_SUBPROCESS is set to 0', () => {
     process.env.AI_SDLC_ORCHESTRATOR_DETECT_SUBPROCESS = '0';
-    const psOutput = '  300 claude --print "AISDLC-202 instructions"\n';
+    const psOutput = '  300 copilot -p "AISDLC-202 instructions"\n';
     const result = checkAlreadyInFlight({
       taskId: 'AISDLC-202',
       repoRoot: tmp,
@@ -283,7 +283,7 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
 
   it('is enabled when AI_SDLC_ORCHESTRATOR_DETECT_SUBPROCESS is set to 1', () => {
     process.env.AI_SDLC_ORCHESTRATOR_DETECT_SUBPROCESS = '1';
-    const psOutput = '  300 claude --print "AISDLC-202 instructions"\n';
+    const psOutput = '  300 copilot -p "AISDLC-202 instructions"\n';
     const result = checkAlreadyInFlight({
       taskId: 'AISDLC-202',
       repoRoot: tmp,
@@ -295,7 +295,7 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
     expect(result.detail).toMatchObject({ signal: 'live-subprocess' });
   });
 
-  it('does NOT match a non-claude process that happens to contain the task ID', () => {
+  it('does NOT match a non-copilot process that happens to contain the task ID', () => {
     const psOutput = '  600 /usr/bin/node worker.js AISDLC-202\n';
     const result = checkAlreadyInFlight({
       taskId: 'AISDLC-202',
@@ -307,9 +307,9 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
     expect(result.passed).toBe(true);
   });
 
-  it('does NOT match a claude process without --print or -p when task ID is present', () => {
-    // e.g. `claude --version` or a different claude invocation mode
-    const psOutput = '  700 claude --version AISDLC-202\n';
+  it('does NOT match a copilot process without --print or -p when task ID is present', () => {
+    // e.g. `copilot --version` or a different copilot invocation mode
+    const psOutput = '  700 copilot --version AISDLC-202\n';
     const result = checkAlreadyInFlight({
       taskId: 'AISDLC-202',
       repoRoot: tmp,
@@ -339,7 +339,7 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
     // AISDLC-2 because "AISDLC-283".includes("AISDLC-2") is truthy.
     // The fix: require the task ID NOT be followed by a digit.
     const psOutput = [
-      '  900 claude --print "Implement AISDLC-283 per the following instructions..."',
+      '  900 copilot -p "Implement AISDLC-283 per the following instructions..."',
     ].join('\n');
 
     const result = checkAlreadyInFlight({
@@ -353,7 +353,7 @@ describe('checkAlreadyInFlight — signal (c): live subprocess', () => {
   });
 
   it('still matches when the shorter task ID IS exactly present (e.g. AISDLC-2 in a process for AISDLC-2)', () => {
-    const psOutput = ['  901 claude --print "Implement AISDLC-2 the short task"'].join('\n');
+    const psOutput = ['  901 copilot -p "Implement AISDLC-2 the short task"'].join('\n');
 
     const result = checkAlreadyInFlight({
       taskId: 'AISDLC-2',
@@ -379,7 +379,7 @@ describe('checkAlreadyInFlight — signal priority (first hit wins)', () => {
       taskId: 'AISDLC-202',
       repoRoot: tmp,
       listOpenPRs: () => [{ number: 402 }],
-      readProcessTable: () => '300 claude --print "AISDLC-202"\n',
+      readProcessTable: () => '300 copilot -p "AISDLC-202"\n',
       detectSubprocess: true,
     });
     expect(result.passed).toBe(false);
@@ -396,7 +396,7 @@ describe('checkAlreadyInFlight — signal priority (first hit wins)', () => {
       taskId: 'AISDLC-202',
       repoRoot: tmp,
       listOpenPRs: () => [],
-      readProcessTable: () => '300 claude --print "AISDLC-202"\n',
+      readProcessTable: () => '300 copilot -p "AISDLC-202"\n',
       detectSubprocess: true,
     });
     expect(result.passed).toBe(false);

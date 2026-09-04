@@ -7,7 +7,7 @@ function v(
   approved: boolean,
   findings: ReviewerVerdict['findings'] = [],
 ): ReviewerVerdict {
-  return { agentId, harness: 'claude-code', approved, findings };
+  return { agentId, harness: 'copilot', approved, findings };
 }
 
 describe('Step 8 — aggregateVerdicts', () => {

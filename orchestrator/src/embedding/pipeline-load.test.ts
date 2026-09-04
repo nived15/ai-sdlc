@@ -382,13 +382,13 @@ describe('resolveEffectiveGracePeriodDays — three-layer precedence', () => {
 });
 
 describe('loadEmbeddingFromPipelineSpec — interaction with registry', () => {
-  it('built-in OpenAI adapter is resolvable via spec', () => {
+  it('built-in GitHub Copilot adapter is resolvable via spec', () => {
     process.env.AI_SDLC_EMBEDDING_PROVIDER = 'on';
     const artifactsDir = mkdtempSync(join(tmpdir(), 'embed-builtin-'));
     try {
-      const builtIn = getEmbeddingAdapter('openai-text-embedding-3-small');
+      const builtIn = getEmbeddingAdapter('github-models-embedding-small');
       const result = loadEmbeddingFromPipelineSpec(
-        { provider: 'openai-text-embedding-3-small' } satisfies EmbeddingSpecInput,
+        { provider: 'github-models-embedding-small' } satisfies EmbeddingSpecInput,
         { artifactsDir },
       );
       expect(result?.adapter).toBe(builtIn);

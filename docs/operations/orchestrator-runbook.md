@@ -73,7 +73,7 @@ check will see that `dist/index.js` is now newer and skip the rebuild.
 
 As of AISDLC-229, `cli-orchestrator tick` dispatches tasks through the
 `ai-sdlc-pipeline execute` umbrella (AISDLC-182) rather than shelling out
-to `claude --print --agent developer` directly. This means each admitted
+to `copilot --print --agent developer` directly. This means each admitted
 task now runs the full Step 0-13 pipeline:
 
 - Step 7: spawn three reviewer subagents (code / test / security)
@@ -90,8 +90,8 @@ the umbrella spawner:
 
 ```bash
 export AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental
-export CODEX_SPAWN_AGENT_BIN="$(pwd)/scripts/codex-spawn-agent-bridge.mjs"
-node pipeline-cli/bin/cli-orchestrator.mjs tick --spawner codex --max-concurrent 1
+export COPILOT_SPAWN_AGENT_BIN="$(pwd)/scripts/copilot-spawn-agent-bridge.mjs"
+node pipeline-cli/bin/cli-orchestrator.mjs tick --spawner copilot --max-concurrent 1
 ```
 
 The same selection can be made with an environment variable, which is useful
@@ -99,34 +99,34 @@ for systemd, cron, and long-running `start` processes:
 
 ```bash
 export AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental
-export AI_SDLC_ORCHESTRATOR_SPAWNER=codex
-export CODEX_SPAWN_AGENT_BIN="$(pwd)/scripts/codex-spawn-agent-bridge.mjs"
+export AI_SDLC_ORCHESTRATOR_SPAWNER=copilot
+export COPILOT_SPAWN_AGENT_BIN="$(pwd)/scripts/copilot-spawn-agent-bridge.mjs"
 node pipeline-cli/bin/cli-orchestrator.mjs start --max-concurrent 1
 ```
 
-Supported values are `mock`, `api-key`, `claude`, and `codex`. Selecting
+Supported values are `mock`, `api-key`, `copilot`, and `copilot`. Selecting
 a spawner explicitly opts the orchestrator into umbrella dispatch for admitted
 tasks. When no spawner is selected and `AI_SDLC_ORCHESTRATOR_USE_UMBRELLA` is
 unset, the existing default behavior is unchanged.
 
-The legacy `claude-cli` inline-manifest spawner was removed in RFC-0041
+The legacy `copilot` inline-manifest spawner was removed in RFC-0041
 Phase 3.3 (AISDLC-377.6). See
-[`docs/operations/claude-cli-spawner-removed.md`](./claude-cli-spawner-removed.md)
+[`docs/operations/copilot-spawner.md`](./copilot-spawner.md)
 for the migration breadcrumb.
 
-For `codex`, the underlying `ai-sdlc-pipeline execute --spawner codex` path
-constructs `CodexHarnessAdapter` from `CODEX_SPAWN_AGENT_BIN`. If the bridge
+For `copilot`, the underlying `ai-sdlc-pipeline execute --spawner copilot` path
+constructs `CopilotHarnessAdapter` from `COPILOT_SPAWN_AGENT_BIN`. If the bridge
 is unset, the command fails during spawner resolution before task validation,
 worktree setup, or status mutation.
 
 ### Fallback: `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK`
 
-The default spawner for the umbrella is `claude` (shells out to `claude -p`
+The default spawner for the umbrella is `copilot` (shells out to `copilot -p`
 for subscription billing, AISDLC-352).
 
 The `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` env var was originally
-a retry hook for the `claude-cli` "manifest not consumed" failure mode.
-RFC-0041 Phase 3.3 (AISDLC-377.6) removed the `claude-cli` spawner, so the
+a retry hook for the `copilot` "manifest not consumed" failure mode.
+RFC-0041 Phase 3.3 (AISDLC-377.6) removed the `copilot` spawner, so the
 retry guard never fires now (the env var is left in place as a configuration
 hook for future spawners with analogous transient-unavailability modes).
 Setting it still triggers the `FALLBACK_BILLING_WARNING` from
@@ -200,14 +200,13 @@ task status to its pre-dispatch value, removes the worktree, and
 See the "Recovering quarantined work" section below for forensic inspection.
 
 **If `failure.type === 'spawner-unavailable'`:**
-The configured spawner could not be resolved. Common causes: `claude` binary
-not on PATH for `--spawner claude`, `ANTHROPIC_API_KEY` unset for
-`--spawner api-key`, `CODEX_SPAWN_AGENT_BIN` unset for `--spawner codex`.
-Fix the env / install gap and re-dispatch the task.
+The configured spawner could not be resolved. The usual cause is
+`COPILOT_SPAWN_AGENT_BIN` being unset (or pointing at a missing file) for
+`--spawner copilot`. Fix the env / install gap and re-dispatch the task.
 
 **If `failure.type === 'unknown'`:**
 Inspect the `message` field. Common causes:
-- `ANTHROPIC_API_KEY` missing when `--spawner api-key` was requested.
+- `COPILOT_SPAWN_AGENT_BIN` missing when `--spawner copilot` was requested.
 - Validation failure in Step 1 (malformed task frontmatter).
 - Network errors during `gh pr create`.
 
@@ -222,7 +221,7 @@ mcp__plugin_ai-sdlc_ai-sdlc__task_edit AISDLC-99 --status "To Do"
 
 ## Subscription-billed autonomous drain (Dispatch Board model)
 
-RFC-0041 Phase 3.3 (AISDLC-377.6) removed the legacy `--spawner claude-cli`
+RFC-0041 Phase 3.3 (AISDLC-377.6) removed the legacy `--spawner copilot`
 inline-manifest path; the recommended way to run subscription-billed autonomous
 drain is now the **Dispatch Board** (RFC-0041 Conductor/Worker architecture):
 
@@ -235,16 +234,16 @@ drain is now the **Dispatch Board** (RFC-0041 Conductor/Worker architecture):
   `/ai-sdlc dispatch-worker`. Each Worker claims a manifest from the queue,
   fires a foreground `Agent(developer)`, and writes the result back to the
   board. N sessions = N-wide parallelism at **zero incremental cost** beyond
-  the operator's existing Claude Code Max subscription.
+  the operator's existing GitHub Copilot CLI Max subscription.
 
 For headless / CI contexts (no operator CC session), use
 [`docs/operations/dispatch-supervisor-install.md`](./dispatch-supervisor-install.md)
-to run the `cli-dispatch-supervisor` daemon — it spawns `env -u CLAUDECODE
-claude -p` subprocess Workers with operator-controlled 30 min watchdogs.
+to run the `cli-dispatch-supervisor` daemon — it spawns `env -u COPILOT_CLI_SESSION
+copilot -p` subprocess Workers with operator-controlled 30 min watchdogs.
 
 ### Prerequisites
 
-1. Claude Code Max subscription (any tier).
+1. GitHub Copilot CLI Max subscription (any tier).
 2. `AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental` (or unset / truthy — default-ON
    since AISDLC-411).
 3. Backlog with at least one task in `To Do` status.
@@ -256,19 +255,19 @@ claude -p` subprocess Workers with operator-controlled 30 min watchdogs.
 If no operator CC session is available, the simplest path is:
 
 ```bash
-cli-orchestrator tick                # default: --spawner claude
+cli-orchestrator tick                # default: --spawner copilot
 # OR explicitly:
-cli-orchestrator tick --spawner claude
+cli-orchestrator tick --spawner copilot
 ```
 
-`--spawner claude` shells out to `claude -p` for each dispatch. Uses
+`--spawner copilot` shells out to `copilot -p` for each dispatch. Uses
 subscription auth (Agent SDK credit pool post-2026-06-15).
 
 ### Migrating from the legacy inline-manifest path
 
-If you currently run `cli-orchestrator tick --spawner claude-cli` (or any
+If you currently run `cli-orchestrator tick --spawner copilot` (or any
 script that does), see
-[`docs/operations/claude-cli-spawner-removed.md`](./claude-cli-spawner-removed.md)
+[`docs/operations/copilot-spawner.md`](./copilot-spawner.md)
 for the full migration breadcrumb.
 
 ---
@@ -291,7 +290,7 @@ short-circuiting on the first hit:
 |---|---|---|
 | (a) **Open PR** | `gh pr list --head ai-sdlc/<task-id-lower>-* --state open` returns ≥1 entry | Yes |
 | (b) **Active worktree sentinel** | `.worktrees/<task-id-lower>/.active-task` exists on disk | Yes |
-| (c) **Live subprocess** | A `claude --print` or `claude -p` process with the task ID in its argv | Behind `AI_SDLC_ORCHESTRATOR_DETECT_SUBPROCESS` (default ON) |
+| (c) **Live subprocess** | A `copilot -p` or `copilot -p` process with the task ID in its argv | Behind `AI_SDLC_ORCHESTRATOR_DETECT_SUBPROCESS` (default ON) |
 
 Signal (a) is the definitive signal — a PR exists means a full pipeline run completed or is
 in review. Signal (b) detects an active session mid-flight. Signal (c) is a best-effort
@@ -318,7 +317,7 @@ Other rejection patterns:
 
 ```
   - Already-in-flight check: failed (live subprocess PID 12345)
-  → skipped, already in flight (live claude --print subprocess for AISDLC-202.2 (PID 12345))
+  → skipped, already in flight (live copilot --print subprocess for AISDLC-202.2 (PID 12345))
 ```
 
 ### Enabling / disabling subprocess detection
@@ -350,7 +349,7 @@ git worktree remove --force .worktrees/<task-id-lower>
 ```
 
 **Subprocess signal (c)**: If the subprocess detection is mis-firing (rare — requires a
-`claude --print` process whose argv happens to contain the task ID), disable it via the env
+`copilot -p` process whose argv happens to contain the task ID), disable it via the env
 var above and investigate.
 
 ---
@@ -628,7 +627,7 @@ forward yourself), set the status to `In Progress` manually so the
 admission filters skip it:
 
 ```bash
-# via the plugin MCP tool inside Claude Code
+# via the plugin MCP tool inside GitHub Copilot CLI
 mcp__plugin_ai-sdlc_ai-sdlc__task_edit AISDLC-70 --status "In Progress"
 ```
 
@@ -743,7 +742,7 @@ the incident where an active worktree was quarantined mid-attestation-sign):
    younger than 6 hours means a live pipeline session is using this worktree.
 
 6. **Live-subprocess check** (AISDLC-228) — a portable `ps -ax -o pid,command`
-   scan must find no `claude --print` (or `claude -p`) process whose argv
+   scan must find no `copilot -p` (or `copilot -p`) process whose argv
    references the task ID. A live subprocess means the dev subagent is still
    running.
 
@@ -831,7 +830,7 @@ the check and quarantine is **skipped**:
 |---|---|---|
 | (1) Upstream tracking | `git rev-parse --abbrev-ref <branch>@{upstream}` — if no upstream exists, commits are local-only → NOT stale. If upstream present, `git rev-list --count <branch> ^<upstream>` must be 0. | Not stale if > 0 commits ahead of upstream |
 | (2) Active sentinel | `.worktrees/<id-lower>/.active-task` mtime < 6 hours | Not stale if sentinel is fresh |
-| (3) Live subprocess | `ps -ax -o pid,command` scan for `claude --print` with task ID in argv | Not stale if subprocess found |
+| (3) Live subprocess | `ps -ax -o pid,command` scan for `copilot -p` with task ID in argv | Not stale if subprocess found |
 | (4) Open PR | `gh pr list --head <branch> --state open` (fail-closed on gh errors) | Not stale if PR exists |
 
 When quarantine is **skipped**, `rollbackDispatch` also skips the worktree removal
@@ -846,7 +845,7 @@ preserving a branch:
 [step-3] aisdlc-178.4.1: keeping branch (active sentinel modified 12min ago)
 [step-3] aisdlc-70: keeping branch (3 commits ahead of origin/ai-sdlc/aisdlc-70 (unpushed))
 [step-3] aisdlc-99: keeping branch (open PR #386 for branch ai-sdlc/aisdlc-99)
-[step-3] aisdlc-99: keeping branch (live claude --print subprocess for AISDLC-99 (PID 55555))
+[step-3] aisdlc-99: keeping branch (live copilot --print subprocess for AISDLC-99 (PID 55555))
 ```
 
 The `quarantineSkippedReason` field is also set in the `OrchestratorRollback`
@@ -966,17 +965,17 @@ source first.
 
 ---
 
-## Diagnosing `claude --print` subprocess failures (AISDLC-239)
+## Diagnosing `copilot -p` subprocess failures (AISDLC-239)
 
 When a developer dispatch returns `developer-json-contract-violated` with
-`raw output: ""`, the problem is at the subprocess level — the `claude --print`
+`raw output: ""`, the problem is at the subprocess level — the `copilot -p`
 process itself exited without producing output. As of AISDLC-239,
-`ShellClaudePSpawner` captures full subprocess diagnostics and surfaces them
+`CopilotHarnessAdapter` captures full subprocess diagnostics and surfaces them
 on the `SubagentResult.subprocessDiagnostics` field.
 
 ### New `subprocessDiagnostics` field
 
-Every `ShellClaudePSpawner` invocation now populates:
+Every `CopilotHarnessAdapter` invocation now populates:
 
 ```ts
 interface SubprocessDiagnostics {
@@ -984,7 +983,7 @@ interface SubprocessDiagnostics {
   signal: string | null;        // OS signal that killed the process; null on normal exit
   stderrTail: string;           // last 2 KB of stderr (empty when stderr was clean)
   wallClockMs: number;          // wall-clock spawn → close duration in ms
-  argv: readonly string[];      // full argv passed to claude (excludes the binary name)
+  argv: readonly string[];      // full argv passed to copilot (excludes the binary name)
   failureType?: string;         // machine-readable failure classification (see below)
   watchdogFired?: boolean;      // true when the spawner's own timeout killed the process
 }
@@ -997,13 +996,13 @@ The field is on `SubagentResult` and propagates through the pipeline to the
 
 | `failureType` | `PipelineFailureDetail.type` | Meaning | Next action |
 |---|---|---|---|
-| `claude-cli-api-error` | `claude-cli-api-error` | Exit != 0 AND stderr matches an Anthropic API error pattern (`authentication_error`, `rate_limit`, `overloaded_error`, `api_error_status`, `invalid_request_error`). | Check `stderrTail`. If `authentication_error` → re-login (`claude auth`). If `rate_limit` → backoff and retry. If `overloaded_error` → retry later. |
-| `claude-cli-empty-output-fast` | `claude-cli-empty-output-fast` | Exit 0, stdout empty, wall-clock < 5 s. The CLI quit before the session started. | Run `claude auth status` to check login state. Re-login if needed (`claude auth`). |
-| `claude-cli-killed` | `claude-cli-killed` | Process was killed by a signal. `signal` carries the signal name; `watchdogFired=true` means the orchestrator's 30-min timeout fired; `watchdogFired=false` means an external kill (OOM, operator). | If `watchdogFired=true` and the task is consistently slow, increase the spawner's `defaultTimeoutMs`. If an OOM kill, investigate memory pressure. |
-| `claude-cli-nonzero-exit` | `developer-json-contract-violated` (fallback) | Non-zero exit without a recognised API error pattern. | Read `stderrTail` for the raw error. Common causes: plugin not loaded, misconfigured agent name. |
-| `claude-cli-spawn-error` | `developer-json-contract-violated` (fallback) | `spawn()` itself threw (e.g. `ENOENT` — `claude` binary not on PATH). | Install the Claude Code CLI: `npm i -g @anthropic-ai/claude-code`. |
-| `claude-cli-watch-error` | `developer-json-contract-violated` (fallback) | Child process emitted an `error` event (network error, process crash). | Check `stderrTail` and system logs. |
-| _(absent)_ | (as-is) | Exit 0, non-empty stdout — happy path OR `claude-cli-empty-output-fast` not triggered because `wallClockMs >= 5000`. | No action needed on success; on `wallClockMs >= 5000` + empty stdout — inspect `stderrTail`. |
+| `copilot-cli-api-error` | `copilot-cli-api-error` | Exit != 0 AND stderr matches an GitHub Models API error pattern (`authentication_error`, `rate_limit`, `overloaded_error`, `api_error_status`, `invalid_request_error`). | Check `stderrTail`. If `authentication_error` → re-login (`copilot /login`). If `rate_limit` → backoff and retry. If `overloaded_error` → retry later. |
+| `copilot-cli-empty-output-fast` | `copilot-cli-empty-output-fast` | Exit 0, stdout empty, wall-clock < 5 s. The CLI quit before the session started. | Run `copilot /login status` to check login state. Re-login if needed (`copilot /login`). |
+| `copilot-cli-killed` | `copilot-cli-killed` | Process was killed by a signal. `signal` carries the signal name; `watchdogFired=true` means the orchestrator's 30-min timeout fired; `watchdogFired=false` means an external kill (OOM, operator). | If `watchdogFired=true` and the task is consistently slow, increase the spawner's `defaultTimeoutMs`. If an OOM kill, investigate memory pressure. |
+| `copilot-cli-nonzero-exit` | `developer-json-contract-violated` (fallback) | Non-zero exit without a recognised API error pattern. | Read `stderrTail` for the raw error. Common causes: plugin not loaded, misconfigured agent name. |
+| `copilot-cli-spawn-error` | `developer-json-contract-violated` (fallback) | `spawn()` itself threw (e.g. `ENOENT` — `copilot` binary not on PATH). | Install the GitHub Copilot CLI: `npm i -g @github/copilot`. |
+| `copilot-cli-watch-error` | `developer-json-contract-violated` (fallback) | Child process emitted an `error` event (network error, process crash). | Check `stderrTail` and system logs. |
+| _(absent)_ | (as-is) | Exit 0, non-empty stdout — happy path OR `copilot-cli-empty-output-fast` not triggered because `wallClockMs >= 5000`. | No action needed on success; on `wallClockMs >= 5000` + empty stdout — inspect `stderrTail`. |
 
 ### Reading diagnostics in log output
 
@@ -1023,8 +1022,8 @@ in the tick result (printed as JSON to `cli-orchestrator tick` stdout):
   "outcome": "developer-json-contract-violated",
   "prUrl": null,
   "failure": {
-    "type": "claude-cli-api-error",
-    "message": "claude -p exited with code 1"
+    "type": "copilot-cli-api-error",
+    "message": "copilot -p exited with code 1"
   },
   "notes": "developer subagent violated JSON envelope contract..."
 }
@@ -1056,22 +1055,22 @@ const { fake } = makeFakeSpawn({
   stderr: '{"error":{"type":"authentication_error","message":"invalid key"}}',
   code: 1,
 });
-const spawner = new ShellClaudePSpawner({ spawn: fake });
+const spawner = new CopilotHarnessAdapter({ spawn: fake });
 const result = await spawner.spawn({ type: 'developer', prompt: '...', cwd: '.' });
 console.log(result.subprocessDiagnostics);
-// => { exitCode: 1, signal: null, stderrTail: '...authentication_error...', failureType: 'claude-cli-api-error', ... }
+// => { exitCode: 1, signal: null, stderrTail: '...authentication_error...', failureType: 'copilot-cli-api-error', ... }
 ```
 
 ### AC #6 — controlled repro observation (AISDLC-239)
 
-The original dogfood incident (2026-05-07) showed both parallel `claude --print`
+The original dogfood incident (2026-05-07) showed both parallel `copilot -p`
 dispatches returning empty stdout. With the new diagnostics instrumented, the
 same failure would now surface one of:
 
-- `claude-cli-empty-output-fast` — if the subprocess exited in < 5 s with code 0.
+- `copilot-cli-empty-output-fast` — if the subprocess exited in < 5 s with code 0.
   Most likely culprit for the parallel-empty-output incident: the CLI quit
   immediately (auth/config check), stdout was never written.
-- `claude-cli-api-error` — if `stderrTail` shows an Anthropic API error
+- `copilot-cli-api-error` — if `stderrTail` shows an GitHub Models API error
   (e.g. `overloaded_error` under heavy load when two parallel sessions both
   hit the subscription's concurrent-session limit).
 
@@ -1240,7 +1239,7 @@ is eligible for automatic discard. The sweep policy is:
 - Age is measured from the sentinel's mtime (last write = last dev activity).
 - Worktrees with an open PR are never swept automatically — they follow the
   PR lifecycle instead.
-- Worktrees with a live `claude --print` subprocess are never swept.
+- Worktrees with a live `copilot -p` subprocess are never swept.
 
 To list all preserved worktrees and their ages:
 
@@ -1303,17 +1302,17 @@ grep '"OrchestratorTaskResumed"' artifacts/_orchestrator/events-*.jsonl | \
 
 ### Session-id resume (Mechanism 2 — future work)
 
-`claude --print --session-id <id>` was investigated (AISDLC-242) to determine
-whether a killed Claude Code session could be resumed by re-attaching to the
+`copilot --print --session-id <id>` was investigated (AISDLC-242) to determine
+whether a killed Copilot CLI session could be resumed by re-attaching to the
 previous conversation ID. Empirical testing against the installed CLI shows:
 
-- `claude --print --session-id` exists as a flag but restarting a session
+- `copilot --print --session-id` exists as a flag but restarting a session
   by ID starts a **new conversation** pre-seeded with the previous session's
   context window. This is not a true resume — the model re-derives intent from
   context rather than continuing a live session state.
 - The flag does not resume from a mid-tool-call state (the killed session's
   in-progress `Edit` or `Write` call is not retried).
-- Claude Code's remote sandbox model (CCR) does not expose session-id
+- GitHub Copilot CLI's remote sandbox model (CCR) does not expose session-id
   semantics at all for `--print` mode.
 
 **Conclusion**: session-id resume is NOT the right primitive for this use

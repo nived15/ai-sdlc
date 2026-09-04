@@ -179,7 +179,7 @@ export function buildDepsCli(): Argv {
         // heuristic once per call. The three inputs are static across frontier
         // entries (the per-task signal is `estimatedTokens`, fetched per-row).
         const cfg = loadDispatchConfig(workDir);
-        const claudePShellMaxConcurrent = cfg?.claudePShellMaxConcurrent ?? 0;
+        const copilotPShellMaxConcurrent = cfg?.copilotPShellMaxConcurrent ?? 0;
         const artifactsDir =
           (argv['artifacts-dir'] as string | undefined) ??
           process.env.ARTIFACTS_DIR ??
@@ -191,7 +191,7 @@ export function buildDepsCli(): Argv {
           return recommendWorkerKind({
             estimatedTokens: tokens,
             quotaUtilization,
-            claudePShellMaxConcurrent,
+            copilotPShellMaxConcurrent,
           });
         };
 

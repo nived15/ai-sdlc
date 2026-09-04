@@ -49,7 +49,7 @@ function runHook(command) {
     const output = execFileSync('node', [hookScript], {
       input,
       encoding: 'utf-8',
-      env: { ...process.env, CLAUDE_PROJECT_DIR: tempDir },
+      env: { ...process.env, COPILOT_PROJECT_DIR: tempDir },
       timeout: 5000,
     });
     return { output: output.trim(), exitCode: 0 };
@@ -111,7 +111,7 @@ describe('ai-sdlc-plugin permission-check hook', () => {
       const output = execFileSync('node', [hookScript], {
         input: JSON.stringify({ tool_input: {} }),
         encoding: 'utf-8',
-        env: { ...process.env, CLAUDE_PROJECT_DIR: tempDir },
+        env: { ...process.env, COPILOT_PROJECT_DIR: tempDir },
         timeout: 5000,
       });
       assert.equal(output.trim(), '', 'should produce no output (allow)');

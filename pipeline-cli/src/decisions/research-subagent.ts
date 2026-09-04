@@ -13,7 +13,7 @@
  *
  * The framework does NOT bake in a transport. Production callers
  * (`/ai-sdlc execute`, orchestrator-tick) wire an invoker that spawns a
- * Claude Code subagent / shells out to `claude -p` / etc.; tests inject
+ * GitHub Copilot CLI subagent / shells out to `copilot -p` / etc.; tests inject
  * a deterministic stub. The Decision Catalog only owns:
  *
  *   1. The CONFIDENCE GATE (`shouldInvokeResearchSubagent`) — pure
@@ -198,14 +198,14 @@ export interface ResearchSubagentResponse {
    * sources were consulted.
    */
   findingsMarkdown: string;
-  /** Model identifier (e.g. `claude-sonnet-4-5`). Drives ledger.model. */
+  /** Model identifier (e.g. `balanced`). Drives ledger.model. */
   model: string;
   /** Input + output tokens — drive ledger debit. Zero is allowed (caching, retries). */
   inputTokens?: number;
   outputTokens?: number;
 }
 
-/** Invoker contract — production wires Claude Code subagent; tests inject. */
+/** Invoker contract — production wires GitHub Copilot CLI subagent; tests inject. */
 export type ResearchSubagentInvoker = (
   input: ResearchSubagentInput,
 ) => Promise<ResearchSubagentResponse>;

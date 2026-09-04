@@ -59,7 +59,7 @@ export class CostTracker {
     const costs = DEFAULT_MODEL_COSTS[model];
     if (!costs) {
       // Fallback: use sonnet pricing
-      const fallback = DEFAULT_MODEL_COSTS['claude-sonnet-4-5-20250929'] ?? {
+      const fallback = DEFAULT_MODEL_COSTS['balanced'] ?? {
         inputPer1M: 3,
         outputPer1M: 15,
         cacheReadPer1M: 0.3,
@@ -277,7 +277,7 @@ export class CostTracker {
     //   agentName    = consumerLabel       ← per-consumer attribution (OQ-6)
     //   model        = provider@modelVersion ← identifies exact model snapshot
     //   inputTokens  = tokens              ← total embedding tokens consumed
-    //   costUsd      = pre-computed by adapter ← $0.02/1M for OpenAI small
+    //   costUsd      = pre-computed by adapter ← $0.02/1M for GitHub Copilot small
     //   stageName    = accountId (or 'self-hosted') ← per-credential attribution
     const entry: Omit<CostLedgerEntry, 'id' | 'createdAt'> = {
       runId,

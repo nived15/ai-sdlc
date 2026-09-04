@@ -50,9 +50,8 @@ export async function executePipeline(opts: PipelineOptions): Promise<PipelineRe
   const logger = opts.logger ?? DEFAULT_LOGGER;
   if (!opts.spawner) {
     throw new Error(
-      'executePipeline requires opts.spawner — pick ShellClaudePSpawner (subscription), ' +
-        'ClaudeCodeSDKSpawner (API key), or MockSpawner (tests). ' +
-        'See RFC-0012 §8.',
+      'executePipeline requires opts.spawner — pick CopilotHarnessAdapter (GitHub Copilot CLI) ' +
+        'or MockSpawner (tests). See RFC-0012 §8.',
     );
   }
 

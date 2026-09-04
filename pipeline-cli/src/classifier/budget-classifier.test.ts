@@ -12,9 +12,9 @@
  *     0 other-failure". Coverage spans the 5 canonical aggregate cases
  *     (3/3 budget, 2/3 budget + 1 ok, 2/3 budget + 1 other-failure,
  *     1/3 budget + 2 ok, all-ok), plus the partial-input regression guard.
- *   - Case-insensitivity — Anthropic occasionally returns the substring
+ *   - Case-insensitivity — GitHub occasionally returns the substring
  *     with different casing ("Credit balance is too low"); we match
- *     case-insensitively per the canonical Anthropic error body shape.
+ *     case-insensitively per the canonical GitHub error body shape.
  *
  * Hermetic — no network, no I/O. The whole point of putting the classifier
  * in pipeline-cli is to land coverage here so the YAML stays a thin
@@ -37,8 +37,8 @@ const validVerdict = (approved = true) =>
   });
 
 const budgetExhaustedStderr = `
-Error: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."}}
-    at handleApiError (anthropic-sdk/error.js:42)
+Error: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the GitHub API. Please go to Plans & Billing to upgrade or purchase credits."}}
+    at handleApiError (github-sdk/error.js:42)
     at executeReview (orchestrator/dist/runtime/review.js:118)
 `.trim();
 
@@ -92,7 +92,7 @@ describe('classifyOneReviewer', () => {
 
   it('returns other-failure when ONLY "credit balance is too low" present (no error type)', () => {
     // Defensive: the error-type substring is the strong signal that this
-    // came from an Anthropic API response body, not a stray log line.
+    // came from an GitHub API response body, not a stray log line.
     const result = classifyOneReviewer({
       type: 'critic',
       verdictLine: '',
@@ -120,7 +120,7 @@ describe('classifyOneReviewer', () => {
   });
 
   it('inspects verdictLine too — budget error written to stdout instead of stderr', () => {
-    // The Anthropic SDK normally writes errors to stderr, but if the
+    // The GitHub SDK normally writes errors to stderr, but if the
     // reviewer wrapper logs the full error JSON to stdout we still
     // catch it. Belt-and-braces.
     const result = classifyOneReviewer({
@@ -146,7 +146,7 @@ describe('classifyOneReviewer', () => {
 
   it('AISDLC-149: returns budget-exhausted for valid verdict whose finding embeds the API error body', () => {
     // Real-world shape from CI run 25265922400 (PR #182): cli-review
-    // caught the Anthropic API error and wrapped it into a well-formed
+    // caught the GitHub API error and wrapped it into a well-formed
     // verdict with a critical finding. Original AISDLC-147 classifier
     // missed this and reported `ok`, posting CHANGES_REQUESTED.
     const verdictLine = JSON.stringify({
@@ -155,7 +155,7 @@ describe('classifyOneReviewer', () => {
         {
           severity: 'critical',
           message:
-            'Review agent failed: Anthropic API error 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_abc123"}',
+            'Review agent failed: GitHub API error 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the GitHub API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_abc123"}',
         },
       ],
       summary: 'testing review could not be completed',
@@ -196,7 +196,7 @@ describe('classifyOneReviewer', () => {
   });
 
   it('AISDLC-149: case-insensitive match inside a valid-verdict finding', () => {
-    // The Anthropic body occasionally arrives with different casing; the
+    // The GitHub body occasionally arrives with different casing; the
     // verdict-finding inspection path must match case-insensitively just
     // like the stdout/stderr path.
     const verdictLine = JSON.stringify({
@@ -204,7 +204,7 @@ describe('classifyOneReviewer', () => {
       findings: [
         {
           severity: 'critical',
-          message: 'Anthropic returned INVALID_REQUEST_ERROR — Credit Balance Is Too Low.',
+          message: 'GitHub returned INVALID_REQUEST_ERROR — Credit Balance Is Too Low.',
         },
       ],
       summary: 'agent failed',
@@ -227,7 +227,7 @@ describe('classifyOneReviewer', () => {
       findings: [
         {
           severity: 'critical',
-          message: 'Anthropic API error 400 invalid_request_error: messages.0: too long',
+          message: 'GitHub API error 400 invalid_request_error: messages.0: too long',
         },
       ],
       summary: 'agent failed',
@@ -260,7 +260,7 @@ describe('classifyOneReviewer', () => {
   "findings": [
     {
       "severity": "critical",
-      "message": "Review agent failed: Anthropic API error 400: {\\"type\\":\\"error\\",\\"error\\":{\\"type\\":\\"invalid_request_error\\",\\"message\\":\\"Your credit balance is too low to access the Anthropic API.\\"}}"
+      "message": "Review agent failed: GitHub API error 400: {\\"type\\":\\"error\\",\\"error\\":{\\"type\\":\\"invalid_request_error\\",\\"message\\":\\"Your credit balance is too low to access the GitHub API.\\"}}"
     }
   ],
   "summary": "review could not be completed"
@@ -308,9 +308,9 @@ describe('classifyOneReviewer', () => {
     // because the combined string spans every line.
     const stdoutRaw = [
       '[review/critic] starting…',
-      'Anthropic API responded with invalid_request_error',
+      'GitHub API responded with invalid_request_error',
       'request_id: req_abc123',
-      'message body: Your credit balance is too low to access the Anthropic API.',
+      'message body: Your credit balance is too low to access the GitHub API.',
       '}',
     ].join('\n');
     const result = classifyOneReviewer({
@@ -336,7 +336,7 @@ describe('classifyOneReviewer', () => {
   });
 
   it('AISDLC-154: empty stdoutRaw + budget signature in stderr → budget-exhausted (existing AISDLC-147 path preserved)', () => {
-    // The original failure mode where the Anthropic SDK aborts before
+    // The original failure mode where the GitHub SDK aborts before
     // cli-review writes anything to stdout still has to work. stderr alone
     // must be enough.
     const result = classifyOneReviewer({
@@ -495,7 +495,7 @@ describe('classifyReviewerOutputs (aggregate decision)', () => {
         {
           severity: 'critical',
           message:
-            'Review agent failed: Anthropic API error 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API."}}',
+            'Review agent failed: GitHub API error 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the GitHub API."}}',
         },
       ],
       summary: 'review could not be completed',
@@ -520,7 +520,7 @@ describe('classifyReviewerOutputs (aggregate decision)', () => {
       findings: [
         {
           severity: 'critical',
-          message: 'Anthropic API error 400 invalid_request_error: Your credit balance is too low.',
+          message: 'GitHub API error 400 invalid_request_error: Your credit balance is too low.',
         },
       ],
       summary: 'agent failed',

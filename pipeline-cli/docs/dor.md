@@ -61,9 +61,9 @@ more-meaningful marker wins):
 
 | Marker | Shape | Notes |
 |---|---|---|
-| `ANTHROPIC` | `sk-ant-(?:api03\|admin01)-[A-Za-z0-9_-]{20,}` | Anthropic API + admin keys (AISDLC-126) |
-| `OPENAI_PROJECT` | `sk-proj-[A-Za-z0-9_-]{20,}` | Project-scoped OpenAI keys |
-| `OPENAI` | `sk-[A-Za-z0-9]{20,}` | Classic OpenAI keys |
+| `INFERENCE_KEY_SCOPED` | `sk-ant-(?:api03\|admin01)-[A-Za-z0-9_-]{20,}` | Vendor-scoped inference keys (AISDLC-126) |
+| `INFERENCE_KEY_PROJECT` | `sk-proj-[A-Za-z0-9_-]{20,}` | Project-scoped GitHub Copilot keys |
+| `INFERENCE_KEY` | `sk-[A-Za-z0-9]{20,}` | Classic inference keys |
 | `SLACK` | `xox[abprs]-[A-Za-z0-9-]{10,}` | Bot/user/refresh/app/legacy tokens (AISDLC-126) |
 | `STRIPE_LIVE_SECRET` | `sk_live_[A-Za-z0-9]{20,}` | Stripe secret keys (AISDLC-126) |
 | `STRIPE_LIVE_PUBLISHABLE` | `pk_live_[A-Za-z0-9]{20,}` | Stripe publishable keys (AISDLC-126) |
@@ -81,7 +81,7 @@ more-meaningful marker wins):
 
 Matches are replaced with `[REDACTED:<marker>]`. The catch-all uses
 `[REDACTED:HIGH-ENTROPY]` instead of pretending to know what it caught.
-Pattern order matters: the more-specific entries (e.g. OpenAI's
+Pattern order matters: the more-specific entries (e.g. GitHub Copilot's
 `sk-proj-` variant) come BEFORE less-specific ones, and the
 high-entropy catch-all is last so it only fires when no named pattern
 matched.

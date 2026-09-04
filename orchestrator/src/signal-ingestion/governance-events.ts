@@ -306,7 +306,7 @@ export function loadSignalIngestionConfigWithGovernance(
 ): LoadConfigWithGovernanceResult {
   // Route through loadSignalIngestionConfigWithDeprecations so the
   // canonical governance-aware loader does NOT silently drop legacy
-  // `sourceBaselineDriftMultiplier` keys (codex MAJOR on #752 — the
+  // `sourceBaselineDriftMultiplier` keys (copilot MAJOR on #752 — the
   // basic loader runs resolveFloodingDetection which ignores unknown
   // keys, breaking the one-release-window soft-translation contract).
   const { config, deprecations } = loadSignalIngestionConfigWithDeprecations({

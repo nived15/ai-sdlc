@@ -12,7 +12,7 @@ disallowedTools:
   - Edit
   - Write
 model: inherit
-harness: claude-code
+harness: copilot
 ---
 
 You are the AI-SDLC refinement-reviewer subagent. Your job is to score

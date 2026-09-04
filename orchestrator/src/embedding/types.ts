@@ -23,7 +23,7 @@ export interface EmbeddingAvailability {
  * Parallel to HarnessRequires in RFC-0010 §13.8.
  */
 export interface EmbeddingRequires {
-  /** Environment variable required by this adapter (e.g., 'OPENAI_API_KEY'). */
+  /** Environment variable required by this adapter (e.g., 'GITHUB_MODELS_TOKEN'). */
   envVar?: string;
   /** Optional npm package or binary name required (for local/ONNX adapters). */
   binary?: string;
@@ -36,11 +36,11 @@ export interface EmbeddingRequires {
 /**
  * Billing model for the adapter — drives cost-tracker routing.
  *
- * - 'pay-per-token': tokens are billed via provider invoice (e.g., OpenAI).
+ * - 'pay-per-token': tokens are billed via provider invoice (e.g., GitHub Copilot).
  *   embeddingTokens are recorded in cost-tracker but do NOT consume SubscriptionLedger
  *   window quota (OQ-7 re-walkthrough).
  * - 'subscription-quota': tokens are billed via the operator's subscription
- *   (e.g., future Anthropic embeddings). Routes through SubscriptionLedger via
+ *   (e.g., future GitHub Models embeddings). Routes through SubscriptionLedger via
  *   the inputTokens/outputTokens mechanism.
  */
 export type EmbeddingBillingModel = 'pay-per-token' | 'subscription-quota';
@@ -66,7 +66,7 @@ export interface EmbeddingCapabilities {
    * Adapter-declared default deprecation grace period in days per RFC-0019
    * §9.1 OQ-4 re-walkthrough. When set, this overrides the framework default
    * (90d) but is itself overridden by per-org `gracePeriodDays`. Fast-moving
-   * providers (e.g., Cohere with 6-month deprecation cycles) declare a smaller
+   * providers (e.g., self-hosted providers with 6-month deprecation cycles) declare a smaller
    * value here so the warning window scales to the provider's actual lifecycle.
    *
    * The three-layer precedence is:
@@ -87,20 +87,20 @@ export interface EmbeddingAdapter {
   /**
    * Canonical adapter alias — the value adopters set in Pipeline.spec.embedding.provider.
    * MUST be unique across the registry. Convention: '<vendor>-<model-family>-<size>'.
-   * Examples: 'openai-text-embedding-3-small', 'cohere-embed-v3-multilingual'.
+   * Examples: 'github-models-embedding-small', 'self-hosted-embed-v3-multilingual'.
    */
   readonly name: string;
 
   /**
    * Provider-specific model identifier — passed to the upstream API.
-   * Example: 'text-embedding-3-small' (posted to OpenAI's /embeddings endpoint).
+   * Example: 'text-embedding-3-small' (posted to GitHub Copilot's /embeddings endpoint).
    */
   readonly modelId: string;
 
   /**
    * Snapshot identifier — ISO date for date-pinned snapshots, semver for versioned models.
    * Used as part of the storage key so vectors don't collide across model snapshots.
-   * Example: '2024-01-25' for OpenAI's 2024-01-25 text-embedding-3-small snapshot.
+   * Example: '2024-01-25' for GitHub Copilot's 2024-01-25 text-embedding-3-small snapshot.
    */
   readonly modelVersion: string;
 
@@ -165,7 +165,7 @@ export interface EmbeddingAdapter {
   embedBatch?(texts: string[], consumerLabel?: string): Promise<number[][]>;
 
   /**
-   * Cheap liveness probe. Combines env-var presence (e.g., OPENAI_API_KEY)
+   * Cheap liveness probe. Combines env-var presence (e.g., GITHUB_MODELS_TOKEN)
    * + lightweight provider health check (optional).
    * Result MAY be cached for the orchestrator's lifetime.
    */
@@ -186,7 +186,7 @@ export interface EmbeddingAdapter {
  * per OQ-6 re-walkthrough.
  */
 export interface EmbeddingCostRecord {
-  /** Adapter name (e.g., 'openai-text-embedding-3-small'). */
+  /** Adapter name (e.g., 'github-models-embedding-small'). */
   provider: string;
   /** Adapter model version (e.g., '2024-01-25'). */
   modelVersion: string;

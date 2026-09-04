@@ -8,9 +8,9 @@
  *   2. Failure path: umbrella returns ok=false → outcomes[i].failure is
  *      populated with the right failure type, outcome is the matching
  *      PipelineOutcome.
- *   3. Spawner-fallback (AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key):
- *      pre-AISDLC-377.6 this section covered the claude-cli "manifest not
- *      consumed → api-key retry" path; after the claude-cli removal the
+ *   3. Spawner-fallback (AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK):
+ *      pre-AISDLC-377.6 this section covered the copilot-cli "manifest not
+ *      consumed → api-key retry" path; after the copilot-cli removal the
  *      retry guard never fires, so the tests now assert the no-retry
  *      contract (the env var is still honored as a billing-safety signal,
  *      but produces no behavioural retry).
@@ -115,21 +115,21 @@ function successExecResult(
         verdicts: [
           {
             agentId: 'code-reviewer',
-            harness: 'claude-code',
+            harness: 'copilot',
             approved: true,
             findings: [],
             summary: 'lgtm',
           },
           {
             agentId: 'test-reviewer',
-            harness: 'claude-code',
+            harness: 'copilot',
             approved: true,
             findings: [],
             summary: 'lgtm',
           },
           {
             agentId: 'security-reviewer',
-            harness: 'claude-code',
+            harness: 'copilot',
             approved: true,
             findings: [],
             summary: 'lgtm',
@@ -365,10 +365,10 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
     );
 
     // umbrellaExecutor was called exactly once with the default spawner kind.
-    // AISDLC-352: default changed from 'claude-cli' to 'claude'.
+    // AISDLC-429.3: the default is `copilot`.
     expect(calls).toHaveLength(1);
     expect(calls[0].taskId).toBe(taskId);
-    expect(calls[0].spawnerKind).toBe('claude'); // default since AISDLC-352
+    expect(calls[0].spawnerKind).toBe('copilot'); // default since AISDLC-429.3
 
     expect(tick.dispatched).toEqual([taskId]);
     const outcome = tick.outcomes[0];
@@ -382,14 +382,14 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
     expect(outcome.pipeline!.iterations).toBe(2);
   });
 
-  it('uses AI_SDLC_ORCHESTRATOR_SPAWNER=codex for the default umbrella executor', async () => {
+  it('uses AI_SDLC_ORCHESTRATOR_SPAWNER=mock for the default umbrella executor', async () => {
     const previousSpawner = process.env[ORCHESTRATOR_SPAWNER_ENV];
     const previousUseUmbrella = process.env.AI_SDLC_ORCHESTRATOR_USE_UMBRELLA;
     delete process.env.AI_SDLC_ORCHESTRATOR_USE_UMBRELLA;
-    process.env[ORCHESTRATOR_SPAWNER_ENV] = 'codex';
+    process.env[ORCHESTRATOR_SPAWNER_ENV] = 'mock';
 
     try {
-      const taskId = 'AISDLC-326-ENV-CODEX';
+      const taskId = 'AISDLC-326-ENV-MOCK';
       const calls: Array<{ taskId: string; spawnerKind: string }> = [];
 
       const umbrellaExecutor = async (t: string, k: string): Promise<ExecuteCommandResult> => {
@@ -409,7 +409,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
         1,
       );
 
-      expect(calls).toEqual([{ taskId, spawnerKind: 'codex' }]);
+      expect(calls).toEqual([{ taskId, spawnerKind: 'mock' }]);
       expect(tick.dispatched).toEqual([taskId]);
       expect(tick.outcomes[0].outcome).toBe('approved');
     } finally {
@@ -426,7 +426,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
     }
   });
 
-  it('throws actionable migration error when AI_SDLC_ORCHESTRATOR_SPAWNER=claude-cli (AISDLC-377.6)', async () => {
+  it('throws actionable migration error when AI_SDLC_ORCHESTRATOR_SPAWNER=claude-cli (retired kind)', async () => {
     const previousSpawner = process.env[ORCHESTRATOR_SPAWNER_ENV];
     process.env[ORCHESTRATOR_SPAWNER_ENV] = 'claude-cli';
 
@@ -442,7 +442,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
           },
           1,
         ),
-      ).rejects.toThrow(/AISDLC-377\.6|no longer supported/);
+      ).rejects.toThrow(/is not supported|GitHub Copilot CLI/);
     } finally {
       if (previousSpawner === undefined) {
         delete process.env[ORCHESTRATOR_SPAWNER_ENV];
@@ -478,38 +478,10 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
     }
   });
 
-  it('surfaces missing CODEX_SPAWN_AGENT_BIN as spawner-unavailable before rollback work', async () => {
-    const taskId = 'AISDLC-326-CODEX-MISSING-BRIDGE';
-    const umbrellaExecutor = async (): Promise<ExecuteCommandResult> => ({
-      ok: false,
-      reason:
-        '`--spawner codex` requires CODEX_SPAWN_AGENT_BIN in the environment before dispatch.',
-    });
-
-    const tick = await runOrchestratorTick(
-      config,
-      {
-        logger: silentLogger(),
-        frontier: fakeFrontier([taskId]),
-        umbrellaSpawnerKind: 'codex',
-        umbrellaExecutor: umbrellaExecutor as unknown as OrchestratorAdapters['umbrellaExecutor'],
-        escalate: async () => {},
-        ...hermeticFilterAdapters(),
-      },
-      1,
-    );
-
-    expect(tick.dispatched).toEqual([taskId]);
-    const outcome = tick.outcomes[0];
-    expect(outcome.failure?.type).toBe('spawner-unavailable');
-    expect(outcome.failure?.message).toContain('CODEX_SPAWN_AGENT_BIN');
-    expect(outcome.pipeline).toBeUndefined();
-  });
-
   // ── AISDLC-429.3 — Copilot CLI spawner kind ─────────────────────────────
   //
   // Phase 3 of AISDLC-429 wires `--spawner copilot` through the orchestrator
-  // umbrella dispatch path. These tests mirror the pre-existing `codex`
+  // umbrella dispatch path. These tests mirror the pre-existing `copilot`
   // cases (success route-through, env-var parsing, missing-bridge failure)
   // so the routing contract is enforced symmetrically across the two
   // host-bridge spawners.
@@ -615,7 +587,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
 
   // ── AC #2: spawner fallback ────────────────────────────────────────────
 
-  describe('spawner-fallback (AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key)', () => {
+  describe('spawner-fallback (AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK)', () => {
     let savedEnv: string | undefined;
 
     beforeEach(() => {
@@ -630,20 +602,20 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
       }
     });
 
-    // RFC-0041 Phase 3.3 (AISDLC-377.6) — the `claude-cli` spawner kind was
-    // removed; the original "claude-cli spawner-unavailable → api-key retry"
+    // RFC-0041 Phase 3.3 (AISDLC-377.6) — the `copilot-cli` spawner kind was
+    // removed; the original "copilot-cli spawner-unavailable → api-key retry"
     // test pair (AISDLC-229 AC #2 path) no longer exercises any live code path
     // because the kind cannot be selected. The retry-no-op contract is what
     // matters now: when ANY non-fallback spawner fails, the umbrella records
-    // the failure once and does NOT retry against api-key.
-    it('does NOT retry against api-key when claude spawner fails (AISDLC-377.6 — claude-cli fallback removed)', async () => {
-      process.env.AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK = 'api-key';
+    // the failure once and does NOT retry against another spawner.
+    it('does NOT retry against another spawner when the copilot spawner fails (AISDLC-377.6 — copilot-cli fallback removed)', async () => {
+      process.env.AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK = 'api-key' /* stale legacy value */;
       const taskId = 'AISDLC-377.6-NO-FALLBACK';
       const calls: Array<string> = [];
 
       const umbrellaExecutor = async (_t: string, kind: string): Promise<ExecuteCommandResult> => {
         calls.push(kind);
-        return { ok: false, reason: 'claude spawner failure (simulated)' };
+        return { ok: false, reason: 'copilot spawner failure (simulated)' };
       };
 
       const tick = await runOrchestratorTick(
@@ -651,7 +623,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
         {
           logger: silentLogger(),
           frontier: fakeFrontier([taskId]),
-          umbrellaSpawnerKind: 'claude',
+          umbrellaSpawnerKind: 'copilot',
           umbrellaExecutor: umbrellaExecutor as unknown as OrchestratorAdapters['umbrellaExecutor'],
           escalate: async () => {},
           ...hermeticFilterAdapters(),
@@ -660,7 +632,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
       );
 
       // Only one call — no retry attempted post-AISDLC-377.6.
-      expect(calls).toEqual(['claude']);
+      expect(calls).toEqual(['copilot']);
       const outcome = tick.outcomes[0];
       expect(outcome.failure).toBeDefined();
     });
@@ -672,7 +644,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
 
       const umbrellaExecutor = async (_t: string, kind: string): Promise<ExecuteCommandResult> => {
         calls.push(kind);
-        return { ok: false, reason: 'claude spawner failure' };
+        return { ok: false, reason: 'copilot spawner failure' };
       };
 
       const tick = await runOrchestratorTick(
@@ -680,7 +652,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
         {
           logger: silentLogger(),
           frontier: fakeFrontier([taskId]),
-          umbrellaSpawnerKind: 'claude',
+          umbrellaSpawnerKind: 'copilot',
           umbrellaExecutor: umbrellaExecutor as unknown as OrchestratorAdapters['umbrellaExecutor'],
           escalate: async () => {},
           ...hermeticFilterAdapters(),
@@ -689,7 +661,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
       );
 
       // Only one call — no fallback attempted.
-      expect(calls).toEqual(['claude']);
+      expect(calls).toEqual(['copilot']);
 
       expect(tick.dispatched).toEqual([taskId]);
       const outcome = tick.outcomes[0];
@@ -697,16 +669,16 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
       expect(outcome.failure).toBeDefined();
     });
 
-    it('does NOT fall back from explicit codex selection to api-key', async () => {
-      process.env.AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK = 'api-key';
-      const taskId = 'AISDLC-326-CODEX-NOFALLBACK';
+    it('does NOT fall back from explicit copilot selection to another spawner', async () => {
+      process.env.AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK = 'api-key' /* stale legacy value */;
+      const taskId = 'AISDLC-326-COPILOT-NOFALLBACK';
       const calls: Array<string> = [];
 
       const umbrellaExecutor = async (_t: string, kind: string): Promise<ExecuteCommandResult> => {
         calls.push(kind);
         return {
           ok: false,
-          reason: '`--spawner codex` requires CODEX_SPAWN_AGENT_BIN in the environment.',
+          reason: '`--spawner copilot` requires COPILOT_SPAWN_AGENT_BIN in the environment.',
         };
       };
 
@@ -715,7 +687,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
         {
           logger: silentLogger(),
           frontier: fakeFrontier([taskId]),
-          umbrellaSpawnerKind: 'codex',
+          umbrellaSpawnerKind: 'copilot',
           umbrellaExecutor: umbrellaExecutor as unknown as OrchestratorAdapters['umbrellaExecutor'],
           escalate: async () => {},
           ...hermeticFilterAdapters(),
@@ -723,18 +695,18 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
         1,
       );
 
-      expect(calls).toEqual(['codex']);
+      expect(calls).toEqual(['copilot']);
       const outcome = tick.outcomes[0];
       expect(outcome.failure?.type).toBe('spawner-unavailable');
-      expect(outcome.failure?.message).toContain('CODEX_SPAWN_AGENT_BIN');
+      expect(outcome.failure?.message).toContain('COPILOT_SPAWN_AGENT_BIN');
     });
 
-    it('real codex spawner path fails before task mutation when CODEX_SPAWN_AGENT_BIN is unset', async () => {
-      const previousBridge = process.env.CODEX_SPAWN_AGENT_BIN;
-      delete process.env.CODEX_SPAWN_AGENT_BIN;
-      process.env.AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK = 'api-key';
-      const workDir = mkdtempSync(join(tmpdir(), 'aisdlc-326-codex-missing-'));
-      const taskId = 'AISDLC-326-REAL-CODEX';
+    it('real copilot spawner path fails before task mutation when COPILOT_SPAWN_AGENT_BIN is unset', async () => {
+      const previousBridge = process.env.COPILOT_SPAWN_AGENT_BIN;
+      delete process.env.COPILOT_SPAWN_AGENT_BIN;
+      process.env.AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK = 'api-key' /* stale legacy value */;
+      const workDir = mkdtempSync(join(tmpdir(), 'aisdlc-326-copilot-missing-'));
+      const taskId = 'AISDLC-326-REAL-COPILOT';
 
       try {
         const tick = await runOrchestratorTick(
@@ -742,7 +714,7 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
           {
             logger: silentLogger(),
             frontier: fakeFrontier([taskId]),
-            umbrellaSpawnerKind: 'codex',
+            umbrellaSpawnerKind: 'copilot',
             escalate: async () => {},
             ...hermeticFilterAdapters(),
           },
@@ -752,14 +724,14 @@ describe('runOrchestratorTick — umbrella dispatch (AISDLC-229)', () => {
         expect(tick.dispatched).toEqual([taskId]);
         const outcome = tick.outcomes[0];
         expect(outcome.failure?.type).toBe('spawner-unavailable');
-        expect(outcome.failure?.message).toContain('CODEX_SPAWN_AGENT_BIN');
+        expect(outcome.failure?.message).toContain('COPILOT_SPAWN_AGENT_BIN');
         expect(existsSync(join(workDir, '.worktrees'))).toBe(false);
         expect(existsSync(join(workDir, 'backlog'))).toBe(false);
       } finally {
         if (previousBridge === undefined) {
-          delete process.env.CODEX_SPAWN_AGENT_BIN;
+          delete process.env.COPILOT_SPAWN_AGENT_BIN;
         } else {
-          process.env.CODEX_SPAWN_AGENT_BIN = previousBridge;
+          process.env.COPILOT_SPAWN_AGENT_BIN = previousBridge;
         }
         rmSync(workDir, { recursive: true, force: true });
       }

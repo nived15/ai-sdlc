@@ -195,7 +195,7 @@ export function runFilterChain(opts: RunFilterChainOpts): FilterChainResult {
   // dependency walk because the cost of a duplicate dispatch (worktree clash,
   // ~30s wasted setup) far outweighs the cost of a `gh pr list` + existsSync
   // + optional `ps -ax` call. Three signals: (a) open PR, (b) active worktree
-  // sentinel, (c) live claude --print subprocess (behind env flag).
+  // sentinel, (c) live copilot -p subprocess (behind env flag).
   const inflightOpts: CheckAlreadyInFlightOpts = {
     taskId: opts.taskId,
     ...opts.alreadyInFlightOpts,

@@ -78,7 +78,7 @@ export function registerSessionStart(server: McpServer, deps: ServerDeps): void 
     'Start a governed AI session. Returns session ID, linked issue, and project context.',
     {
       developer: z.string().describe('Developer name or identifier'),
-      tool: z.enum(['claude-code', 'copilot', 'cursor', 'other']).describe('AI tool in use'),
+      tool: z.enum(['copilot', 'vscode', 'other']).describe('AI tool in use'),
       issueNumber: z.number().int().optional().describe('Explicit issue number to link'),
     },
     async ({ developer, tool, issueNumber }) => {

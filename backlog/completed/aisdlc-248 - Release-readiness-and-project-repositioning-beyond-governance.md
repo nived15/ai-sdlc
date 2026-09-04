@@ -13,7 +13,7 @@ dependencies: []
 priority: high
 references:
   - README.md
-  - CLAUDE.md
+  - .github/copilot-instructions.md
   - .github/workflows/release.yml
   - spec/rfcs/README.md
 ---

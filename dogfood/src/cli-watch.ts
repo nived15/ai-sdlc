@@ -4,7 +4,7 @@
  * the shared `executePipeline()` composite from `@ai-sdlc/pipeline-cli`.
  *
  * Usage: pnpm --filter @ai-sdlc/dogfood watch --issue <id> [--issue <id> ...]
- *                                               [--spawner mock|shell|sdk|auto]
+ *                                               [--spawner auto|copilot|mock]
  *
  * RFC-0012 Phase 5 (AISDLC-100.5). The previous implementation wrapped
  * `@ai-sdlc/orchestrator`'s reconciler-driven `startWatch` + Pipeline-resource
@@ -14,10 +14,9 @@
  * spawner; final results are reported on stdout.
  *
  * Spawner selection (RFC-0012 §8.3):
- *   - `--spawner shell` (or default `auto` when `claude` CLI is on PATH) →
- *     `ShellClaudePSpawner` (subscription billing, preferred per RFC §2.4).
- *   - `--spawner sdk`   (or `auto` falling back to `ANTHROPIC_API_KEY`) →
- *     `ClaudeCodeSDKSpawner` (API-key billing for unattended/CI runs).
+ *   - `--spawner copilot` (or the default `auto`) → `CopilotHarnessAdapter`
+ *     over the bridge at `COPILOT_SPAWN_AGENT_BIN`. Billing: the operator's
+ *     GitHub Copilot subscription.
  *   - `--spawner mock`  → `MockSpawner` (deterministic test fixture; intended
  *     for smoke tests + this file's own integration tests).
  *
@@ -37,7 +36,7 @@ import {
   type SubagentType,
 } from '@ai-sdlc/pipeline-cli';
 
-type SpawnerKind = 'auto' | 'shell' | 'sdk' | 'mock';
+type SpawnerKind = 'auto' | 'copilot' | 'mock';
 
 interface ParsedArgs {
   issueIds: string[];
@@ -58,10 +57,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       i++;
     } else if (argv[i] === '--spawner' && i + 1 < argv.length) {
       const value = argv[i + 1].trim().toLowerCase();
-      if (value !== 'auto' && value !== 'shell' && value !== 'sdk' && value !== 'mock') {
-        console.error(
-          `Invalid --spawner "${argv[i + 1]}" — expected one of: auto, shell, sdk, mock`,
-        );
+      if (value !== 'auto' && value !== 'copilot' && value !== 'mock') {
+        console.error(`Invalid --spawner "${argv[i + 1]}" — expected one of: auto, copilot, mock`);
         process.exit(1);
       }
       spawnerKind = value as SpawnerKind;
@@ -69,7 +66,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     }
   }
   if (issues.length === 0) {
-    console.error('Usage: watch --issue <id> [--issue <id> ...] [--spawner auto|shell|sdk|mock]');
+    console.error('Usage: watch --issue <id> [--issue <id> ...] [--spawner auto|copilot|mock]');
     process.exit(1);
   }
   return { issueIds: issues, spawnerKind };
@@ -78,25 +75,17 @@ function parseArgs(argv: string[]): ParsedArgs {
 /**
  * Build the `SubagentSpawner` matching the requested kind. Exported so tests
  * can inject `--spawner mock` and verify pipeline orchestration without
- * touching `claude` / the SDK.
+ * touching the GitHub Copilot CLI.
  */
 export async function resolveSpawner(kind: SpawnerKind): Promise<SubagentSpawner> {
   if (kind === 'mock') {
     return makeApprovingMockSpawner();
   }
-  // shell / sdk / auto: defer to the pipeline-cli resolver. defaultSpawner()
-  // prefers ShellClaudePSpawner when `claude` is on PATH and falls back to
-  // ClaudeCodeSDKSpawner when ANTHROPIC_API_KEY is set. Explicit `--spawner`
-  // overrides the auto-detection by short-circuiting one of the two probes.
-  if (kind === 'shell') {
-    // Force the shell branch: pretend env has no API key so we never fall
-    // through to the SDK spawner if `claude` is missing.
-    return defaultSpawner({ env: () => undefined });
-  }
-  if (kind === 'sdk') {
-    // Force the SDK branch: pretend `claude` isn't on PATH so we skip it.
-    return defaultSpawner({ which: async () => false });
-  }
+  // `copilot` and `auto` are the same path: the framework dispatches every
+  // subagent through the GitHub Copilot CLI, so there is exactly one real
+  // spawner. `defaultSpawner()` constructs a CopilotHarnessAdapter over the
+  // bridge at COPILOT_SPAWN_AGENT_BIN, and throws an actionable configuration
+  // error when that env var is unset.
   return defaultSpawner();
 }
 

@@ -15,15 +15,8 @@ export type ReviewerName = 'testing' | 'critic' | 'security';
 
 export const ALL_REVIEWERS: readonly ReviewerName[] = ['testing', 'critic', 'security'];
 
-const VALID_MODEL_OVERRIDES = new Set(['haiku', 'sonnet', 'opus', 'opus[1m]']);
-const VALID_HARNESS_OVERRIDES = new Set([
-  'claude-code',
-  'codex',
-  'gemini-cli',
-  'opencode',
-  'aider',
-  'generic-api',
-]);
+const VALID_MODEL_OVERRIDES = new Set(['fast', 'balanced', 'reasoning', 'reasoning[1m]']);
+const VALID_HARNESS_OVERRIDES = new Set(['copilot']);
 
 const CONFIDENCE_FLOOR_FOR_TRUE = 0.7;
 
@@ -32,7 +25,9 @@ export interface ClassifierOutput {
   rationale: Record<string, string>;
   confident: boolean;
   confidence: number;
-  modelOverride?: Partial<Record<ReviewerName, 'haiku' | 'sonnet' | 'opus' | 'opus[1m]'>>;
+  modelOverride?: Partial<
+    Record<ReviewerName, 'fast' | 'balanced' | 'reasoning' | 'reasoning[1m]'>
+  >;
   harnessOverride?: Partial<Record<ReviewerName, string>>;
 }
 
@@ -315,7 +310,7 @@ export function defaultRulesetDecision(diff: DiffSummary): ClassifierOutput {
         critic: 'auth touched; verify approach',
         security: 'auth-touching diff; mandatory security review',
       },
-      modelOverride: { security: 'opus' },
+      modelOverride: { security: 'reasoning' },
       confident: true,
       confidence: 0.99,
     };

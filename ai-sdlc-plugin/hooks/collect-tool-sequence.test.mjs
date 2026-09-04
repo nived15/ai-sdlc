@@ -34,7 +34,7 @@ function runHook(inputObj, extraEnv = {}) {
     const output = execFileSync('node', [hookScript], {
       input,
       encoding: 'utf-8',
-      env: { ...process.env, HOME: tempHome, CLAUDE_PROJECT_DIR: tempHome, ...extraEnv },
+      env: { ...process.env, HOME: tempHome, COPILOT_PROJECT_DIR: tempHome, ...extraEnv },
       timeout: 5000,
     });
     return { output: output.trim(), exitCode: 0 };
@@ -53,7 +53,7 @@ describe('ai-sdlc-plugin collect-tool-sequence hook', () => {
     });
     assert.equal(result.exitCode, 0, 'should exit 0');
 
-    const jsonlPath = join(tempHome, '.claude', 'usage-data', 'tool-sequences.jsonl');
+    const jsonlPath = join(tempHome, '.copilot', 'usage-data', 'tool-sequences.jsonl');
     assert.ok(existsSync(jsonlPath), 'JSONL file should be created');
 
     const lines = readFileSync(jsonlPath, 'utf-8').trim().split('\n');
@@ -72,7 +72,7 @@ describe('ai-sdlc-plugin collect-tool-sequence hook', () => {
       session_id: sid,
     });
 
-    const jsonlPath = join(tempHome, '.claude', 'usage-data', 'tool-sequences.jsonl');
+    const jsonlPath = join(tempHome, '.copilot', 'usage-data', 'tool-sequences.jsonl');
     const lines = readFileSync(jsonlPath, 'utf-8').trim().split('\n');
     const entry = lines.map((l) => JSON.parse(l)).find((e) => e.sid === sid);
     assert.ok(entry, 'should find entry for this session');
@@ -88,7 +88,7 @@ describe('ai-sdlc-plugin collect-tool-sequence hook', () => {
       session_id: sid,
     });
 
-    const jsonlPath = join(tempHome, '.claude', 'usage-data', 'tool-sequences.jsonl');
+    const jsonlPath = join(tempHome, '.copilot', 'usage-data', 'tool-sequences.jsonl');
     const lines = readFileSync(jsonlPath, 'utf-8').trim().split('\n');
     const entry = lines.map((l) => JSON.parse(l)).find((e) => e.sid === sid);
     assert.ok(entry);
@@ -127,7 +127,7 @@ describe('ai-sdlc-plugin collect-tool-sequence hook', () => {
       session_id: sid,
     });
 
-    const jsonlPath = join(tempHome, '.claude', 'usage-data', 'tool-sequences.jsonl');
+    const jsonlPath = join(tempHome, '.copilot', 'usage-data', 'tool-sequences.jsonl');
     const lines = readFileSync(jsonlPath, 'utf-8').trim().split('\n');
     const entry = lines.map((l) => JSON.parse(l)).find((e) => e.sid === sid);
     assert.ok(entry);

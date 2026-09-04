@@ -77,7 +77,7 @@ export function enterAltScreen(stdout: NodeJS.WriteStream = process.stdout): () 
     process.exit(143); // conventional SIGTERM exit code
   };
 
-  // Ensure we restore on every exit path. AISDLC-236 codex code-reviewer:
+  // Ensure we restore on every exit path. AISDLC-236 copilot code-reviewer:
   // include `exit` for normal Ink shutdown via `q`/`waitUntilExit()`, and
   // SIGINT/SIGTERM for keyboard interrupt + container kill. Caller-driven
   // teardown can also invoke the returned restore() explicitly.
@@ -110,7 +110,7 @@ export async function runTui(): Promise<void> {
   // surfaced to stderr after Ink unmounts (when the alt-screen is gone
   // and the operator can actually read the output).
   //
-  // AISDLC-236 codex code-reviewer: the previous `captureError` impl just
+  // AISDLC-236 copilot code-reviewer: the previous `captureError` impl just
   // pushed errors to a buffer with no termination, which suppressed Node's
   // default crash semantics — `waitUntilExit()` could hang indefinitely
   // after a real failure. We now buffer for AC#7 reporting AND tear down

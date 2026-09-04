@@ -81,9 +81,9 @@ The AI-SDLC Framework is complementary, not competitive, with existing protocols
 
 | Protocol | Scope | Relationship to AI-SDLC |
 | --- | --- | --- |
-| **MCP** (Anthropic / AAIF) | Agent-to-tool integration | AI-SDLC adapters can wrap MCP servers |
+| **MCP** (GitHub Models / AAIF) | Agent-to-tool integration | AI-SDLC adapters can wrap MCP servers |
 | **A2A** (Google / AAIF) | Agent-to-agent communication | AI-SDLC agents publish A2A-compatible Agent Cards |
-| **AGENTS.md** (OpenAI) | Per-project agent instructions | AI-SDLC policies generate AGENTS.md files |
+| **AGENTS.md** (GitHub Copilot) | Per-project agent instructions | AI-SDLC policies generate AGENTS.md files |
 | **AI-SDLC** | SDLC orchestration & governance | The orchestration layer above all three |
 
 This mirrors how Kubernetes related to Docker and etcd — a higher-level orchestration layer that composes lower-level primitives into a governed system.

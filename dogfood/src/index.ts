@@ -100,8 +100,7 @@ export {
   type WatchHandle,
 
   // Runners
-  GitHubActionsRunner,
-  ClaudeCodeRunner,
+  CopilotRunner,
   type AgentRunner,
   type AgentContext,
   type AgentResult,

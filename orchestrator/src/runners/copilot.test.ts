@@ -126,7 +126,7 @@ describe('CopilotRunner', () => {
     vi.restoreAllMocks();
   });
 
-  describe('buildPrompt (re-exported from claude-code)', () => {
+  describe('buildPrompt (re-exported from copilot)', () => {
     it('produces a valid prompt', () => {
       const prompt = buildPrompt(makeCtx());
       expect(prompt).toContain('issue #42');

@@ -592,7 +592,7 @@ describe('AISDLC-381: AC #4 (safety guard #5) — secrets are not leaked into fo
   //   1. None of the workflows reference signing secrets (e.g.
   //      AI_SDLC_ATTESTATION_PRIVATE_KEY, NPM_TOKEN) — those should
   //      only be in release.yml (which doesn't fire on PR events).
-  //   2. The `analyze` job's ANTHROPIC_API_KEY (the most-sensitive
+  //   2. The `analyze` job's GITHUB_MODELS_TOKEN (the most-sensitive
   //      secret here) is only available in env of steps that are
   //      INSIDE the analyze job (which has no GitHub write perms),
   //      not propagated to report/post-skip-results.
@@ -651,15 +651,15 @@ describe('AISDLC-381: AC #4 (safety guard #5) — secrets are not leaked into fo
     });
   }
 
-  it('ai-sdlc-review.yml: ANTHROPIC_API_KEY only appears in the analyze job (no leak to report)', () => {
+  it('ai-sdlc-review.yml: GITHUB_MODELS_TOKEN only appears in the analyze job (no leak to report)', () => {
     const wf = loadYaml('ai-sdlc-review.yml');
     for (const [jobId, job] of Object.entries(wf.jobs ?? {})) {
       const blob = JSON.stringify(job);
-      if (blob.includes('ANTHROPIC_API_KEY')) {
+      if (blob.includes('GITHUB_MODELS_TOKEN')) {
         assert.equal(
           jobId,
           'analyze',
-          `ANTHROPIC_API_KEY must only appear in 'analyze' job (sandboxed, no GH write); found in '${jobId}'`,
+          `GITHUB_MODELS_TOKEN must only appear in 'analyze' job (sandboxed, no GH write); found in '${jobId}'`,
         );
       }
     }

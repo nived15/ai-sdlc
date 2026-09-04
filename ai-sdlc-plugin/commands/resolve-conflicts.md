@@ -19,7 +19,7 @@ PR is stuck and you want it cleared before walking away).
 
 Plugin subagents cannot use the `Agent` tool (the harness filters it
 out one level deep — empirical proof in AISDLC-69.2 / AISDLC-98). The
-slash command body runs in the main Claude Code session which DOES have
+slash command body runs in the main Copilot CLI session which DOES have
 `Agent`, so it can spawn `ci-conflict-resolver` directly. This is the
 same architecture pattern as `/ai-sdlc rebase` and `/ai-sdlc execute`.
 

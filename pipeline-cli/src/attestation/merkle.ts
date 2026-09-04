@@ -55,9 +55,9 @@ export interface TranscriptLeaf {
   transcriptHash: string;
   /** 32-byte hex nonce bound to the PR's head SHA. */
   nonce: string;
-  /** Harness name, e.g. "claude-code". */
+  /** Harness name, e.g. "copilot". */
   harness: string;
-  /** LLM model identifier, e.g. "sonnet". */
+  /** LLM model identifier, e.g. "balanced". */
   model: string;
   /** true when the reviewer approved, false when CHANGES_REQUESTED. */
   verdictApproved: boolean;

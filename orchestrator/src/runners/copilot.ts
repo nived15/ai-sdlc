@@ -12,7 +12,7 @@ import {
   DEFAULT_COMMIT_MESSAGE_TEMPLATE,
   DEFAULT_COMMIT_CO_AUTHOR,
 } from '../defaults.js';
-import { buildPrompt } from './claude-code.js';
+import { buildPrompt } from './prompt.js';
 import { cleanGitEnv } from '../runtime/git-env.js';
 
 export { buildPrompt };

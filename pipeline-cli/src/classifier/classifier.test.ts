@@ -63,7 +63,7 @@ describe('defaultRulesetDecision', () => {
       linesRemoved: 20,
     });
     expect([...d.reviewers].sort()).toEqual(['critic', 'security', 'testing']);
-    expect(d.modelOverride?.security).toBe('opus');
+    expect(d.modelOverride?.security).toBe('reasoning');
   });
 
   it('lockfile change triggers security + critic (no testing)', () => {
@@ -120,7 +120,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect([...d.reviewers].sort()).toEqual(['critic', 'security', 'testing']);
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
 
     it('docs/.env.local is auth-tier (.env-prefix glob)', () => {
@@ -131,7 +131,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect([...d.reviewers].sort()).toEqual(['critic', 'security', 'testing']);
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
 
     it('docs/private-key.pem is auth-tier (PEM denylist + secret detection)', () => {
@@ -142,7 +142,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect([...d.reviewers].sort()).toEqual(['critic', 'security', 'testing']);
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
 
     it('docs/signing.key is auth-tier (key denylist + secret detection)', () => {
@@ -153,7 +153,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect([...d.reviewers].sort()).toEqual(['critic', 'security', 'testing']);
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
 
     it('docs/Dockerfile is NOT docs-only — falls to default (all 3 reviewers)', () => {
@@ -226,7 +226,7 @@ describe('defaultRulesetDecision', () => {
         linesRemoved: 0,
       });
       expect([...d.reviewers].sort()).toEqual(['critic', 'security', 'testing']);
-      expect(d.modelOverride?.security).toBe('opus');
+      expect(d.modelOverride?.security).toBe('reasoning');
     });
   });
 

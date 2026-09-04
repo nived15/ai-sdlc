@@ -56,19 +56,19 @@ import {
   type ResearchSubagentInvoker,
 } from '@ai-sdlc/pipeline-cli';
 
-// 1. Implement the invoker. Production wires a Claude Code subagent
-//    spawn / `claude -p` shellout / Codex / etc.
+// 1. Implement the invoker. Production wires a GitHub Copilot CLI subagent
+//    spawn / `copilot -p` shellout / GitHub Copilot / etc.
 const invoker: ResearchSubagentInvoker = async (input) => {
   // input.summary, input.body, input.options, input.recommendation
   // are all present. Return findings + model + token counts.
-  const { stdout } = await runClaude({
+  const { stdout } = await runCopilot({
     prompt: `Research the following decision: ${input.summary}`,
     options: input.options,
     framing: input.framing,
   });
   return {
     findingsMarkdown: stdout,
-    model: 'claude-sonnet-4-5',
+    model: 'the balanced tier',
     inputTokens: 1500,
     outputTokens: 800,
   };
@@ -154,7 +154,7 @@ if (!isNotebookSummariesEnabled()) return;  // respect the flag
 
 const invoker: NotebookSummaryInvoker = async (input) => ({
   summaryMarkdown: await callYourLlm(input),
-  model: 'claude-haiku-4-5',
+  model: 'copilot-haiku-4-5',
   inputTokens: 800,
   outputTokens: 200,
 });

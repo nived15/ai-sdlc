@@ -54,16 +54,16 @@ requiresDocs:
 |---|---|---|
 | v1 | 2026-04-26 | Initial draft. Defines worktree pool, deterministic port allocator, parallelism caps, merge coordination. Cites Archon (`coleam00/Archon`) as prior art for the deterministic port-hash and worktree adoption patterns. |
 | v2 | 2026-04-26 | Added per-stage model routing (amends RFC-0004 §4) and the conditional review fan-out pattern. Both were originally scoped out; bundled in after CTO direction to keep parallel-execution wins in one document. |
-| v3 | 2026-04-26 | Added per-stage harness selection. Harness (`claude-code`, `codex`, `gemini-cli`, `opencode`, `aider`, `generic-api`) is now orthogonal to model — Claude Code can drive non-Claude models via Bedrock/Vertex/custom endpoints, and OpenCode/Aider can drive Claude. Defines the HarnessAdapter interface, capability matrix, and fallback chain. Enables cross-harness review (e.g., Codex reviewing Claude's PR). |
-| v4 | 2026-04-26 | Added subscription-aware scheduling. Reframes cost optimization from per-call unit pricing to "maximize utility of fixed subscription windows" (Claude Code 5-hour quotas, off-peak 2× multipliers, monthly Codex caps). Introduces the SubscriptionLedger, per-stage `schedule` hints, off-peak deferral, and burn-down pacing. Goal: end every billing window having processed the maximum possible PPA-ordered work without exceeding quota. |
+| v3 | 2026-04-26 | Added per-stage harness selection. Harness (`copilot`) is orthogonal to model — GitHub Copilot CLI can drive any model its plan exposes. Defines the HarnessAdapter interface, capability matrix, and fallback chain. Enables independent parallel review via isolated reviewer sessions. |
+| v4 | 2026-04-26 | Added subscription-aware scheduling. Reframes cost optimization from per-call unit pricing to "maximize utility of fixed subscription windows" (GitHub Copilot CLI 5-hour quotas, off-peak 2× multipliers, monthly GitHub Copilot caps). Introduces the SubscriptionLedger, per-stage `schedule` hints, off-peak deferral, and burn-down pacing. Goal: end every billing window having processed the maximum possible PPA-ordered work without exceeding quota. |
 | v5 | 2026-04-26 | Added per-worktree database isolation (resolves Q1). Defines `DatabaseBranchAdapter` interface, ships adapters for SQLite copy-per-worktree, Neon branching, generic Postgres snapshot-restore, and `external` (operator-managed). Adds `DatabaseBranchPool` resource, per-stage `databaseAccess` declaration, connection-string rewriting, and migration coordination. Production Postgres clients no longer have to wait for RFC-0011. |
-| v6 | 2026-04-26 | Resolved Q1 (cap default value). `Pipeline.spec.parallelism.maxConcurrent` is now optional, with a tier-aware default derived from declared `SubscriptionPlan`: no plan → 1 (today's behavior, no surprise regressions); `claude-code-pro` → 3; `claude-code-max-5x` → 5; `claude-code-max-20x` → 10. Couples parallelism opt-in to the same signal that says "I want subscription utilization to be maximized." |
+| v6 | 2026-04-26 | Resolved Q1 (cap default value). `Pipeline.spec.parallelism.maxConcurrent` is now optional, with a tier-aware default derived from declared `SubscriptionPlan`: no plan → 1 (today's behavior, no surprise regressions); `copilot-pro` → 3; `copilot-max-5x` → 5; `copilot-max-20x` → 10. Couples parallelism opt-in to the same signal that says "I want subscription utilization to be maximized." |
 | v7 | 2026-04-26 | Resolved Q2 (parallel-agent budget aggregation) by clarifying the three-axis cost model. `costBudget` (RFC-0004) is shared dollar-denominated across all parallel agents at pipeline scope. `SubscriptionPlan.windowQuotaTokens` is per-harness token-denominated, not per-agent. `Stage.maxBudgetUsd` is a per-stage circuit breaker, independent of either. Adds new §14.10 explaining how subscription quota maps to dollars (it doesn't directly — subscription work is pre-paid; only spillover to pay-per-token decrements `costBudget`). |
 | v8 | 2026-04-26 | Resolved Q3 (PPA re-scoring on requeue). Hybrid algorithm: re-score when (time since last triage > 24h) OR (failure type signals difficulty miscalibration) OR (operator-triggered requeue). Adds normative §9.4 with the failure-type taxonomy classifying each known failure as transient (trust score) or intrinsic (re-score). Triage history persisted to `$ARTIFACTS_DIR/<issue-id>/triage-history.jsonl` for audit. |
 | v9 | 2026-04-26 | Resolved Q4 (classifier failure-open scope). Classifier emits BOTH `confident: bool` (drives dispatch — the binary fall-open trigger) AND `confidence: float [0,1]` (informational, fed to calibration analysis). Validation rejects outputs where the two contradict (e.g., `confident: true` with `confidence < 0.7`). Operators can audit classifier calibration via `$ARTIFACTS_DIR/_classifier/calibration.jsonl` to detect overconfident or underconfident prompts and iterate. |
 | v10 | 2026-04-26 | Resolved Q5 (model-deprecation handling). Model registry gains `deprecatedAt` / `removedAt` per entry. Pipeline-load resolves all aliases to physical IDs and pins them to `runtime.json` for the run's lifetime. Deprecated models still resolve but emit `ModelDeprecated` warning naming the removal date; removed models fail pipeline-load with `ModelRemoved`. Adds `cli-model-bump --dry-run` for operators to preview new resolutions before starting a pipeline run that picks them up. |
 | v11 | 2026-04-26 | Resolved Q6 (adapter capability discovery vs declaration). Hybrid: static declaration is authoritative for pipeline-load validation; startup version probe is a sanity check against the installed CLI. Adds `requires: { binary, versionRange }` to the HarnessAdapter interface. Defaults to open-ended upper bounds (`>=X.Y.Z`) — assume forward-compatibility unless a specific upstream version is known to break compat. Probe parsing failures emit `HarnessProbeFailed` warning but do not block validation (avoids breaking on undocumented `--version` output changes). |
-| v12 | 2026-04-26 | Resolved Q7 (cross-harness artifact format compatibility). Each artifact type produced by stages now has TWO files: a human-narrative `.md` (operator-friendly, harness-natural style) AND a schema-conformant `.json` (downstream-machine-readable, validated against `spec/schemas/artifacts/`). Adapters MUST include the relevant JSON schema in their invocation prompt and MUST produce a valid JSON file. Schema validation failure is a stage failure (`ArtifactSchemaInvalid`); adapter MAY retry once with a sharpened prompt before failing. Schemas are versioned via the `$schema` field for forward-compat. |
+| v12 | 2026-04-26 | Resolved Q7 (cross-session artifact format compatibility). Each artifact type produced by stages now has TWO files: a human-narrative `.md` (operator-friendly, harness-natural style) AND a schema-conformant `.json` (downstream-machine-readable, validated against `spec/schemas/artifacts/`). Adapters MUST include the relevant JSON schema in their invocation prompt and MUST produce a valid JSON file. Schema validation failure is a stage failure (`ArtifactSchemaInvalid`); adapter MAY retry once with a sharpened prompt before failing. Schemas are versioned via the `$schema` field for forward-compat. |
 | v13 | 2026-04-26 | Resolved Q8 (fallback chain audit). Default behavior is transparent fallback with audit (`runtime.json` records actual harness used). Adds optional `Stage.requiresIndependentHarnessFrom: string[]` for stages where harness independence is a load-bearing safety property (e.g., `review-security` requires independence from `implement`). When set, the orchestrator filters the stage's harness chain to exclude harnesses that ran the named upstream stages. If no harness preserves independence, emits `IndependenceViolated` event and applies the stage's `onFailure` policy (`continue` advisory by default; operator MAY set `abort` for security-critical pipelines). |
 | v14 | 2026-04-26 | Resolved Q9 (authoritative quota API migration). Adds `SubscriptionPlan.spec.quotaSource: 'self-tracked' (default) | 'authoritative-api' | 'authoritative-with-fallback'`. Operator opt-in (D); switching is pinned at pipeline-load. On first switch from self-tracked to authoritative, orchestrator emits one-time `LedgerReconciliation` event recording the divergence between self-tracked and authoritative utilization (B). Soft `QuotaSourceUpdateRecommended` warning when self-tracker drift is detectable after API is generally available. |
 | v15 | 2026-04-26 | Resolved Q10 (off-peak schedule freshness). Adds `SubscriptionPlan.spec.offPeak.lastVerified: ISO 8601 date` for operator-declared freshness. At pipeline-load, missing or >30-day-old `lastVerified` emits `OffPeakScheduleStale` warning, surfaced to Slack digest (not just logs). `cli-status --subscriptions` view shows freshness age per plan. Reference SubscriptionPlan examples shipped with maintainer-verified dates, refreshed quarterly. |
@@ -106,9 +106,9 @@ requiresDocs:
 
 ## 1. Summary
 
-This RFC extends the AI-SDLC pipeline (RFC-0002) with declarative semantics for **parallel execution of PPA-prioritized issues** through a **pooled git-worktree isolation model**, amends the cost-governance contract (RFC-0004) to support **per-stage model routing**, introduces **per-stage harness selection** so each stage can run on the most appropriate coding agent (Claude Code, Codex CLI, Gemini CLI, OpenCode, Aider) regardless of the underlying LLM, and introduces **subscription-aware scheduling** that reframes cost optimization from "minimize per-call cost" to "maximize utility of fixed subscription windows."
+This RFC extends the AI-SDLC pipeline (RFC-0002) with declarative semantics for **parallel execution of PPA-prioritized issues** through a **pooled git-worktree isolation model**, amends the cost-governance contract (RFC-0004) to support **per-stage model routing**, introduces **per-stage harness selection** so each stage can run on the most appropriate coding agent (the GitHub Copilot CLI) regardless of the underlying LLM, and introduces **subscription-aware scheduling** that reframes cost optimization from "minimize per-call cost" to "maximize utility of fixed subscription windows."
 
-Today, `orchestrator/src/execute.ts` drives one issue at a time through plan → build → review; every agent stage hardcodes Sonnet (`ai-sdlc-plugin/agents/*-reviewer.md`); the entire pipeline assumes Claude Code as the only harness; and the cost model assumes pay-per-token API pricing rather than the session-window quotas, off-peak multipliers, and monthly subscription caps that actually govern most coding-agent billing. To realize the dogfood pipeline vision at competitive unit economics, the orchestrator must run N agents concurrently without collisions, spend the right model on the right stage, fall over between harnesses, AND schedule work to fully consume each subscription window before it resets — including deferring lower-priority work to off-peak hours where Claude Code grants 2× the token allocation. This RFC defines the worktree pool, the port-allocation function, the concurrency cap, the merge serialization protocol, the artifact directory, the per-stage `model` and `harness` fields, the HarnessAdapter interface, the SubscriptionLedger that tracks remaining quota across windows, per-stage `schedule` hints that let operators say "this stage prefers off-peak" or "this stage MUST run within current quota," and the `DatabaseBranchAdapter` interface with shipped adapters for SQLite copy-per-worktree and Neon Postgres branching so parallel agents touching shared DB state don't corrupt each other's writes.
+Today, `orchestrator/src/execute.ts` drives one issue at a time through plan → build → review; every agent stage hardcodes Sonnet (`ai-sdlc-plugin/agents/*-reviewer.md`); the entire pipeline assumes GitHub Copilot CLI as the only harness; and the cost model assumes pay-per-token API pricing rather than the session-window quotas, off-peak multipliers, and monthly subscription caps that actually govern most coding-agent billing. To realize the dogfood pipeline vision at competitive unit economics, the orchestrator must run N agents concurrently without collisions, spend the right model on the right stage, fall over between harnesses, AND schedule work to fully consume each subscription window before it resets — including deferring lower-priority work to off-peak hours where GitHub Copilot CLI grants 2× the token allocation. This RFC defines the worktree pool, the port-allocation function, the concurrency cap, the merge serialization protocol, the artifact directory, the per-stage `model` and `harness` fields, the HarnessAdapter interface, the SubscriptionLedger that tracks remaining quota across windows, per-stage `schedule` hints that let operators say "this stage prefers off-peak" or "this stage MUST run within current quota," and the `DatabaseBranchAdapter` interface with shipped adapters for SQLite copy-per-worktree and Neon Postgres branching so parallel agents touching shared DB state don't corrupt each other's writes.
 
 ## 2. Motivation
 
@@ -116,7 +116,7 @@ Today, `orchestrator/src/execute.ts` drives one issue at a time through plan →
 
 `orchestrator/src/execute.ts` dispatches a single agent against a single branch. With a PPA-ordered queue of N issues, end-to-end throughput is `N × T_issue`, regardless of how many models or seats are available. The Archon project (`coleam00/Archon`) demonstrates ~10× throughput gains by running parallel agents, each in its own worktree, against an ordered queue. We need the same capability.
 
-### 2.2 Naive `claude --worktree` does not scale past ~3 agents
+### 2.2 Naive `copilot --worktree` does not scale past ~3 agents
 
 Three concrete failure modes appear once two or more agents share a host:
 
@@ -142,22 +142,22 @@ Stored in memory (`feedback_observability.md`): *"black box execution destroys c
 
 ### 2.7 The pipeline is locked to a single harness
 
-Every stage today assumes Claude Code as the runtime. This creates four concrete risks:
+Every stage today assumes GitHub Copilot CLI as the runtime. This creates four concrete risks:
 
-1. **Vendor concentration.** A Claude Code outage, rate-limit, or pricing change halts the entire dogfood pipeline. Multiple clients running this product cannot tolerate single-vendor failure.
+1. **Vendor concentration.** A GitHub Copilot CLI outage, rate-limit, or pricing change halts the entire dogfood pipeline. Multiple clients running this product cannot tolerate single-vendor failure.
 2. **Lost cost arbitrage.** Different harnesses + model providers have different unit economics for the same stage. An OpenRouter-routed DeepSeek call may cost 1/10th of a Sonnet call for a triage classification with comparable quality. Locking the harness forecloses this lever.
-3. **Lost cross-harness review quality.** The Cole Medin transcript explicitly recommends `/codex adversarial-review` reviewing Claude's PR — a different model family in a different harness catches different classes of bugs. Single-harness pipelines lose this independence multiplier.
-4. **Different harnesses, different strengths.** Codex CLI (OpenAI) excels at certain reasoning patterns; Gemini CLI handles long-context tasks well; Aider has strong refactoring; Claude Code has the richest skill/tool ecosystem. A pipeline that can route stages to the right harness extracts more value than one that uses any single tool for everything.
+3. **Lost independent parallel review quality.** The Cole Medin transcript explicitly recommends `/copilot adversarial-review` reviewing GitHub Copilot's PR — a different model family in a different harness catches different classes of bugs. Single-harness pipelines lose this independence multiplier.
+4. **Different harnesses, different strengths.** GitHub Copilot CLI (GitHub Copilot) excels at certain reasoning patterns; GitHub Copilot CLI handles long-context tasks well; GitHub Copilot has strong refactoring; GitHub Copilot CLI has the richest skill/tool ecosystem. A pipeline that can route stages to the right harness extracts more value than one that uses any single tool for everything.
 
-Notably, harness ≠ model. Claude Code can drive Bedrock-hosted Claude, Vertex-hosted Claude, or via `ANTHROPIC_BASE_URL` any OpenAI-compatible endpoint serving any model. OpenCode and Aider can drive Claude. The two axes are independent and must be configured independently.
+Notably, harness ≠ model. GitHub Copilot CLI can drive Bedrock-hosted GitHub Copilot, Vertex-hosted GitHub Copilot, or via `GITHUB_MODELS_BASE_URL` any GitHub Copilot-compatible-shapedible endpoint serving any model. GitHub Copilot and GitHub Copilot can drive GitHub Copilot. The two axes are independent and must be configured independently.
 
 ### 2.8 Subscription quota waste is the real cost lever
 
-The existing cost-governance model (RFC-0004) assumes pay-per-token API pricing, which is correct for direct Anthropic API calls but **wrong for the billing model most clients actually use**:
+The existing cost-governance model (RFC-0004) assumes pay-per-token API pricing, which is correct for direct GitHub Models API calls but **wrong for the billing model most clients actually use**:
 
-1. **Claude Code Pro/Max** allocates tokens in 5-hour rolling windows. Unused capacity at window-end is forfeit. A pipeline that processes 3 issues in a window with capacity for 8 has effectively wasted 60% of that window's value.
-2. **Off-peak multiplier**: Claude Code grants approximately **2× token allocation** during documented off-peak hours. The same Opus 1M call that consumes 1 unit of quota on-peak consumes 0.5 units off-peak. A pipeline that runs all work on-peak processes half the issues per dollar of subscription compared to one that defers low-priority work to off-peak.
-3. **Codex Pro / Plus** has monthly caps, not session windows. Pacing matters across the month, not within a 5-hour block.
+1. **GitHub Copilot CLI Pro/Max** allocates tokens in 5-hour rolling windows. Unused capacity at window-end is forfeit. A pipeline that processes 3 issues in a window with capacity for 8 has effectively wasted 60% of that window's value.
+2. **Off-peak multiplier**: GitHub Copilot CLI grants approximately **2× token allocation** during documented off-peak hours. The same Opus 1M call that consumes 1 unit of quota on-peak consumes 0.5 units off-peak. A pipeline that runs all work on-peak processes half the issues per dollar of subscription compared to one that defers low-priority work to off-peak.
+3. **GitHub Copilot Pro / Plus** has monthly caps, not session windows. Pacing matters across the month, not within a 5-hour block.
 4. **OpenRouter / generic-API** is true pay-per-token with no windows or multipliers — the legacy assumption.
 
 The optimization problem is not "minimize cost per issue" but **"given a fixed subscription, process the maximum number of PPA-prioritized issues before the subscription period ends."** This is a knapsack/scheduling problem, and the orchestrator currently solves none of it. A pipeline that processes 12 issues per week on a $200/month subscription is twice as valuable as one that processes 6, even if the per-issue cost is identical, because the marginal subscription cost of issues 7–12 is zero.
@@ -186,7 +186,7 @@ The fix is well-understood: each worktree gets its own database branch (Neon, Su
 - Define a cross-clone worktree ownership guard.
 - Add a `model` field to the Stage object so each pipeline stage declares its target model (Haiku/Sonnet/Opus/Opus 1M), with cost attribution flowing into RFC-0004's accounting per stage.
 - Specify a conditional review fan-out: a Haiku-cheap classifier decides which of `{testing, critic, security}` reviewers to invoke per PR.
-- Define a `harness` field on the Stage object and a HarnessAdapter interface so each stage can run on a different coding-agent runtime (Claude Code, Codex CLI, Gemini CLI, OpenCode, Aider, generic-API).
+- Define a `harness` field on the Stage object and a HarnessAdapter interface so each stage can run on a different coding-agent runtime (GitHub Copilot CLI, GitHub Copilot CLI, GitHub Copilot CLI, GitHub Copilot, GitHub Copilot, generic-API).
 - Specify a capability matrix that adapters MUST self-declare so the orchestrator can validate stage requirements against available harnesses at pipeline-load time.
 - Specify a fallback chain so a stage can declare an ordered preference list of harnesses, falling through on rate-limit, outage, or capability mismatch.
 - Define a SubscriptionLedger that tracks per-harness window state (current usage, reset time, off-peak multipliers, monthly caps) so harness/model routing and pipeline dispatch decisions consult quota in real time.
@@ -195,7 +195,7 @@ The fix is well-understood: each worktree gets its own database branch (Neon, Su
 - Define a `DatabaseBranchAdapter` interface and `DatabaseBranchPool` resource so each worktree gets isolated database state. Ship `sqlite-copy`, `neon`, `pg-snapshot-restore`, and `external` adapters at v1.
 - Define a per-stage `databaseAccess` declaration (`none` | `read` | `write` | `migrate`) so the orchestrator can decide whether to provision a branch, share a read-only one, or run migration coordination.
 - Define connection-string rewriting so agents transparently see the per-worktree branch via the same env-var name (`DATABASE_URL`, etc.) the application already uses.
-- Maintain backward compatibility — pipelines that omit `parallelism`, `model`, or `harness` execute serially on Claude Code with Sonnet, exactly as today.
+- Maintain backward compatibility — pipelines that omit `parallelism`, `model`, or `harness` execute serially on GitHub Copilot CLI with Sonnet, exactly as today.
 
 ## 4. Non-Goals
 
@@ -206,9 +206,9 @@ The fix is well-understood: each worktree gets its own database branch (Neon, Su
 - **Dependency install caching.** `pnpm` content-addressable store is sufficient for our workloads; no special mechanism is specified here.
 - **Speculative branching** (running multiple plan variants per issue and picking the winner). Out of scope.
 - **Adaptive model selection.** This RFC defines *declarative* per-stage routing (the operator picks the model in YAML). Learning-based selection (the orchestrator picks the model based on stage difficulty signals) is out of scope and would be a future RFC building on the per-stage-cost telemetry this RFC requires.
-- **Day-one parity across all harnesses.** This RFC defines the HarnessAdapter interface and the capability matrix. The reference implementation ships only `claude-code` (parity with today) and `codex` (highest-value second harness for cross-harness review). Adapters for `gemini-cli`, `opencode`, `aider`, and `generic-api` are deferred to follow-up work but the interface MUST be sufficient to implement them without further schema changes.
-- **Cross-harness session migration.** A stage that starts on Claude Code cannot mid-flight transfer its conversation to Codex. Each stage runs end-to-end on one harness; switching happens at stage boundaries.
-- **Authoritative subscription quota introspection.** Anthropic does not currently expose Claude Code window state via API. The SubscriptionLedger is a *self-tracked best-effort estimate* based on observed token consumption against documented window caps, not a queried-from-vendor source of truth. The interface is forward-compatible with an authoritative API if/when one ships.
+- **Day-one parity across all harnesses.** This RFC defines the HarnessAdapter interface and the capability matrix. The reference implementation ships only `copilot`. The interface MUST be sufficient to implement additional adapters without further schema changes.
+- **cross-session session migration.** A stage that starts on GitHub Copilot CLI cannot mid-flight transfer its conversation to GitHub Copilot. Each stage runs end-to-end on one harness; switching happens at stage boundaries.
+- **Authoritative subscription quota introspection.** GitHub Models does not currently expose GitHub Copilot CLI window state via API. The SubscriptionLedger is a *self-tracked best-effort estimate* based on observed token consumption against documented window caps, not a queried-from-vendor source of truth. The interface is forward-compatible with an authoritative API if/when one ships.
 - **Real-time spot-pricing arbitrage.** Continuously rerouting between providers on minute-by-minute price changes is out of scope. We optimize over hours-to-days windows, not seconds.
 - **Billing reconciliation.** This RFC tracks consumption for *scheduling decisions*, not for accounting accuracy. Authoritative billing comes from the provider invoice. The ledger's accuracy target is "within 10% of provider-reported usage" — sufficient for pacing, insufficient for accounting.
 
@@ -236,7 +236,7 @@ A per-issue directory (`$ARTIFACTS_DIR/<issue-id>/`) containing the plan, implem
 
 ### 5.6 Per-Stage Model
 
-A declarative `model:` field on each Stage object, accepting one of `haiku`, `sonnet`, `opus`, `opus[1m]`, `inherit`, or an explicit model ID (`claude-haiku-4-5-20251001`). `inherit` is the default and resolves to the pipeline's `defaultModel` (today: Sonnet). The orchestrator MUST attribute token cost to the resolved model, not to `inherit`.
+A declarative `model:` field on each Stage object, accepting one of `haiku`, `sonnet`, `opus`, `opus[1m]`, `inherit`, or an explicit model ID (`copilot-haiku-4-5-20251001`). `inherit` is the default and resolves to the pipeline's `defaultModel` (today: Sonnet). The orchestrator MUST attribute token cost to the resolved model, not to `inherit`.
 
 ### 5.7 Review Classifier
 
@@ -248,7 +248,7 @@ A pluggable runtime implementation that abstracts a coding-agent CLI behind a un
 
 ### 5.9 SubscriptionLedger
 
-A per-harness state store that tracks billing-window consumption against documented quota. For Claude Code Pro/Max it tracks the rolling 5-hour window, the off-peak multiplier currently in effect, and the projected window-end utilization given queue depth. For Codex Pro it tracks the monthly cap. For pay-per-token harnesses (`generic-api`) it tracks dollar spend against the pipeline's `costBudget`. The ledger is consulted on every stage dispatch and every harness-routing decision.
+A per-harness state store that tracks billing-window consumption against documented quota. For GitHub Copilot CLI Pro/Max it tracks the rolling 5-hour window, the off-peak multiplier currently in effect, and the projected window-end utilization given queue depth. For GitHub Copilot Pro it tracks the monthly cap. For pay-per-token harnesses (`copilot`) it tracks dollar spend against the pipeline's `costBudget`. The ledger is consulted on every stage dispatch and every harness-routing decision.
 
 ### 5.10 Schedule Hint
 
@@ -294,7 +294,7 @@ spec:
     - primary-postgres
     - analytics-postgres
   subscriptionPlans:           # optional, references SubscriptionPlan resources by name (§6.6)
-    - claude-code-max-5x
+    - copilot-max-5x
 ```
 
 ### 6.3 Stage object additions (amends RFC-0002 §3)
@@ -306,7 +306,7 @@ spec:
 | `model` | string | MAY | One of `haiku`, `sonnet`, `opus`, `opus[1m]`, `inherit`, or an explicit model ID. Defaults to `inherit`. |
 | `kind` | string | MAY | One of `agent` (default), `review-classifier`, `review-fanout`. Drives stage-specific execution semantics. |
 | `maxBudgetUsd` | number | MAY | Per-stage cost ceiling. When exceeded, the orchestrator MUST emit `BudgetExceeded` and apply the stage's `onFailure` policy. Hooks into RFC-0004 cost attribution. |
-| `harness` | string | MAY | One of `claude-code` (default), `codex`, `gemini-cli`, `opencode`, `aider`, `generic-api`, `inherit`. Resolves against the orchestrator's adapter registry (§13.2). Pipeline-load MUST fail if an unregistered harness is named. |
+| `harness` | string | MAY | One of `copilot` (default), `inherit`. Resolves against the orchestrator's adapter registry (§13.2). Pipeline-load MUST fail if an unregistered harness is named. |
 | `harnessFallback` | array[string] | MAY | Ordered preference list. If the primary harness is unavailable (rate-limited, capability mismatch, runtime error during invocation), the orchestrator MUST attempt each fallback in order before applying `onFailure`. |
 | `requiresIndependentHarnessFrom` | array[string] | MAY | List of upstream stage names. The orchestrator MUST exclude any harness that ran one of those upstream stages from this stage's effective `harness` + `harnessFallback` chain. See §13.10. |
 | `schedule` | string | MAY | One of `now` (default), `off-peak`, `quota-permitting`, `defer-if-low-priority`. Drives subscription-aware dispatch (§14). |
@@ -323,7 +323,7 @@ spec:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `defaultHarness` | string | MAY | Resolution target for any stage with `harness: inherit`. Defaults to `claude-code`. Same value space as `Stage.harness`. |
+| `defaultHarness` | string | MAY | Resolution target for any stage with `harness: inherit`. Defaults to `copilot`. Same value space as `Stage.harness`. |
 | `defaultHarnessFallback` | array[string] | MAY | Pipeline-wide default fallback chain applied to any stage that omits `harnessFallback`. |
 | `tenant` | string | MAY | Tenant identifier for SubscriptionLedger keying (§14.12). When set, partitions a shared vendor account into virtual sub-windows. When omitted, all pipelines on the same `(harness, accountId)` share a single ledger. |
 | `tenantQuotaShare` | number [0,1] | MAY | Fraction of the shared account's `windowQuotaTokens` allocated to this tenant. Required when `tenant` is set AND multiple tenants exist on the same `(harness, accountId)`. Sum of shares across all tenants on the same account MUST equal 1.0; validated at orchestrator startup. |
@@ -339,9 +339,9 @@ Declares the billing-window characteristics of a harness so the SubscriptionLedg
 apiVersion: ai-sdlc.dev/v1alpha1
 kind: SubscriptionPlan
 metadata:
-  name: claude-code-max-5x
+  name: copilot-max-5x
 spec:
-  harness: claude-code
+  harness: copilot
   billingMode: session-window           # "session-window" | "monthly-cap" | "pay-per-token"
   windowDuration: PT5H                  # ISO 8601, only for session-window
   windowQuotaTokens: 1000000            # documented per-window cap
@@ -502,11 +502,11 @@ The orchestrator MUST NOT execute more than the resolved `maxConcurrent` value s
 | Declared SubscriptionPlan | Default `maxConcurrent` | Rationale |
 |---|---|---|
 | (none declared) | `1` | Backward-compatible with today's behavior; no surprise regressions on plugin upgrade. |
-| `claude-code-pro` | `3` | Pro tier quota sustains ~3 concurrent Opus stages over a 5h window without exhausting hardCap. |
-| `claude-code-max-5x` | `5` | 5× quota → 5 concurrent stages without burndown alarm. |
-| `claude-code-max-20x` | `10` | 20× quota leaves headroom for the 10-cap ceiling we set in §6.1. |
-| `codex-plus` | `2` | Lower monthly cap; conservative default. |
-| `codex-pro` | `5` | Comparable to Max-5x. |
+| `copilot-pro` | `3` | Pro tier quota sustains ~3 concurrent Opus stages over a 5h window without exhausting hardCap. |
+| `copilot-max-5x` | `5` | 5× quota → 5 concurrent stages without burndown alarm. |
+| `copilot-max-20x` | `10` | 20× quota leaves headroom for the 10-cap ceiling we set in §6.1. |
+| `copilot-plus` | `2` | Lower monthly cap; conservative default. |
+| `copilot-pro` | `5` | Comparable to Max-5x. |
 | `pay-per-token` | `5` | No quota constraint; cap chosen for host-resource sanity. |
 | Multiple plans for the same harness | `sum(per-plan default)` | Operator with multiple seats gets additive headroom. |
 | Multiple harnesses across stages | `max(per-harness default)` | The dispatcher caps total in-flight; per-harness contention is surfaced via the `QuotaContention` event for the operator to size separately. |
@@ -583,7 +583,7 @@ Every triage event (original + every re-score) is appended to `$ARTIFACTS_DIR/<i
   "triggerDetail": "AgentTimeout x2",
   "score": { "Sα": 0.72, "Dπ": 0.55, "Eρ": 0.40, "HC": 0.85, "composite": 0.61 },
   "deltaFromPrevious": { "composite": -0.14, "narrative": "Eρ dropped: agent timeouts indicate harder than estimated" },
-  "model": "claude-haiku-4-5-20251001",
+  "model": "copilot-haiku-4-5-20251001",
   "costUsd": 0.0011
 }
 ```
@@ -637,29 +637,29 @@ Mid-stage model changes are NOT supported.
 
 | Alias | Resolves to | `deprecatedAt` | `removedAt` | Use case |
 |---|---|---|---|---|
-| `haiku` | `claude-haiku-4-5-20251001` | null | null | Classification, routing, formatting, structured-output extraction |
-| `sonnet` | `claude-sonnet-4-6` | null | null | Code review, refactoring, validation, default for everything else |
-| `opus` | `claude-opus-4-7` | null | null | Complex implementation, multi-file refactors, design work |
-| `opus[1m]` | `claude-opus-4-7[1m]` | null | null | Implementation against a large codebase context (>200K tokens) |
+| `haiku` | `copilot-haiku-4-5-20251001` | null | null | Classification, routing, formatting, structured-output extraction |
+| `sonnet` | `the balanced tier` | null | null | Code review, refactoring, validation, default for everything else |
+| `opus` | `the reasoning tier` | null | null | Complex implementation, multi-file refactors, design work |
+| `opus[1m]` | `the reasoning tier[1m]` | null | null | Implementation against a large codebase context (>200K tokens) |
 
 Aliases are resolved at pipeline-load against a registry file (`orchestrator/src/models/registry.ts`). The two date columns drive the deprecation lifecycle defined in §11.6. Maintainer responsibility: keep both dates current as vendors publish deprecation announcements.
 
 ### 11.3 Recommended routing for the dogfood pipeline
 
-Non-normative guidance the reference implementation SHOULD ship as defaults. Harness defaults to `claude-code` unless cross-harness independence adds review value or cost arbitrage is meaningful:
+Non-normative guidance the reference implementation SHOULD ship as defaults. Harness defaults to `copilot` unless cross-session independence adds review value or cost arbitrage is meaningful:
 
 | Stage | Model | Harness | Rationale |
 |---|---|---|---|
-| `triage` (PPA scoring) | `haiku` | `claude-code` | Pattern matching against fixed scoring rubric |
-| `review-classify` | `haiku` | `claude-code` | Diff-shape classification |
-| `plan` | `sonnet` | `claude-code` | Default-balance, uses our skills/MCP tools |
-| `implement` | `opus[1m]` | `claude-code` | Large-context multi-file edits, full skill ecosystem |
-| `validate` | `sonnet` | `claude-code` | Test execution + log interpretation |
-| `review-testing` | `sonnet` | `claude-code` | Same harness as implementer is acceptable for testing review |
-| `review-critic` | `sonnet` | `codex` | **Cross-harness review** — different model family catches different bugs |
-| `review-security` | `sonnet` | `codex` | **Cross-harness review** — independence is a security property |
-| `fix-pr` | `sonnet` | `claude-code` | Most fix actions are mechanical |
-| `simplify` | `sonnet` | `claude-code` | Localized refactor |
+| `triage` (PPA scoring) | `haiku` | `copilot` | Pattern matching against fixed scoring rubric |
+| `review-classify` | `haiku` | `copilot` | Diff-shape classification |
+| `plan` | `sonnet` | `copilot` | Default-balance, uses our skills/MCP tools |
+| `implement` | `opus[1m]` | `copilot` | Large-context multi-file edits, full skill ecosystem |
+| `validate` | `sonnet` | `copilot` | Test execution + log interpretation |
+| `review-testing` | `sonnet` | `copilot` | Same harness as implementer is acceptable for testing review |
+| `review-critic` | `sonnet` | `copilot` | **independent parallel review** — different model family catches different bugs |
+| `review-security` | `sonnet` | `copilot` | **independent parallel review** — independence is a security property |
+| `fix-pr` | `sonnet` | `copilot` | Most fix actions are mechanical |
+| `simplify` | `sonnet` | `copilot` | Localized refactor |
 
 ### 11.4 Cost attribution (amends RFC-0004 §4)
 
@@ -682,7 +682,7 @@ The orchestrator enforces three independent caps with distinct scopes and units.
 
 Failure of any check blocks admission. The orchestrator emits a structured `AdmissionDenied` event naming which cap blocked, so operators can tell "blocked on dollars" from "blocked on subscription window" from "blocked on per-stage circuit breaker."
 
-**Why three caps, not one.** Dollar budgets are a Finance concern (don't overspend the month). Subscription windows are a vendor-imposed reality (don't exhaust Claude Code's 5h quota). Per-stage circuit breakers are a runaway-protection concern (kill a stage that 10×'d its estimate). Each has a different audience, a different unit, and a different correct response when breached. Conflating them produces confusing operator behavior — operators set "$50/day" and then can't understand why dispatch blocks when only $12 has been spent (answer: subscription window exhausted, unrelated to dollars).
+**Why three caps, not one.** Dollar budgets are a Finance concern (don't overspend the month). Subscription windows are a vendor-imposed reality (don't exhaust GitHub Copilot CLI's 5h quota). Per-stage circuit breakers are a runaway-protection concern (kill a stage that 10×'d its estimate). Each has a different audience, a different unit, and a different correct response when breached. Conflating them produces confusing operator behavior — operators set "$50/day" and then can't understand why dispatch blocks when only $12 has been spent (answer: subscription window exhausted, unrelated to dollars).
 
 ### 11.6 Model deprecation lifecycle
 
@@ -702,9 +702,9 @@ The model registry tracks each entry's `deprecatedAt: Date | null` and `removedA
 ```
 $ cli-model-bump --dry-run
 Pipeline `dogfood`:
-  Stage `triage` (model: haiku) currently resolves to claude-haiku-4-5-20251001
+  Stage `triage` (model: haiku) currently resolves to copilot-haiku-4-5-20251001
     DEPRECATED 2026-08-01, REMOVED 2027-02-01
-    Replacement: claude-haiku-5-0-20270115 (via alias `haiku`)
+    Replacement: copilot-haiku-5-0-20270115 (via alias `haiku`)
   Run without --dry-run to start a new pipeline run that picks up the replacement.
 ```
 
@@ -756,16 +756,16 @@ A pipeline that omits the classifier and uses ordinary review stages preserves t
     "modelOverride": {
       "type": "object",
       "additionalProperties": {
-        "enum": ["haiku", "sonnet", "opus", "opus[1m]"]
+        "enum": ["fast", "balanced", "reasoning", "opus[1m]"]
       },
       "description": "Optional per-reviewer model bump (e.g., security-flagged diff escalates security-reviewer to opus)."
     },
     "harnessOverride": {
       "type": "object",
       "additionalProperties": {
-        "enum": ["claude-code", "codex", "gemini-cli", "opencode", "aider", "generic-api"]
+        "enum": ["copilot", "copilot", "copilot", "copilot", "copilot", "copilot"]
       },
-      "description": "Optional per-reviewer harness override (e.g., a security-flagged diff routes security-reviewer to a specific harness for cross-harness independence per §13.6 / §13.10)."
+      "description": "Optional per-reviewer harness override (e.g., a security-flagged diff routes security-reviewer to a specific harness for cross-session independence per §13.6 / §13.10)."
     }
   },
   "allOf": [
@@ -836,7 +836,7 @@ Every harness adapter MUST implement the following TypeScript interface (declare
 
 ```typescript
 interface HarnessAdapter {
-  readonly name: string;                        // 'claude-code', 'codex', etc.
+  readonly name: string;                        // 'copilot', 'copilot', etc.
   readonly capabilities: HarnessCapabilities;
   readonly requires: HarnessRequires;           // §13.8 binary + version range
 
@@ -859,7 +859,7 @@ interface HarnessAdapter {
   // SubscriptionLedger key so two pipelines on the same vendor account auto-pool.
   // MUST be a one-way derivation (e.g., SHA-256 of the API key + harness name)
   // and MUST NOT leak the credential itself. Returns null when the harness
-  // cannot derive an account identity (e.g., generic-api with no auth scheme),
+  // cannot derive an account identity (e.g., copilot with no auth scheme),
   // in which case the orchestrator emits LedgerKeyAmbiguous and degrades to
   // per-pipeline ledger keying.
   getAccountId(): Promise<string | null>;
@@ -876,7 +876,7 @@ interface HarnessCapabilities {
 }
 
 interface HarnessRequires {
-  binary: string;               // Executable name resolved against PATH ('claude', 'codex', etc.)
+  binary: string;               // Executable name resolved against PATH ('copilot', 'copilot', etc.)
   versionRange: string;         // semver range ('>=2.0.0'). Open-ended upper bound by default.
   versionProbe: {
     args: string[];             // e.g., ['--version']
@@ -920,9 +920,9 @@ The orchestrator maintains a registry at `orchestrator/src/harness/registry.ts`:
 
 ```typescript
 const HARNESSES = new Map<string, HarnessAdapter>([
-  ['claude-code', new ClaudeCodeAdapter()],
-  ['codex',       new CodexAdapter()],
-  // 'gemini-cli', 'opencode', 'aider', 'generic-api' — registered when adapters land
+  ['copilot', new CopilotAdapter()],
+  ['copilot',       new CopilotAdapter()],
+  // 'copilot', 'copilot', 'copilot', 'copilot' — registered when adapters land
 ]);
 ```
 
@@ -930,17 +930,17 @@ Pipeline-load MUST fail with `UnknownHarness` if a stage names a harness not pre
 
 ### 13.3 Capability matrix (initial adapters)
 
-The reference implementation ships these two adapters at v1; the matrix below is the starting baseline and MUST be kept current as adapters evolve.
+The reference implementation ships a single adapter at v1; the matrix below is the starting baseline and MUST be kept current as the adapter evolves.
 
-| Capability | `claude-code` | `codex` | `gemini-cli` (future) | `opencode` (future) | `aider` (future) | `generic-api` (future) |
-|---|---|---|---|---|---|---|
-| freshContext | ✅ | ✅ | ✅ | ✅ | ⚠️ stateful | ✅ |
-| customTools (MCP) | ✅ | ⚠️ partial | ❌ | ✅ | ❌ | ❌ |
-| streaming | ✅ | ✅ | ✅ | ✅ | ✅ | depends |
-| worktreeAwareCwd | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| skills | ✅ | ❌ | ❌ | ⚠️ partial | ❌ | ❌ |
-| artifactWrites | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ via tools only |
-| maxContextTokens | 1M (Opus) | 200K (GPT-5) | 2M (Gemini) | varies | varies | depends |
+| Capability | `copilot` |
+|---|---|
+| freshContext | ✅ |
+| customTools (MCP) | ✅ |
+| streaming | ✅ |
+| worktreeAwareCwd | ✅ |
+| skills | ✅ |
+| artifactWrites | ✅ |
+| maxContextTokens | model-dependent |
 
 The matrix is normative: stage validation (§13.4) checks declared requirements against this table.
 
@@ -949,7 +949,7 @@ The matrix is normative: stage validation (§13.4) checks declared requirements 
 At pipeline-load time, for each stage:
 
 1. Resolve `harness` and `harnessFallback` against the registry.
-2. Call `adapter.isAvailable()` for the primary and every fallback. This runs the version probe (§13.8). If `available: false` for the primary, pipeline-load FAILS with `HarnessUnavailable` naming the `reason` and `detail` (e.g., "claude 1.8.2 installed, adapter requires >=2.0.0"). Fallbacks that report unavailable are removed from the chain with a warning, not a hard fail (pipeline can still start with a degraded fallback chain).
+2. Call `adapter.isAvailable()` for the primary and every fallback. This runs the version probe (§13.8). If `available: false` for the primary, pipeline-load FAILS with `HarnessUnavailable` naming the `reason` and `detail` (e.g., "copilot 1.8.2 installed, adapter requires >=2.0.0"). Fallbacks that report unavailable are removed from the chain with a warning, not a hard fail (pipeline can still start with a degraded fallback chain).
 3. Resolve `model` against the harness's `availableModels()`.
 4. Verify the stage's declared requirements (e.g., `requires: [skills, customTools]` on the Stage object) are satisfied by the harness's static `capabilities`.
 5. Verify the same for every remaining fallback harness — a fallback that cannot satisfy the stage's requirements MUST be removed from the chain (warning), not abort pipeline-load.
@@ -969,16 +969,16 @@ When a stage executes:
 
 Fallback MUST NOT trigger on stage *content* failures (the agent ran but produced a wrong answer). Fallback is exclusively for *availability* failures (harness CLI missing, API down, rate limit, capability mismatch detected at runtime). Distinguishing these is the adapter's responsibility — adapters MUST map provider errors into the `HarnessResult.status` taxonomy correctly.
 
-### 13.6 Cross-harness review pattern
+### 13.6 independent parallel review pattern
 
-The recommended routing in §11.3 places `review-critic` and `review-security` on `codex` while leaving `implement` on `claude-code`. This is deliberate: the review's value comes partly from being performed by a different model family than the one that wrote the code. The pattern generalizes:
+The recommended routing in §11.3 places `review-critic` and `review-security` on `copilot` while leaving `implement` on `copilot`. This is deliberate: the review's value comes partly from being performed by a different model family than the one that wrote the code. The pattern generalizes:
 
-- Code written by Claude (via `claude-code`) → reviewed by GPT-5 (via `codex`)
-- Code written by GPT-5 (via `codex`) → reviewed by Claude (via `claude-code`)
+- Code written by GitHub Copilot (via `copilot`) → reviewed by GPT-5 (via `copilot`)
+- Code written by GPT-5 (via `copilot`) → reviewed by GitHub Copilot (via `copilot`)
 
-Operators MAY configure the inverse routing (e.g., for clients with only OpenAI credentials available) by amending the pipeline's `defaultHarness` and the relevant stage `harness` fields. The classifier (§12) MAY emit `harnessOverride` in addition to `modelOverride` if a specific PR shape benefits from a specific reviewer harness.
+Operators MAY configure the inverse routing (e.g., for clients with only GitHub Copilot credentials available) by amending the pipeline's `defaultHarness` and the relevant stage `harness` fields. The classifier (§12) MAY emit `harnessOverride` in addition to `modelOverride` if a specific PR shape benefits from a specific reviewer harness.
 
-**Preserving independence under fallback.** The recommended routing assumes the primary harness for `implement` is available. If `claude-code` is rate-limited and `implement` falls back to `codex`, the cross-harness independence property silently degrades — both `implement` and `review-security` would now run on `codex`. To prevent this degradation, the reference pipeline declares `requiresIndependentHarnessFrom: [implement]` on `review-critic` and `review-security`. The orchestrator then enforces the independence constraint per §13.10 — if no harness in the review stages' chain preserves independence after `implement` fell back, the orchestrator emits `IndependenceViolated` and applies the stage's `onFailure` policy. Security-critical pipelines SHOULD set `onFailure: abort` for these stages; advisory pipelines MAY set `continue`.
+**Preserving independence under fallback.** The recommended routing assumes the primary harness for `implement` is available. If `copilot` is rate-limited and `implement` falls back to `copilot`, the cross-session independence property silently degrades — both `implement` and `review-security` would now run on `copilot`. To prevent this degradation, the reference pipeline declares `requiresIndependentHarnessFrom: [implement]` on `review-critic` and `review-security`. The orchestrator then enforces the independence constraint per §13.10 — if no harness in the review stages' chain preserves independence after `implement` fell back, the orchestrator emits `IndependenceViolated` and applies the stage's `onFailure` policy. Security-critical pipelines SHOULD set `onFailure: abort` for these stages; advisory pipelines MAY set `continue`.
 
 ### 13.7 Adapter ownership and security
 
@@ -989,9 +989,9 @@ Adapters live in-tree at `orchestrator/src/harness/adapters/`. Third-party adapt
 Each adapter declares the upstream binary it depends on and the version range it has been written against:
 
 ```typescript
-// orchestrator/src/harness/adapters/claude-code.ts
+// orchestrator/src/harness/adapters/copilot.ts
 readonly requires: HarnessRequires = {
-  binary: 'claude',
+  binary: 'copilot',
   versionRange: '>=2.0.0',                          // open-ended upper bound by default
   versionProbe: {
     args: ['--version'],
@@ -1002,7 +1002,7 @@ readonly requires: HarnessRequires = {
 
 **Default policy: open-ended upper bounds.** Adapters SHOULD declare `>=X.Y.Z` rather than `>=X.Y.Z <X+1.0.0`. We assume forward-compatibility unless a specific upstream version is known to break compat. This avoids the "pinned upper bound forces operators onto downgrades after every minor upstream release" trap.
 
-**When to pin an upper bound.** Only when a specific upstream version is verified incompatible (e.g., Claude Code 3.0 ships a breaking CLI flag change that our adapter has not been updated for). The pin is removed in the same patch that updates the adapter for compat.
+**When to pin an upper bound.** Only when a specific upstream version is verified incompatible (e.g., GitHub Copilot CLI 3.0 ships a breaking CLI flag change that our adapter has not been updated for). The pin is removed in the same patch that updates the adapter for compat.
 
 **Probe semantics (called from `isAvailable()`):**
 
@@ -1010,9 +1010,9 @@ readonly requires: HarnessRequires = {
 |---|---|---|
 | Binary not on PATH | `{ available: false, reason: 'binary-missing' }` | Pipeline-load fails for primary; fallback removed with warning. |
 | Binary present, version in range | `{ available: true, installedVersion }` | Validation proceeds. |
-| Binary present, version below range | `{ available: false, reason: 'version-out-of-range', detail: 'claude 1.8.2 installed, adapter requires >=2.0.0; run `npm install -g @anthropic-ai/claude-code@latest`' }` | Pipeline-load fails for primary; fallback removed with warning. |
-| Binary present, version above pinned upper bound (rare) | `{ available: false, reason: 'version-out-of-range', detail: 'claude 3.0.1 installed, adapter pinned to <3.0.0; adapter update required' }` | Same as above. |
-| Probe parsing failed (e.g., `--version` output format changed) | `{ available: true, reason: 'probe-failed', detail: 'could not parse claude --version output: ...' }` | Validation proceeds with `HarnessProbeFailed` warning. |
+| Binary present, version below range | `{ available: false, reason: 'version-out-of-range', detail: 'copilot 1.8.2 installed, adapter requires >=2.0.0; run `npm install -g @github-models-ai/copilot@latest`' }` | Pipeline-load fails for primary; fallback removed with warning. |
+| Binary present, version above pinned upper bound (rare) | `{ available: false, reason: 'version-out-of-range', detail: 'copilot 3.0.1 installed, adapter pinned to <3.0.0; adapter update required' }` | Same as above. |
+| Probe parsing failed (e.g., `--version` output format changed) | `{ available: true, reason: 'probe-failed', detail: 'could not parse copilot --version output: ...' }` | Validation proceeds with `HarnessProbeFailed` warning. |
 | Adapter-specific health check failed (e.g., API token missing) | `{ available: false, reason: 'health-check-failed', detail }` | Pipeline-load fails. |
 
 **Why parse failures fall through to "available."** Vendor `--version` output format is undocumented and can change without notice. Treating parse failure as "unavailable" would break every pipeline the moment a vendor rewords their version banner. The warning surfaces the issue to the maintainer (registry-freshness telemetry, §11.6) without disrupting operators.
@@ -1030,7 +1030,7 @@ Every adapter MUST produce schema-conformant JSON artifacts per §16.4. Concrete
 3. On first-attempt validation failure: the adapter MUST retry once with a sharpened prompt that includes the validator error message and re-emphasizes the schema requirement.
 4. On retry failure: the adapter MUST set `HarnessResult.status = 'failure'` with `errorDetail` naming the schema validation error, and the orchestrator emits `ArtifactSchemaInvalid`.
 
-This is the cross-harness contract that lets downstream stages consume any harness's output uniformly. Adapter authors who skip the validation step are introducing a silent-corruption hazard that invalidates the cross-harness review pattern (§13.6) — review never integrates without it.
+This is the cross-session contract that lets downstream stages consume any harness's output uniformly. Adapter authors who skip the validation step are introducing a silent-corruption hazard that invalidates the independent parallel review pattern (§13.6) — review never integrates without it.
 
 ### 13.10 Harness independence enforcement
 
@@ -1055,22 +1055,28 @@ When a stage declares `requiresIndependentHarnessFrom: [stageA, stageB, ...]`, t
 
 ```yaml
 - name: implement
-  harness: claude-code
-  harnessFallback: [codex]
+  harness: copilot
+  harnessFallback: [copilot]
 - name: review-security
-  harness: codex
-  harnessFallback: [claude-code]
+  harness: copilot
+  harnessFallback: [copilot]
   requiresIndependentHarnessFrom: [implement]
   onFailure:
     on: IndependenceViolated
     strategy: continue          # advisory; operator overrides for security-critical pipelines
 ```
 
-If `implement` runs on `claude-code` (no fallback): `review-security` candidates = `[codex, claude-code]`, filtered = `[codex]`. Dispatch on codex. Independence preserved.
+Independence is structural rather than vendor-based: every reviewer stage is
+dispatched into a fresh `copilot` session with a read-only tool grant, so the
+reviewer cannot observe or reuse the implementer's session state.
 
-If `implement` falls back to `codex`: `review-security` candidates = `[codex, claude-code]`, filtered = `[claude-code]`. Dispatch on claude-code. Independence preserved (different harness from implementer).
+If `implement` and `review-security` run in separate sessions: independence is preserved.
 
-If both `claude-code` and `codex` are unavailable: `implement` falls back through its chain (or the pipeline aborts per its `onFailure`). The independence question becomes moot because the pipeline isn't progressing.
+If a reviewer stage is dispatched into a session that already carried the
+implementer's context, the orchestrator MUST emit `IndependenceViolated` and
+apply the stage's `onFailure` policy.
+
+If the harness is unavailable entirely, `implement` cannot progress (or the pipeline aborts per its `onFailure`). The independence question becomes moot because the pipeline isn't progressing.
 
 ## 14. Subscription-Aware Scheduling
 
@@ -1117,7 +1123,7 @@ interface WindowState {
   windowEnd: Date;
   consumedTokens: number;
   quotaTokens: number;
-  multiplier: number;          // 1.0 on-peak, 2.0 off-peak (Claude Code)
+  multiplier: number;          // 1.0 on-peak, 2.0 off-peak (GitHub Copilot CLI)
   utilizationFraction: number; // consumed / quota
   pacingTarget: number;
   hardCap: number;
@@ -1147,8 +1153,8 @@ Every 5 minutes (configurable), the orchestrator MUST emit a `BurnDownReport` ev
 
 ```json
 {
-  "harness": "claude-code",
-  "ledgerKey": { "harness": "claude-code", "accountId": "a3f2c891", "tenant": "__default__" },
+  "harness": "copilot",
+  "ledgerKey": { "harness": "copilot", "accountId": "a3f2c891", "tenant": "__default__" },
   "windowEnd": "2026-04-26T22:30:00-07:00",
   "subscriptionTokensConsumed": 412000,
   "quotaTokens": 1000000,
@@ -1249,8 +1255,8 @@ The dogfood reference pipeline (`spec/examples/pipelines/dogfood.yaml`) declares
 | `implement` | 250,000 | 40,000 | Opus 1M; multi-file edits |
 | `validate` | 60,000 | 6,000 | Sonnet; reads test output |
 | `review-testing` | 90,000 | 8,000 | Sonnet |
-| `review-critic` | 90,000 | 8,000 | Sonnet, cross-harness |
-| `review-security` | 90,000 | 8,000 | Sonnet, cross-harness |
+| `review-critic` | 90,000 | 8,000 | Sonnet, cross-session |
+| `review-security` | 90,000 | 8,000 | Sonnet, cross-session |
 | `fix-pr` | 120,000 | 15,000 | Mechanical fixes; bimodal — operator MAY freeze |
 | `simplify` | 70,000 | 8,000 | Sonnet; localized refactor |
 
@@ -1281,7 +1287,7 @@ PPA score (RFC-0008) and `schedule` are orthogonal but composable:
 
 ### 14.9 Multi-harness load balancing
 
-When the same model is available on multiple harnesses with different SubscriptionPlans (e.g., Claude on Claude Code session-window AND on Anthropic API pay-per-token), the orchestrator routes to the harness with:
+When the same model is available on multiple harnesses with different SubscriptionPlans (e.g., GitHub Copilot on Copilot CLI session-window AND on GitHub Models API pay-per-token), the orchestrator routes to the harness with:
 
 1. Available headroom in current window (session-window plans only).
 2. Off-peak multiplier currently active (preferred).
@@ -1293,9 +1299,9 @@ This creates a soft preference for "free" subscription capacity over paid API ca
 
 The relationship between subscription quota and dollar spend is not 1:1, and operators routinely confuse the two. This subsection pins down the model.
 
-**Subscription work is pre-paid.** A `claude-code-max-5x` subscription has been billed at month-start. Every token consumed within the window's quota costs `$0` *at the moment of consumption*. The dollar cost was sunk when the subscription was purchased; the marginal cost of the next token is zero until the window's `windowQuotaTokens` is exhausted.
+**Subscription work is pre-paid.** A `copilot-max-5x` subscription has been billed at month-start. Every token consumed within the window's quota costs `$0` *at the moment of consumption*. The dollar cost was sunk when the subscription was purchased; the marginal cost of the next token is zero until the window's `windowQuotaTokens` is exhausted.
 
-**Spillover work is pay-per-token.** When a stage cannot be admitted on a subscription harness (window exhausted, hardCap reached, harness unavailable), the orchestrator falls over per §13.5 to the next harness in `harnessFallback`. If that harness is `pay-per-token` (e.g., Anthropic API direct, OpenRouter), the stage's tokens DO incur dollar cost at the model's per-token rate.
+**Spillover work is pay-per-token.** When a stage cannot be admitted on a subscription harness (window exhausted, hardCap reached, harness unavailable), the orchestrator falls over per §13.5 to the next harness in `harnessFallback`. If that harness is `pay-per-token` (e.g., GitHub Models API direct, OpenRouter), the stage's tokens DO incur dollar cost at the model's per-token rate.
 
 **Implication for `costBudget` accounting:**
 
@@ -1337,7 +1343,7 @@ The SubscriptionLedger (§14.2) tracks window state from one of three sources, d
 ```json
 {
   "timestamp": "2026-04-26T15:00:00Z",
-  "plan": "claude-code-max-5x",
+  "plan": "copilot-max-5x",
   "previousSource": "self-tracked",
   "newSource": "authoritative-api",
   "selfTrackedUtilization": 0.60,
@@ -1369,11 +1375,11 @@ The SubscriptionLedger is keyed by `(harness, accountId, tenant)` so multiple pi
 | `accountId` | `harnessAdapter.getAccountId()` (§13.1) | Auto-derived from credentials. Two pipelines using the same API key get the same `accountId` → same ledger. Different keys → different ledgers. When `getAccountId()` returns `null`, see "ambiguous" below. |
 | `tenant` | `Pipeline.spec.tenant` | Optional. When set, partitions the `(harness, accountId)` ledger into virtual sub-windows. When omitted, defaults to `__default__` so all untenanted pipelines on the same account share. |
 
-**Auto-pooling example:** Two pipelines `dogfood` and `client-onboarding` both run on the same operator's Anthropic API key. `getAccountId()` returns the same hash for both. Both omit `Pipeline.spec.tenant`. Ledger key is `(claude-code, hash(key), __default__)` — single shared ledger. Burn-down across both pipelines correctly reflects the shared window.
+**Auto-pooling example:** Two pipelines `dogfood` and `client-onboarding` both run on the same operator's GitHub Models API key. `getAccountId()` returns the same hash for both. Both omit `Pipeline.spec.tenant`. Ledger key is `(copilot, hash(key), __default__)` — single shared ledger. Burn-down across both pipelines correctly reflects the shared window.
 
-**Auto-isolation example:** Client A and Client B run on the same orchestrator host but with separate Anthropic accounts. Their API keys differ → `getAccountId()` returns different hashes → separate ledgers. Client A's runaway dispatch cannot affect Client B's headroom because the ledgers don't share state.
+**Auto-isolation example:** Client A and Client B run on the same orchestrator host but with separate GitHub Models accounts. Their API keys differ → `getAccountId()` returns different hashes → separate ledgers. Client A's runaway dispatch cannot affect Client B's headroom because the ledgers don't share state.
 
-**Tenant overlay example:** A parent organization has one Anthropic account but wants to attribute spend to two internal teams (`team-platform` and `team-product`). Both pipelines declare:
+**Tenant overlay example:** A parent organization has one GitHub Models account but wants to attribute spend to two internal teams (`team-platform` and `team-product`). Both pipelines declare:
 
 ```yaml
 # pipeline-platform.yaml
@@ -1387,7 +1393,7 @@ spec:
   tenantQuotaShare: 0.4
 ```
 
-Each tenant gets a virtual sub-window of `windowQuotaTokens × share`. Team-platform sees 60% of the account's quota; team-product sees 40%. The vendor still sees one account; the orchestrator enforces internal partitioning. Ledger keys are `(claude-code, hash(key), team-platform)` and `(claude-code, hash(key), team-product)`.
+Each tenant gets a virtual sub-window of `windowQuotaTokens × share`. Team-platform sees 60% of the account's quota; team-product sees 40%. The vendor still sees one account; the orchestrator enforces internal partitioning. Ledger keys are `(copilot, hash(key), team-platform)` and `(copilot, hash(key), team-product)`.
 
 **Validation at orchestrator startup:**
 
@@ -1397,7 +1403,7 @@ Each tenant gets a virtual sub-window of `windowQuotaTokens × share`. Team-plat
    - If all pipelines omit `tenant` → single shared ledger keyed `(harness, accountId, __default__)`. No share validation.
    - If any pipeline declares `tenant` → ALL pipelines in the group MUST declare `tenant` AND `tenantQuotaShare`. Sum of shares MUST equal 1.0 (±0.001 tolerance). Mixed declared/undeclared OR sum ≠ 1.0 → orchestrator startup FAILS with `TenantShareInvalid` naming the conflicting pipelines.
 
-**Ambiguous accountId.** When `getAccountId()` returns `null` (e.g., generic-api harness with an opaque token, or a credential scheme that doesn't expose stable identity):
+**Ambiguous accountId.** When `getAccountId()` returns `null` (e.g., copilot harness with an opaque token, or a credential scheme that doesn't expose stable identity):
 
 1. Orchestrator emits `LedgerKeyAmbiguous` warning at pipeline-load naming the harness and pipeline.
 2. Ledger degrades to per-pipeline keying: `(harness, 'pipeline:' + pipeline.metadata.name, tenant)`.
@@ -1419,14 +1425,14 @@ The orchestrator aggregates `QuotaContention` events per `(harness, accountId, t
 ```json
 {
   "billingPeriod": "2026-W17",
-  "ledgerKey": { "harness": "claude-code", "accountId": "a3f2c891", "tenant": "__default__" },
-  "currentPlan": "claude-code-pro",
+  "ledgerKey": { "harness": "copilot", "accountId": "a3f2c891", "tenant": "__default__" },
+  "currentPlan": "copilot-pro",
   "currentPlanCostUsd": 20,
   "contentionEvents": 47,
   "cumulativeContentionDuration": "PT12H",
   "issuesDeferredOffPeak": 14,
   "issuesBlockedOnHardCap": 3,
-  "recommendedPlan": "claude-code-max-5x",
+  "recommendedPlan": "copilot-max-5x",
   "recommendedPlanCostUsd": 100,
   "projectedTimeSaved": "PT9H",
   "projectedAdditionalIssuesProcessed": 11,
@@ -1459,11 +1465,11 @@ Recommendations confirming the current plan are silenced — operators don't nee
 - `--details` — include the per-event contention breakdown (which stages, which issues, what hour of day).
 - `--all-tenants` — across all `(harness, accountId, tenant)` keys; default shows only the current pipeline's key.
 
-**Bidirectional recommendations.** The analysis MAY recommend downgrading. When `currentPlan: max-5x` runs at <40% utilization for 4 consecutive billing periods AND `confidence: high`, the recommendation MAY be `claude-code-pro` with `projectedSavingsUsd`. The orchestrator does not bias toward upgrades — operators waste money in either direction. The Slack digest entry for downgrade recommendations uses softer language ("you may be over-provisioned") to avoid implying urgency.
+**Bidirectional recommendations.** The analysis MAY recommend downgrading. When `currentPlan: max-5x` runs at <40% utilization for 4 consecutive billing periods AND `confidence: high`, the recommendation MAY be `copilot-pro` with `projectedSavingsUsd`. The orchestrator does not bias toward upgrades — operators waste money in either direction. The Slack digest entry for downgrade recommendations uses softer language ("you may be over-provisioned") to avoid implying urgency.
 
 **Why not real-time alerts.** Quota contention is rarely an emergency requiring same-day action. Real-time `TierUpgradeRecommended` events would train operators to ignore the channel. The weekly digest cadence matches typical subscription-review workflow. Operators who want sharper feedback can lower the bucketing thresholds via configuration in a future enhancement.
 
-**Plan corpus.** Recommendations are drawn from the registered `SubscriptionPlan` resources available to the orchestrator. The reference implementation ships plans for `claude-code-pro`, `claude-code-max-5x`, `claude-code-max-20x`, `codex-plus`, `codex-pro`, and `pay-per-token` (per Phase 2.8 implementation plan). Operators with custom plans MUST register them as `SubscriptionPlan` resources for the recommender to consider them.
+**Plan corpus.** Recommendations are drawn from the registered `SubscriptionPlan` resources available to the orchestrator. The reference implementation ships plans for `copilot-pro`, `copilot-max-5x`, `copilot-max-20x`, `copilot-plus`, `copilot-pro`, and `pay-per-token` (per Phase 2.8 implementation plan). Operators with custom plans MUST register them as `SubscriptionPlan` resources for the recommender to consider them.
 
 ## 15. Database Isolation
 
@@ -1804,7 +1810,7 @@ Every JSON artifact MUST include a `$schema` field naming the schema URI it conf
 3. Validate the produced JSON against the schema before declaring stage success.
 4. On validation failure: retry once with a sharpened prompt that includes the schema-validator's error message. If the retry also fails, the stage fails with `ArtifactSchemaInvalid` and the orchestrator applies the stage's `onFailure` policy.
 
-**Markdown is unconstrained.** Adapters MAY produce any markdown structure. Cross-harness review (Codex critiquing Claude's PR) reads the JSON, not the markdown. Operators reading both styles is acceptable variation; downstream automation reading both styles is not.
+**Markdown is unconstrained.** Adapters MAY produce any markdown structure. independent parallel review (GitHub Copilot critiquing GitHub Copilot's PR) reads the JSON, not the markdown. Operators reading both styles is acceptable variation; downstream automation reading both styles is not.
 
 **Schema evolution.** When a schema needs a breaking change, ship `<artifact>.schema.json#v2` alongside v1. Downstream stages consume whichever version they declare. Adapters MAY produce either; operators control the schema version per pipeline via `Pipeline.spec.artifactSchemaVersion: v1 | v2 | latest`. Default `v1` until the migration window closes.
 
@@ -1835,7 +1841,7 @@ The Slack integration described in `project_slack_integration.md` is a candidate
 - The new `Stage.model` field defaults to `inherit`, which resolves to `Pipeline.spec.defaultModel`, which defaults to `sonnet` — matching the current hardcoded behavior. Existing pipelines and agent skills that omit `model` continue to run on Sonnet.
 - The `kind` field defaults to `agent`, preserving today's stage semantics. The new `review-classifier` and `review-fanout` kinds are only active when explicitly declared.
 - `RFC-0004` cost-attribution amendment is additive: the new `modelId` column on cost ledger entries does not break existing readers; existing aggregation queries continue to work and may be updated to group by it.
-- The new `Stage.harness` field defaults to `inherit`, which resolves to `Pipeline.spec.defaultHarness`, which defaults to `claude-code` — matching the only harness used today. Existing pipelines and skills that omit `harness` continue to run on Claude Code with no behavior change.
+- The new `Stage.harness` field defaults to `inherit`, which resolves to `Pipeline.spec.defaultHarness`, which defaults to `copilot` — matching the only harness used today. Existing pipelines and skills that omit `harness` continue to run on GitHub Copilot CLI with no behavior change.
 - The HarnessAdapter interface is internal to the orchestrator. External-facing pipeline YAML only references harnesses by name; the adapter implementation can evolve without schema changes.
 - The new `Stage.schedule` field defaults to `now`, preserving today's "dispatch immediately" behavior. Pipelines that omit `schedule` are unaffected by subscription-aware scheduling.
 - `SubscriptionPlan` is a new resource; absence is equivalent to `billingMode: pay-per-token` with no quota — preserves today's behavior of "dispatch as fast as the orchestrator can manage."
@@ -1871,22 +1877,22 @@ Phased delivery to land low-risk wins first.
 - [ ] Implement `review-fanout` stage kind that reads `classifier.json` and dispatches selected reviewers in parallel.
 - [ ] Integration test: a docs-only PR runs only the critic reviewer; an auth-touching PR runs all three with security bumped to Opus.
 
-### Phase 2.7 — Harness adapter framework + Codex adapter (2 weeks, parallelizable with Phases 2 and 2.5)
+### Phase 2.7 — Harness adapter framework + GitHub Copilot adapter (2 weeks, parallelizable with Phases 2 and 2.5)
 
 - [ ] Implement `HarnessAdapter` interface, registry, and capability matrix at `orchestrator/src/harness/{types.ts, registry.ts}`.
-- [ ] Migrate today's hardcoded Claude Code invocation into a `ClaudeCodeAdapter` implementing the interface (no behavior change, just refactor — covered by existing tests).
-- [ ] Implement `CodexAdapter` driving the OpenAI Codex CLI; verify it can run against a fixture worktree end-to-end.
+- [ ] Migrate today's hardcoded GitHub Copilot CLI invocation into a `CopilotAdapter` implementing the interface (no behavior change, just refactor — covered by existing tests).
+- [ ] Implement `CopilotAdapter` driving the GitHub Copilot GitHub Copilot CLI; verify it can run against a fixture worktree end-to-end.
 - [ ] Add `Stage.harness`, `Stage.harnessFallback`, `Pipeline.spec.defaultHarness`, `Pipeline.spec.defaultHarnessFallback` to the JSON schemas.
 - [ ] Implement pipeline-load validation per §13.4 (unknown harness, model unavailable on harness, capability mismatch).
-- [ ] Implement runtime fallback per §13.5; integration test that takes Claude Code "offline" via env var and verifies Codex picks up the stage.
-- [ ] Update `review-critic` and `review-security` skills to declare `harness: codex` per §11.3 recommended routing.
-- [ ] Integration test: end-to-end review where Claude implements and Codex critiques, verify both artifacts land in `$ARTIFACTS_DIR`.
-- [ ] Document the adapter-authoring guide for future `gemini-cli` / `opencode` / `aider` / `generic-api` adapters; do NOT ship those adapters in v1.
+- [ ] Implement runtime fallback per §13.5; integration test that takes GitHub Copilot CLI "offline" via env var and verifies GitHub Copilot picks up the stage.
+- [ ] Update `review-critic` and `review-security` skills to declare `harness: copilot` per §11.3 recommended routing.
+- [ ] Integration test: end-to-end review where GitHub Copilot implements and GitHub Copilot critiques, verify both artifacts land in `$ARTIFACTS_DIR`.
+- [ ] Document the adapter-authoring guide for future harness adapters; do NOT ship additional adapters in v1.
 
 ### Phase 2.8 — Subscription-aware scheduling (2 weeks, sequenced after Phase 2.7)
 
 - [ ] Implement `SubscriptionLedger` interface and persistent state at `orchestrator/src/scheduling/{ledger.ts, types.ts}` with file-backed `$ARTIFACTS_DIR/_ledger/` storage.
-- [ ] Implement `SubscriptionPlan` resource validation; ship reference plans for `claude-code-pro`, `claude-code-max-5x`, `claude-code-max-20x`, `codex-plus`, `codex-pro`, `pay-per-token` at `spec/examples/subscription-plans/`.
+- [ ] Implement `SubscriptionPlan` resource validation; ship reference plans for `copilot-pro`, `copilot-max-5x`, `copilot-max-20x`, `copilot-plus`, `copilot-pro`, `pay-per-token` at `spec/examples/subscription-plans/`.
 - [ ] Implement off-peak schedule evaluation with timezone-aware time-range matching. Unit tests against fixture clocks.
 - [ ] Add `Stage.schedule` and `Stage.estimatedTokens` to JSON schemas.
 - [ ] Implement schedule-aware dispatcher: queue ordering by PPA × schedule × ledger admission. Unit tests covering the four schedule modes.
@@ -1938,7 +1944,7 @@ Sequenced after the merge gate (Phase 3) because the `migrate` access mode requi
 
 ### 20.1 Adopt Archon directly
 
-We could deploy Archon as our orchestrator instead of extending our own. **Rejected** because Archon is a standalone server that runs Claude Code as a subprocess; we are a Claude Code plugin and operate inside the harness, not outside it. The architectural mismatch is too costly to bridge. We borrow patterns instead.
+We could deploy Archon as our orchestrator instead of extending our own. **Rejected** because Archon is a standalone server that runs GitHub Copilot CLI as a subprocess; we are a GitHub Copilot CLI plugin and operate inside the harness, not outside it. The architectural mismatch is too costly to bridge. We borrow patterns instead.
 
 ### 20.2 Container-per-agent isolation
 
@@ -1960,9 +1966,9 @@ Have the orchestrator choose the model per stage based on diff size, file types,
 
 Replace the three reviewer agents with a single agent that does its own scoping. **Rejected** because losing the bias-isolation property of independent reviewers (each in a fresh context) erodes the review quality argument from the Archon transcript and from RFC-0008's review composite. The classifier-then-fanout pattern keeps reviewer independence intact while skipping unneeded ones.
 
-### 20.7 Single-harness pipeline (Claude Code only)
+### 20.7 Single-harness pipeline (GitHub Copilot CLI only)
 
-Continue assuming Claude Code is the only harness, optimize for its specific capabilities, accept the lock-in. **Rejected** for the four risks enumerated in §2.7: vendor concentration, lost cost arbitrage, lost cross-harness review independence, and inability to route stages to the harness with the right strengths. The cost of the adapter framework (~2 weeks per Phase 2.7) is amortized across every future harness we add and every client deployment that needs harness flexibility for credential or vendor reasons.
+Continue assuming GitHub Copilot CLI is the only harness, optimize for its specific capabilities, accept the lock-in. **Rejected** for the four risks enumerated in §2.7: vendor concentration, lost cost arbitrage, lost independent parallel review independence, and inability to route stages to the harness with the right strengths. The cost of the adapter framework (~2 weeks per Phase 2.7) is amortized across every future harness we add and every client deployment that needs harness flexibility for credential or vendor reasons.
 
 ### 20.8 Plugin/extension model for third-party adapters
 
@@ -1970,7 +1976,7 @@ Allow third parties to ship harness adapters as separately-installable plugins. 
 
 ### 20.9 Optimize for unit cost rather than subscription utility
 
-Continue treating each call as pay-per-token and optimize for minimum cost per issue. **Rejected** because it ignores how clients actually pay. A pipeline optimized for unit cost will be tempted to skip stages, downgrade models, or reduce review coverage to "save money" — but those savings are imaginary when the subscription has already been paid and the saved tokens evaporate at window-end. Subscription utility is the correct objective function for the dominant billing mode (Claude Code Pro/Max).
+Continue treating each call as pay-per-token and optimize for minimum cost per issue. **Rejected** because it ignores how clients actually pay. A pipeline optimized for unit cost will be tempted to skip stages, downgrade models, or reduce review coverage to "save money" — but those savings are imaginary when the subscription has already been paid and the saved tokens evaporate at window-end. Subscription utility is the correct objective function for the dominant billing mode (GitHub Copilot CLI Pro/Max).
 
 ### 20.10 Defer all subscription-aware logic to a separate scheduler service
 
@@ -2001,10 +2007,10 @@ The walkthrough that produced these resolutions is preserved as design rationale
 - **Prior art:** `coleam00/Archon` (`packages/git/src/worktree.ts`, `packages/core/src/utils/port-allocation.ts`, `packages/isolation/src/resolver.ts`, `.archon/workflows/defaults/archon-fix-github-issue.yaml`). Specifically borrows the deterministic port-hash, the cross-clone ownership guard, and the artifact-directory convention.
 - **Companion talk:** "Parallel Agentic Development" by Cole Medin (2026). The accompanying `w.sh`/`.ps1` worktree-setup scripts referenced in the talk are NOT in the Archon repo and were independently re-derived for this RFC.
 - **Internal specs:** RFC-0002 (Pipeline Orchestration), RFC-0004 (Cost Governance and Attribution), RFC-0008 (PPA Triad Integration).
-- **Internal code touched by this RFC:** `orchestrator/src/execute.ts` (single-issue → worker-pool migration; harness- and schedule-aware dispatch), `orchestrator/src/cost-governance.ts` (modelId + harnessId columns; ledger integration), `orchestrator/src/review-runner.ts` (classifier integration), `orchestrator/src/harness/{types.ts, registry.ts, adapters/{claude-code,codex}.ts}` (NEW — adapter framework), `orchestrator/src/scheduling/{ledger.ts, types.ts, off-peak.ts}` (NEW — SubscriptionLedger + scheduler), `ai-sdlc-plugin/agents/{code,test,security}-reviewer.md` (model: inherit; security & critic move to `harness: codex`), `ai-sdlc-plugin/commands/triage.md` (model: haiku), `ai-sdlc-plugin/commands/review.md` (classifier-aware fan-out, harness-aware dispatch), `spec/examples/subscription-plans/*.yaml` (NEW — reference plans for common tiers).
-- **External billing documentation:** Claude Code Pro/Max plan limits and off-peak schedule (`docs.claude.com/claude-code/billing` — operator MUST verify against current docs when declaring SubscriptionPlans), OpenAI Codex Plus/Pro monthly cap details (`platform.openai.com/docs/codex`). The off-peak multiplier value (~2×) and exact window hours are subject to vendor change; SubscriptionPlans MUST be updated when vendor terms change.
+- **Internal code touched by this RFC:** `orchestrator/src/execute.ts` (single-issue → worker-pool migration; harness- and schedule-aware dispatch), `orchestrator/src/cost-governance.ts` (modelId + harnessId columns; ledger integration), `orchestrator/src/review-runner.ts` (classifier integration), `orchestrator/src/harness/{types.ts, registry.ts, adapters/copilot.ts}` (NEW — adapter framework), `orchestrator/src/scheduling/{ledger.ts, types.ts, off-peak.ts}` (NEW — SubscriptionLedger + scheduler), `ai-sdlc-plugin/agents/{code,test,security}-reviewer.md` (model: inherit; security & critic move to `harness: copilot`), `ai-sdlc-plugin/commands/triage.md` (model: haiku), `ai-sdlc-plugin/commands/review.md` (classifier-aware fan-out, harness-aware dispatch), `spec/examples/subscription-plans/*.yaml` (NEW — reference plans for common tiers).
+- **External billing documentation:** GitHub Copilot CLI Pro/Max plan limits and off-peak schedule (`docs.copilot.com/copilot/billing` — operator MUST verify against current docs when declaring SubscriptionPlans), GitHub Copilot GitHub Copilot Plus/Pro monthly cap details (`platform.github-copilot.com/docs/copilot`). The off-peak multiplier value (~2×) and exact window hours are subject to vendor change; SubscriptionPlans MUST be updated when vendor terms change.
 - **External database-branching documentation:** Neon branching API (`neon.tech/docs/manage/branches`), Supabase branching (`supabase.com/docs/guides/platform/branching`), AWS RDS snapshot/restore (`docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html`). Adapter implementations MUST cite the upstream API version they target.
 - **Database isolation code added:** `orchestrator/src/database/{types.ts, registry.ts, adapters/{sqlite-copy,neon,pg-snapshot-restore,external}.ts}` (NEW), connection-string injection in agent dispatch path, `cli-status --branches` command, stale-branch sweep on orchestrator startup, `spec/examples/database-branch-pools/*.yaml` (NEW — reference pool definitions for SQLite, Neon, RDS).
-- **External harness documentation:** Claude Code (`claude.com/claude-code`), OpenAI Codex CLI (`github.com/openai/codex`), Gemini CLI (`github.com/google-gemini/gemini-cli`), OpenCode (`github.com/sst/opencode`), Aider (`aider.chat`), OpenRouter (`openrouter.ai`). Adapter implementations MUST cite the upstream version they target.
-- **Prior art on multi-harness orchestration:** Archon's `packages/providers/src/registry.ts` (claude / codex / community providers) demonstrates the registry pattern at production scale. Their `pi-coding-agent` provider exposes ~20 LLMs through a single harness — useful inspiration for the future `generic-api` adapter.
+- **External harness documentation:** GitHub Copilot CLI (`docs.github.com/en/copilot`). Adapter implementations MUST cite the upstream version they target.
+- **Prior art on multi-harness orchestration:** Archon's `packages/providers/src/registry.ts` demonstrates the registry pattern at production scale — useful inspiration for the adapter registry even though this framework ships a single harness.
 - **Project memories incorporated:** `feedback_observability.md` (real-time visibility), `feedback_never_merge_prs.md` (merge gate ≠ auto-merge), `feedback_rebase_not_merge.md` (rejects GitHub `update-branch`), `feedback_review_severity_policy.md` (classifier preserves severity rules), `project_dogfood_pipeline_vision.md` (overall framing), `project_slack_integration.md` (event stream consumer).

@@ -13,8 +13,8 @@ import {
 } from './types.js';
 
 const samplePlan: SubscriptionPlan = {
-  name: 'claude-code-max-5x',
-  harness: 'claude-code',
+  name: 'copilot-business',
+  harness: 'copilot',
   billingMode: 'session-window',
   windowDuration: 'PT5H',
   windowQuotaTokens: 1_000_000,
@@ -30,7 +30,7 @@ const samplePlan: SubscriptionPlan = {
 };
 
 const sampleKey: LedgerKey = {
-  harness: 'claude-code',
+  harness: 'copilot',
   accountId: 'a3f2c891',
   tenant: DEFAULT_TENANT,
 };
@@ -140,14 +140,14 @@ describe('SubscriptionLedger', () => {
     const ledger = new SubscriptionLedger('/tmp/artifacts', { io });
     await ledger.load(sampleKey, samplePlan);
     await ledger.record(sampleKey, samplePlan, { input: 100, output: 50 });
-    const expectedPath = '/tmp/artifacts/_ledger/claude-code-a3f2c891-__default__.json';
+    const expectedPath = '/tmp/artifacts/_ledger/copilot-a3f2c891-__default__.json';
     expect(io.store.get(expectedPath)).toBeDefined();
   });
 
   it('pay-per-token plan always admits', async () => {
     const ppt: SubscriptionPlan = {
       name: 'pay-per-token',
-      harness: 'claude-code',
+      harness: 'copilot',
       billingMode: 'pay-per-token',
       pacingTarget: 1,
       hardCap: 1,
@@ -165,8 +165,8 @@ describe('validateTenantShares', () => {
   it('passes when no tenants are declared', () => {
     expect(
       validateTenantShares([
-        { name: 'p1', harness: 'claude-code', accountId: 'a1' },
-        { name: 'p2', harness: 'claude-code', accountId: 'a1' },
+        { name: 'p1', harness: 'copilot', accountId: 'a1' },
+        { name: 'p2', harness: 'copilot', accountId: 'a1' },
       ]),
     ).toEqual([]);
   });
@@ -176,14 +176,14 @@ describe('validateTenantShares', () => {
       validateTenantShares([
         {
           name: 'p1',
-          harness: 'claude-code',
+          harness: 'copilot',
           accountId: 'a1',
           tenant: 't1',
           tenantQuotaShare: 0.6,
         },
         {
           name: 'p2',
-          harness: 'claude-code',
+          harness: 'copilot',
           accountId: 'a1',
           tenant: 't2',
           tenantQuotaShare: 0.4,
@@ -194,8 +194,8 @@ describe('validateTenantShares', () => {
 
   it('fails when shares sum != 1.0', () => {
     const failures = validateTenantShares([
-      { name: 'p1', harness: 'claude-code', accountId: 'a1', tenant: 't1', tenantQuotaShare: 0.6 },
-      { name: 'p2', harness: 'claude-code', accountId: 'a1', tenant: 't2', tenantQuotaShare: 0.5 },
+      { name: 'p1', harness: 'copilot', accountId: 'a1', tenant: 't1', tenantQuotaShare: 0.6 },
+      { name: 'p2', harness: 'copilot', accountId: 'a1', tenant: 't2', tenantQuotaShare: 0.5 },
     ]);
     expect(failures).toHaveLength(1);
     expect(failures[0].sumOfShares).toBeCloseTo(1.1);
@@ -203,16 +203,16 @@ describe('validateTenantShares', () => {
 
   it('fails on mixed declared/undeclared tenants on the same account', () => {
     const failures = validateTenantShares([
-      { name: 'p1', harness: 'claude-code', accountId: 'a1', tenant: 't1', tenantQuotaShare: 1.0 },
-      { name: 'p2', harness: 'claude-code', accountId: 'a1' },
+      { name: 'p1', harness: 'copilot', accountId: 'a1', tenant: 't1', tenantQuotaShare: 1.0 },
+      { name: 'p2', harness: 'copilot', accountId: 'a1' },
     ]);
     expect(failures).toHaveLength(1);
   });
 
   it('groups separately per (harness, accountId)', () => {
     const failures = validateTenantShares([
-      { name: 'p1', harness: 'claude-code', accountId: 'a1', tenant: 't1', tenantQuotaShare: 1.0 },
-      { name: 'p2', harness: 'codex', accountId: 'b2', tenant: 't1', tenantQuotaShare: 1.0 },
+      { name: 'p1', harness: 'copilot', accountId: 'a1', tenant: 't1', tenantQuotaShare: 1.0 },
+      { name: 'p2', harness: 'copilot', accountId: 'b2', tenant: 't1', tenantQuotaShare: 1.0 },
     ]);
     expect(failures).toEqual([]);
   });
@@ -402,8 +402,8 @@ describe('buildBurnDownReport', () => {
 
 describe('analyzeTier', () => {
   const proPlan: SubscriptionPlan = {
-    name: 'claude-code-pro',
-    harness: 'claude-code',
+    name: 'copilot-pro',
+    harness: 'copilot',
     billingMode: 'session-window',
     windowDuration: 'PT5H',
     windowQuotaTokens: 200_000,
@@ -413,7 +413,7 @@ describe('analyzeTier', () => {
   };
   const max5x: SubscriptionPlan = {
     ...proPlan,
-    name: 'claude-code-max-5x',
+    name: 'copilot-business',
     windowQuotaTokens: 1_000_000,
   };
 
@@ -430,7 +430,7 @@ describe('analyzeTier', () => {
       issuesBlockedOnHardCap: 3,
       candidates: [proPlan, max5x],
     });
-    expect(result.recommendedPlan).toBe('claude-code-max-5x');
+    expect(result.recommendedPlan).toBe('copilot-business');
     expect(result.confidence).toBe('high');
   });
 
@@ -444,7 +444,7 @@ describe('analyzeTier', () => {
       issuesBlockedOnHardCap: 0,
       candidates: [proPlan, max5x],
     });
-    expect(result.recommendedPlan).toBe('claude-code-pro');
+    expect(result.recommendedPlan).toBe('copilot-pro');
     expect(result.confidence).toBe('low');
   });
 });

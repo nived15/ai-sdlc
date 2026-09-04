@@ -5,7 +5,7 @@
 > shipping with the marketplace plugin).
 >
 > **Purpose**: explain every supported way to invoke the orchestrator, which
-> Claude account / billing pool each one consumes, and the recommended pattern
+> GitHub Copilot account / billing pool each one consumes, and the recommended pattern
 > for keeping cost low.
 
 If you're new to AI-SDLC, start with [`docs/operations/operator-runbook.md`](./operator-runbook.md). Come here when you need to understand the cost implications of each dispatch path or you're wiring CI / GitHub Actions and want to avoid surprise bills.
@@ -16,20 +16,20 @@ If you're new to AI-SDLC, start with [`docs/operations/operator-runbook.md`](./o
 
 | You want to… | Run | Bills against |
 |---|---|---|
-| Type a one-off task interactively | `/ai-sdlc execute <task-id>` in Claude Code | Your **interactive Max-20x quota** |
-| **Continuous autonomous loop — zero incremental cost (post-2026-06-15)** | `/ai-sdlc orchestrator-tick` in an active Claude Code session | Your **interactive Max-20x quota** (Agent SDK credit NOT drawn) |
-| Dispatch a single backlog task headless from a terminal | `node pipeline-cli/bin/ai-sdlc-pipeline.mjs execute <task-id> --run --spawner api-key` | **$200/mo Agent SDK credit** (Max-20x), then API-key overflow |
-| Run an autonomous loop on the dispatch frontier (cron/daemon) | `cli-orchestrator tick --spawner claude` | **$200/mo Agent SDK credit** (Max-20x), then API-key overflow (post-2026-06-15; uses `claude -p` which the credit covers) |
+| Type a one-off task interactively | `/ai-sdlc execute <task-id>` in GitHub Copilot CLI | Your **interactive Max-20x quota** |
+| **Continuous autonomous loop — zero incremental cost (post-2026-06-15)** | `/ai-sdlc orchestrator-tick` in an active Copilot CLI session | Your **interactive Max-20x quota** (Agent SDK credit NOT drawn) |
+| Dispatch a single backlog task headless from a terminal | `node pipeline-cli/bin/ai-sdlc-pipeline.mjs execute <task-id> --run --spawner copilot` | **$200/mo Agent SDK credit** (Max-20x), then API-key overflow |
+| Run an autonomous loop on the dispatch frontier (cron/daemon) | `cli-orchestrator tick --spawner copilot` | **$200/mo Agent SDK credit** (Max-20x), then API-key overflow (post-2026-06-15; uses `copilot -p` which the credit covers) |
 | Run reviewers + attestation IN CI on every push | `ai-sdlc-review.yml` GitHub Actions | **$200/mo Agent SDK credit** (Max-20x), then API-key overflow |
 | Skip CI-side reviewers when local attestation already signed | Sign locally first; CI's `verify-attestation.yml` short-circuits | Local sign uses no LLM (pure crypto). **FREE.** |
 
-The single most impactful cost-saving habit: **always sign attestation locally before pushing.** Local sign uses your machine's signing key + a content-hash computation — no Claude API call. CI verifies the signature (also free) and skips its own reviewers. The CI-side review only fires when local attestation is missing — that's the fallback cost.
+The single most impactful cost-saving habit: **always sign attestation locally before pushing.** Local sign uses your machine's signing key + a content-hash computation — no GitHub Copilot API call. CI verifies the signature (also free) and skips its own reviewers. The CI-side review only fires when local attestation is missing — that's the fallback cost.
 
 ---
 
 ## What changed June 15, 2026
 
-Anthropic introduced a separate monthly **Agent SDK credit** that is allocated alongside (and separate from) your interactive Claude subscription quota:
+GitHub Models introduced a separate monthly **Agent SDK credit** that is allocated alongside (and separate from) your interactive GitHub Copilot subscription quota:
 
 | Plan | Monthly Agent SDK credit |
 |---|---|
@@ -42,16 +42,16 @@ Anthropic introduced a separate monthly **Agent SDK credit** that is allocated a
 
 The Agent SDK credit applies to:
 
-- The Claude Agent SDK (Python or TypeScript) called from your own apps
-- The `claude -p` (also `claude --print`) non-interactive CLI mode
-- Claude Code GitHub Actions integrations
+- The GitHub Copilot Agent SDK (Python or TypeScript) called from your own apps
+- The `copilot -p` (also `copilot -p`) non-interactive CLI mode
+- GitHub Copilot CLI GitHub Actions integrations
 - Any third-party app that authenticates via the Agent SDK using your subscription
 
-It does **not** apply to interactive Claude Code (typing in the chat / spawning subagents inside an interactive session) — that still draws from your interactive Max-20x quota.
+It does **not** apply to interactive GitHub Copilot CLI (typing in the chat / spawning subagents inside an interactive session) — that still draws from your interactive Max-20x quota.
 
 Unused credit doesn't roll over. Once exhausted, traffic falls through to API-key pay-as-you-go IF you've explicitly enabled overflow charges; otherwise requests stop until the credit refreshes monthly.
 
-**Adopter action required**: claim the credit via the email Anthropic sends to eligible accounts ahead of the cutover. One-time opt-in.
+**Adopter action required**: claim the credit via the email GitHub Models sends to eligible accounts ahead of the cutover. One-time opt-in.
 
 ---
 
@@ -59,9 +59,9 @@ Unused credit doesn't roll over. Once exhausted, traffic falls through to API-ke
 
 ### 1. `/ai-sdlc execute <task-id>` (operator-typed slash command)
 
-**Where it runs**: inside an interactive Claude Code session, started by typing the slash command in the chat.
+**Where it runs**: inside an interactive Copilot CLI session, started by typing the slash command in the chat.
 
-**Bills against**: your **interactive Max-20x quota**. Same pool as your normal Claude Code chatting + subagent fan-out.
+**Bills against**: your **interactive Max-20x quota**. Same pool as your normal GitHub Copilot CLI chatting + subagent fan-out.
 
 **When to use it**: ad-hoc dispatch of a single backlog task while you're already at the keyboard.
 
@@ -75,17 +75,17 @@ Unused credit doesn't roll over. Once exhausted, traffic falls through to API-ke
 
 > **This is the preferred high-throughput path post-2026-06-15.** It runs an
 > unlimited autonomous dispatch loop at zero incremental cost as long as one
-> Claude Code session stays alive.
+> Copilot CLI session stays alive.
 
-**Where it runs**: inside an active Claude Code session, started by typing the slash command once. `ScheduleWakeup` fires the next tick every 30 seconds automatically.
+**Where it runs**: inside an active Copilot CLI session, started by typing the slash command once. `ScheduleWakeup` fires the next tick every 30 seconds automatically.
 
-**Bills against**: your **interactive Max-20x quota** — the same pool as your normal Claude Code chatting. The Agent SDK credit pool ($200/mo) is NOT drawn, because the dispatch happens inside a human-driven interactive session turn, not a non-interactive Agent SDK invocation.
+**Bills against**: your **interactive Max-20x quota** — the same pool as your normal GitHub Copilot CLI chatting. The Agent SDK credit pool ($200/mo) is NOT drawn, because the dispatch happens inside a human-driven interactive session turn, not a non-interactive Agent SDK invocation.
 
 **When to use it**: continuous autonomous backlog churning on Max-20x subscription where you want zero cost above your existing subscription fee.
 
 **How it works**:
 
-The `/ai-sdlc orchestrator-tick` slash command is the Conductor side of the RFC-0041 Dispatch Board protocol (the pre-RFC-0041 inline-manifest path via `--spawner claude-cli` was removed in AISDLC-377.6):
+The `/ai-sdlc orchestrator-tick` slash command is the Conductor side of the RFC-0041 Dispatch Board protocol (the pre-RFC-0041 inline-manifest path via `--spawner copilot` was removed in AISDLC-377.6):
 
 1. The command runs `cli-dispatch sweep` + `cli-dispatch collect-verdicts` to reconcile completed Worker dispatches and surface any `done/<task-id>.verdict.json` payloads from the previous tick.
 2. For each `success` verdict, the slash command body fans out the three reviewer subagents via foreground `Agent` calls (these draw from the operator's interactive quota — NOT the Agent SDK credit pool — because they run inside an interactive session turn).
@@ -93,17 +93,17 @@ The `/ai-sdlc orchestrator-tick` slash command is the Conductor side of the RFC-
 4. The command then peeks the frontier, fires `cli-dispatch write-manifest` to enqueue new work to `.ai-sdlc/dispatch/queue/`, and writes a `bg-agent-request` for each admitted task — Pattern X v2's Phase B fires a `run_in_background:true` `Agent(developer)` for the request on the next tick, and Phase A reconciles its completion notification one or more ticks later.
 5. `ScheduleWakeup(30s)` fires — the next tick starts automatically 30 seconds later.
 
-For headless / CI contexts (no operator CC session available), use `cli-orchestrator tick --spawner claude` from cron / daemon / sidecar — that path bills against the Agent SDK credit pool instead of the interactive quota.
+For headless / CI contexts (no operator CC session available), use `cli-orchestrator tick --spawner copilot` from cron / daemon / sidecar — that path bills against the Agent SDK credit pool instead of the interactive quota.
 
-**Trade-off**: requires ONE active Claude Code session to remain open. The session can hibernate (no keyboard activity) between ticks; `ScheduleWakeup` wakes it automatically. If the session terminates, the loop stops until you restart it.
+**Trade-off**: requires ONE active Copilot CLI session to remain open. The session can hibernate (no keyboard activity) between ticks; `ScheduleWakeup` wakes it automatically. If the session terminates, the loop stops until you restart it.
 
 **Side-by-side comparison**:
 
-| | `/ai-sdlc orchestrator-tick` (subscription loop) | `cli-orchestrator tick --spawner claude` (cron/daemon) |
+| | `/ai-sdlc orchestrator-tick` (subscription loop) | `cli-orchestrator tick --spawner copilot` (cron/daemon) |
 |---|---|---|
 | **Billing pool** | Interactive Max-20x quota | Agent SDK credit pool ($200/mo), then API overflow |
 | **Post-2026-06-15 incremental cost** | **$0** (part of subscription) | First $200/mo free, then pay-as-you-go per token |
-| **Requires active session?** | Yes — one terminal with Claude Code open | No — runs headless from cron/daemon/sidecar |
+| **Requires active session?** | Yes — one terminal with GitHub Copilot CLI open | No — runs headless from cron/daemon/sidecar |
 | **Recovery on session crash** | Operator restarts session + fires command again | Loop auto-restarts via cron/daemon |
 | **Max throughput** | Bounded by interactive quota | Bounded by SDK credit pool ($200/mo) |
 | **Setup complexity** | One command | Requires cron/systemd/daemon setup |
@@ -114,9 +114,9 @@ For headless / CI contexts (no operator CC session available), use `cli-orchestr
 # 1. Enable the experimental orchestrator flag (add to your shell profile):
 export AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental
 
-# 2. Open a dedicated terminal and start Claude Code in your project root:
+# 2. Open a dedicated terminal and start GitHub Copilot CLI in your project root:
 cd /path/to/your/project
-claude
+copilot
 
 # 3. Fire the tick once — ScheduleWakeup handles the rest:
 /ai-sdlc orchestrator-tick
@@ -131,37 +131,37 @@ claude
 | Path | Monthly tasks | Incremental cost (post-2026-06-15) |
 |---|---|---|
 | Subscription loop (`/ai-sdlc orchestrator-tick`) | ~600/mo | **$0** — subscription covers it |
-| SDK credit pool (`cli-orchestrator tick --spawner claude`) | ~600/mo | First $200/mo free; typical ~$0.50–$2 per task → $300–$1,200/mo overflow after credit exhausted |
-| Pure API-key (`--spawner api-key`) | ~600/mo | ~$0.50–$2 per task direct = $300–$1,200/mo |
+| SDK credit pool (`cli-orchestrator tick --spawner copilot`) | ~600/mo | First $200/mo free; typical ~$0.50–$2 per task → $300–$1,200/mo overflow after credit exhausted |
+| Pure API-key (`--spawner copilot`) | ~600/mo | ~$0.50–$2 per task direct = $300–$1,200/mo |
 
 > **Note**: the "incremental cost $0" assumes your Max-20x subscription's interactive quota is not already saturated by other use. If you run heavy interactive workloads in parallel, the autonomous loop competes for the same pool. In practice, between-tick hibernation means the loop's share of the interactive quota is small relative to the dispatch subagent's wall-clock time.
 
-**What happens if the Claude Code session crashes or closes mid-loop?**
+**What happens if the Copilot CLI session crashes or closes mid-loop?**
 
 1. **Worktrees survive on disk.** Any in-flight task's worktree at `.worktrees/<task-id>/` is preserved. No code is lost.
 2. **Recovery detection.** The next `cli-orchestrator tick` run detects in-flight tasks via the AISDLC-242 recoverable-abort path (or the AISDLC-273 resume-from-draft mechanism when the task already has a PR).
-3. **Restart.** Open a new Claude Code session in the same project directory, set `AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental`, and fire `/ai-sdlc orchestrator-tick` again. The orchestrator's tick loop picks up where it left off — unfinished tasks re-enter the dispatch frontier.
+3. **Restart.** Open a new Copilot CLI session in the same project directory, set `AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental`, and fire `/ai-sdlc orchestrator-tick` again. The orchestrator's tick loop picks up where it left off — unfinished tasks re-enter the dispatch frontier.
 
 ```bash
 # Recovery after session crash:
 export AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental
-claude  # open new session in project root
+copilot  # open new session in project root
 /ai-sdlc orchestrator-tick  # loop resumes
 ```
 
 ---
 
-### 2. `ai-sdlc-pipeline execute <task-id> --run --spawner api-key` (headless one-shot)
+### 2. `ai-sdlc-pipeline execute <task-id> --run --spawner copilot` (headless one-shot)
 
-**Where it runs**: any Node-capable terminal. Does not require Claude Code.
+**Where it runs**: any Node-capable terminal. Does not require GitHub Copilot CLI.
 
 **Bills against**:
-- **Pre-2026-06-15**: API-key pay-as-you-go (`ANTHROPIC_API_KEY`)
+- **Pre-2026-06-15**: API-key pay-as-you-go (`GITHUB_MODELS_TOKEN`)
 - **Post-2026-06-15**: $200/mo Agent SDK credit first, then API-key overflow if enabled
 
 **When to use it**:
 - Autonomous Bash dispatch from CI / a daemon / a script
-- Operators who want headless dispatch without typing into Claude Code
+- Operators who want headless dispatch without typing into GitHub Copilot CLI
 - Any context where you can't / don't want to use the operator's interactive subscription
 
 **Cost shape**: single Node process runs the full Step 0–13 pipeline inline (`executePipeline()`). Step 9 iteration handles up to 2 review→fix rounds within the same session.
@@ -170,13 +170,13 @@ claude  # open new session in project root
 
 ```bash
 # Your account must have an API key with subscription access enabled.
-export ANTHROPIC_API_KEY="sk-ant-..."
+export GITHUB_MODELS_TOKEN="sk-ant-..."
 
 # Install the SDK lazy peer if not already:
-pnpm add @anthropic-ai/claude-code
+pnpm add @github-models-ai/copilot
 
 # Run:
-node pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-NNN --run --spawner api-key
+node pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-NNN --run --spawner copilot
 ```
 
 The `--run` flag is required to actually execute (default is `--dry-run` for safety).
@@ -188,9 +188,9 @@ The `--run` flag is required to actually execute (default is `--dry-run` for saf
 **Where it runs**: long-lived process (terminal, systemd, Docker, GitHub Actions self-hosted runner).
 
 **Bills against**:
-- **Default spawner is `ShellClaudePSpawner` → `claude -p`**
-- **Pre-2026-06-15**: same pool as your interactive Max-20x (or pay-as-you-go if `ANTHROPIC_API_KEY` is set in env)
-- **Post-2026-06-15**: $200/mo Agent SDK credit (the Anthropic article explicitly lists `claude -p` as covered)
+- **Default spawner is `CopilotHarnessAdapter` → `copilot -p`**
+- **Pre-2026-06-15**: same pool as your interactive Max-20x (or pay-as-you-go if `GITHUB_MODELS_TOKEN` is set in env)
+- **Post-2026-06-15**: $200/mo Agent SDK credit (the GitHub Models article explicitly lists `copilot -p` as covered)
 
 **When to use it**: continuous dogfood / production dispatch — orchestrator polls the backlog, picks up tasks as they become DoR-ready, dispatches in parallel up to the configured concurrency.
 
@@ -215,7 +215,7 @@ The loop respects `AISDLC-242` recoverable-abort detection — interrupted dispa
 **Where it runs**: GitHub Actions runners on every push / PR / merge_group event.
 
 **Bills against**:
-- The runner must have `ANTHROPIC_API_KEY` set in repo secrets to run reviewers
+- The runner must have `GITHUB_MODELS_TOKEN` set in repo secrets to run reviewers
 - **Pre-2026-06-15**: API-key pay-as-you-go
 - **Post-2026-06-15**: $200/mo Agent SDK credit (the SDK is what the workflow uses internally)
 
@@ -229,7 +229,7 @@ The loop respects `AISDLC-242` recoverable-abort detection — interrupted dispa
 
 ```yaml
 # .github/workflows/ — both files come from `ai-sdlc init --with-workflows`
-# Repo secret `ANTHROPIC_API_KEY` only needs to be set if you want the
+# Repo secret `GITHUB_MODELS_TOKEN` only needs to be set if you want the
 # CI-side fallback reviewers to actually fire. If unset, the fallback
 # silently skips ("Post Review Results: skipped (budget exhausted)") — at
 # the cost of any PR without a local attestation NEVER getting reviewed.
@@ -241,20 +241,20 @@ The loop respects `AISDLC-242` recoverable-abort detection — interrupted dispa
 
 Run through this before every autonomous tick session to avoid surprise API-key charges:
 
-1. **Use `--spawner claude` (or rely on the default).**
-   Since AISDLC-352, `cli-orchestrator tick` defaults to `--spawner claude`. You no longer need to pass the flag explicitly for cron/daemon dispatch. The legacy `--spawner claude-cli` inline-manifest path was removed in RFC-0041 Phase 3.3 (AISDLC-377.6); any script that still passes it will be rejected at parse time with `Invalid values: Choices: "mock", "api-key", "claude", "codex"`. Drop the flag (or replace with `--spawner claude`) — see [`docs/operations/claude-cli-spawner-removed.md`](./claude-cli-spawner-removed.md).
+1. **Use `--spawner copilot` (or rely on the default).**
+   `cli-orchestrator tick` defaults to `--spawner copilot`, so you no longer need to pass the flag explicitly for cron/daemon dispatch. Retired third-party spawner literals are rejected at parse time with `Invalid values: Choices: "mock", "copilot"`. Drop the flag entirely, or pass `--spawner copilot` — see [`docs/operations/copilot-spawner.md`](./copilot-spawner.md).
 
-2. **Unset `ANTHROPIC_API_KEY` unless you intend to use API-key billing.**
-   When `ANTHROPIC_API_KEY` is set and you run `cli-orchestrator tick --spawner claude`, the CLI emits this warning to stderr:
+2. **Unset `GITHUB_MODELS_TOKEN` unless you intend to use API-key billing.**
+   When `GITHUB_MODELS_TOKEN` is set and you run `cli-orchestrator tick --spawner copilot`, the CLI emits this warning to stderr:
 
    ```
-   [orchestrator] warning: ANTHROPIC_API_KEY is set but --spawner claude is requested.
-   If the dispatch falls back to --spawner api-key for any reason, you'll be billed
-   for paid API tokens. To force subscription-only, unset ANTHROPIC_API_KEY before
+   [orchestrator] warning: GITHUB_MODELS_TOKEN is set but --spawner copilot is requested.
+   If the dispatch falls back to --spawner copilot for any reason, you'll be billed
+   for paid API tokens. To force subscription-only, unset GITHUB_MODELS_TOKEN before
    running the tick.
    ```
 
-   The `claude` spawner itself does NOT consume the API key. But if `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` is also set, a spawner error will silently retry with paid API tokens. Unset `ANTHROPIC_API_KEY` to prevent any accidental billing.
+   The `copilot` spawner itself does NOT consume the API key. But if `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` is also set, a spawner error will silently retry with paid API tokens. Unset `GITHUB_MODELS_TOKEN` to prevent any accidental billing.
 
 3. **Watch for the `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK` warning.**
    When `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` is set AND the configured spawner is not `api-key`, the CLI emits:
@@ -262,7 +262,7 @@ Run through this before every autonomous tick session to avoid surprise API-key 
    ```
    [orchestrator] warning: AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key is set.
    If the configured spawner is unavailable the orchestrator will silently retry
-   with --spawner api-key, billing paid API tokens. Unset ANTHROPIC_API_KEY to
+   with --spawner copilot, billing paid API tokens. Unset GITHUB_MODELS_TOKEN to
    prevent API-key overflow, or unset AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK to
    disable the silent fallback entirely.
    ```
@@ -287,7 +287,7 @@ This is why `/ai-sdlc execute` and `cli-orchestrator start` route the entire Ste
 
 ### Pattern 2 — Cap CI fallback to "no API key" (current best practice)
 
-If you do NOT want CI to fall back on API-key reviewers, simply **don't set `ANTHROPIC_API_KEY`** as a repo secret. The CI-side reviewer step will then post `skipped (budget exhausted)` — no LLM call, no cost. PRs without local attestation will still post `ai-sdlc/attestation: failure` (the verifier sees no envelope), so the gate still fires; you just don't get an autonomous fix path.
+If you do NOT want CI to fall back on API-key reviewers, simply **don't set `GITHUB_MODELS_TOKEN`** as a repo secret. The CI-side reviewer step will then post `skipped (budget exhausted)` — no LLM call, no cost. PRs without local attestation will still post `ai-sdlc/attestation: failure` (the verifier sees no envelope), so the gate still fires; you just don't get an autonomous fix path.
 
 This is what the dogfood repo currently does. Operators are forced to fix the missing-attestation locally + re-push, which keeps the cost at zero.
 
@@ -297,9 +297,9 @@ This is what the dogfood repo currently does. Operators are forced to fix the mi
 
 When you have a queue of N tasks to dispatch tonight (e.g. dogfood batch), prefer:
 
-- ✅ `cli-orchestrator start` (uses `claude -p` → SDK credit pool post-cutover)
-- ✅ `ai-sdlc-pipeline execute --run --spawner api-key` (uses SDK directly → SDK credit pool post-cutover)
-- ❌ Spawning `Agent({subagent_type: "developer"})` from inside an interactive Claude Code session (eats interactive quota — the SDK credit doesn't help)
+- ✅ `cli-orchestrator start` (uses `copilot -p` → SDK credit pool post-cutover)
+- ✅ `ai-sdlc-pipeline execute --run --spawner copilot` (uses SDK directly → SDK credit pool post-cutover)
+- ❌ Spawning `Agent({subagent_type: "developer"})` from inside an interactive Copilot CLI session (eats interactive quota — the SDK credit doesn't help)
 
 Tonight's interactive quota is finite. The SDK credit is a separate $200/mo pool. Routing autonomous work to the SDK pool keeps your interactive ceiling free for ad-hoc work + chat.
 
@@ -336,7 +336,7 @@ The ledger records every dispatch's token consumption + estimated dollar cost. W
                               │ Single task?    │  │ /ai-sdlc execute │
                               └──┬───────────┬──┘  │ (interactive)    │
                                  │ Yes       │ No  │ OR cli-orch start│
-                                 ▼           ▼     │ (uses claude -p) │
+                                 ▼           ▼     │ (uses copilot -p) │
                     ┌─────────────────┐  ┌────────────────────────────┐
                     │ ai-sdlc-pipeline│  │ cli-orchestrator start     │
                     │ execute --run   │  │ (autonomous loop)          │
@@ -355,13 +355,13 @@ For CI: always sign locally first. CI-side review is fallback, not primary.
 
 Yes — same architecture, just smaller credit pool ($20/mo). One dispatch consumes ~$0.50–$2 of credit; budget accordingly.
 
-**Q. Does `ai-sdlc-pipeline execute --spawner claude-cli` use the SDK credit?**
+**Q. Does `ai-sdlc-pipeline execute --spawner copilot` use the SDK credit?**
 
-The `claude-cli` spawner was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) and is no longer a valid `--spawner` choice — see [`docs/operations/claude-cli-spawner-removed.md`](./claude-cli-spawner-removed.md). For subscription billing without an interactive operator session, use `--spawner claude` (shell-out to `claude -p`, draws Agent SDK credit pool). For interactive-quota dispatch with zero incremental cost, use the Dispatch Board model: `/ai-sdlc orchestrator-tick` + N `/ai-sdlc dispatch-worker` sessions.
+The `copilot` spawner was removed in RFC-0041 Phase 3.3 (AISDLC-377.6) and is no longer a valid `--spawner` choice — see [`docs/operations/copilot-spawner.md`](./copilot-spawner.md). For subscription billing without an interactive operator session, use `--spawner copilot` (shell-out to `copilot -p`, draws Agent SDK credit pool). For interactive-quota dispatch with zero incremental cost, use the Dispatch Board model: `/ai-sdlc orchestrator-tick` + N `/ai-sdlc dispatch-worker` sessions.
 
 **Q. My CI is silently skipping reviewers — is that a problem?**
 
-It means your repo's `ANTHROPIC_API_KEY` secret is unset (or your local attestation IS valid). Check `gh pr checks <pr>` — if you see `Post Review Results: skipped (budget exhausted)`, that's the fallback declining. If you ALSO see `ai-sdlc/attestation: failure`, the local attestation is missing too — the PR is blocked. Sign locally + re-push.
+It means your repo's `GITHUB_MODELS_TOKEN` secret is unset (or your local attestation IS valid). Check `gh pr checks <pr>` — if you see `Post Review Results: skipped (budget exhausted)`, that's the fallback declining. If you ALSO see `ai-sdlc/attestation: failure`, the local attestation is missing too — the PR is blocked. Sign locally + re-push.
 
 **Q. How do I know which spawner ran a given dispatch?**
 
@@ -378,7 +378,7 @@ Not today — the spawner choice is per-dispatch, not per-step. If this matters,
 - [`pipeline-cli/docs/spawner.md`](../../pipeline-cli/docs/spawner.md) — engineer-facing reference for the `SubagentSpawner` interface, custom spawner howto, and per-spawner contract details
 - [`docs/operations/operator-runbook.md`](./operator-runbook.md) — high-level operator workflows
 - [`docs/operations/orchestrator-runbook.md`](./orchestrator-runbook.md) — `cli-orchestrator` setup + monitoring
-- [`docs/operations/claude-cli-spawner-removed.md`](./claude-cli-spawner-removed.md) — RFC-0041 Phase 3.3 (AISDLC-377.6) `--spawner claude-cli` removal & migration breadcrumb
+- [`docs/operations/copilot-spawner.md`](./copilot-spawner.md) — RFC-0041 Phase 3.3 (AISDLC-377.6) `--spawner copilot` removal & migration breadcrumb
 - [`spec/rfcs/RFC-0012-shared-pipeline-core.md`](../../spec/rfcs/RFC-0012-shared-pipeline-core.md) — Tier 1 vs Tier 2 architectural rationale
 - [`spec/rfcs/RFC-0010-parallel-execution-worktree-pooling.md`](../../spec/rfcs/RFC-0010-parallel-execution-worktree-pooling.md) §14 — subscription scheduling + token-budget governance
 

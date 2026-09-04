@@ -370,7 +370,7 @@ const integrationApproved = {
   verdicts: [
     {
       agentId: 'code-reviewer' as const,
-      harness: 'claude-code' as const,
+      harness: 'copilot' as const,
       approved: true,
       findings: [],
       summary: 'lgtm',
@@ -532,9 +532,9 @@ describe('Step 11 — pushAndPr with late-rebase (AISDLC-232)', () => {
       `## [Unreleased]\n### Added\n<<<<<<< HEAD\n- branch feat\n=======\n- main feat\n>>>>>>> origin/main\n`,
     );
 
-    // No signAttestationScript provided, CLAUDE_PLUGIN_ROOT unset → no signer
-    const savedEnv = process.env.CLAUDE_PLUGIN_ROOT;
-    delete process.env.CLAUDE_PLUGIN_ROOT;
+    // No signAttestationScript provided, COPILOT_PLUGIN_ROOT unset → no signer
+    const savedEnv = process.env.COPILOT_PLUGIN_ROOT;
+    delete process.env.COPILOT_PLUGIN_ROOT;
 
     const fake = new FakeRunner()
       .on(/^git fetch origin main/, ok())
@@ -560,7 +560,7 @@ describe('Step 11 — pushAndPr with late-rebase (AISDLC-232)', () => {
     });
 
     // Restore env
-    if (savedEnv !== undefined) process.env.CLAUDE_PLUGIN_ROOT = savedEnv;
+    if (savedEnv !== undefined) process.env.COPILOT_PLUGIN_ROOT = savedEnv;
 
     // Push should still succeed (signer absence is non-fatal — pre-push hook fallback handles it)
     expect(r.pushed).toBe(true);

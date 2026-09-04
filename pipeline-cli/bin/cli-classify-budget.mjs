@@ -4,7 +4,7 @@
  * compiled router. Compiled entry lives in `dist/cli/classify-budget.js`
  * after `pnpm build`.
  *
- * Wraps the Anthropic API budget-exhaustion classifier so the report job in
+ * Wraps the GitHub API budget-exhaustion classifier so the report job in
  * `.github/workflows/ai-sdlc-review.yml` can suppress noisy CHANGES_REQUESTED
  * when ALL three reviewers fail with credit-exhausted errors.
  */

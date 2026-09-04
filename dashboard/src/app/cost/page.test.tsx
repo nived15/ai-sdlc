@@ -65,7 +65,7 @@ describe('CostPage', () => {
       { agent_name: 'dev-agent', cost_usd: 200, runs: 40 },
       { agent_name: 'review-agent', cost_usd: 50, runs: 10 },
     ]);
-    mockAll.mockReturnValueOnce([{ model: 'claude-sonnet-4-5-20250929', cost_usd: 200, runs: 40 }]);
+    mockAll.mockReturnValueOnce([{ model: 'balanced', cost_usd: 200, runs: 40 }]);
     mockAll.mockReturnValueOnce([
       { date: '2026-03-14', cost_usd: 10, runs: 5 },
       { date: '2026-03-15', cost_usd: 15, runs: 8 },

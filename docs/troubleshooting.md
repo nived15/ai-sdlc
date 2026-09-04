@@ -205,7 +205,7 @@ healthCheck:
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `AI_SDLC_MODEL` | Default LLM model for agent operations | `claude-sonnet-4-5-20250929` |
+| `AI_SDLC_MODEL` | Default LLM model for agent operations | `the balanced tier` |
 | `AI_SDLC_LOG_LEVEL` | Logging level (debug, info, warn, error) | `info` |
 | `GITHUB_TOKEN` | GitHub API token for adapters | (required for GitHub adapters) |
 | `LINEAR_API_KEY` | Linear API key for issue tracking | (required for Linear adapter) |

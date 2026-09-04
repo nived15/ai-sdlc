@@ -28,15 +28,15 @@ describe('redactSecrets', () => {
     );
   });
 
-  describe('OpenAI keys', () => {
+  describe('Generic inference keys', () => {
     it('redacts classic sk- keys', () => {
       const input = 'token: sk-test1234567890abcdef1234567890 — done';
-      expect(redactSecrets(input)).toBe('token: [REDACTED:OPENAI] — done');
+      expect(redactSecrets(input)).toBe('token: [REDACTED:INFERENCE_KEY] — done');
     });
 
-    it('redacts project-scoped sk-proj- keys with the OPENAI_PROJECT marker', () => {
+    it('redacts project-scoped sk-proj- keys with the INFERENCE_KEY_PROJECT marker', () => {
       const input = 'key=sk-proj-abcdef_1234-567890ABCDEF1234567890 next';
-      expect(redactSecrets(input)).toBe('key=[REDACTED:OPENAI_PROJECT] next');
+      expect(redactSecrets(input)).toBe('key=[REDACTED:INFERENCE_KEY_PROJECT] next');
     });
 
     it('does not match short sk- prefixes (<20 char body)', () => {
@@ -242,15 +242,15 @@ describe('redactSecrets', () => {
     });
   });
 
-  describe('Anthropic keys', () => {
-    it('redacts sk-ant-api03- keys with the ANTHROPIC marker', () => {
+  describe('GitHub keys', () => {
+    it('redacts sk-ant-api03- keys with the INFERENCE_KEY_SCOPED marker', () => {
       const input = `key=sk-ant-api03-${'a'.repeat(20)} next`;
-      expect(redactSecrets(input)).toBe('key=[REDACTED:ANTHROPIC] next');
+      expect(redactSecrets(input)).toBe('key=[REDACTED:INFERENCE_KEY_SCOPED] next');
     });
 
-    it('redacts sk-ant-admin01- keys with the ANTHROPIC marker', () => {
+    it('redacts sk-ant-admin01- keys with the INFERENCE_KEY_SCOPED marker', () => {
       const input = `admin=sk-ant-admin01-${'b'.repeat(25)} done`;
-      expect(redactSecrets(input)).toBe('admin=[REDACTED:ANTHROPIC] done');
+      expect(redactSecrets(input)).toBe('admin=[REDACTED:INFERENCE_KEY_SCOPED] done');
     });
 
     it('does not match unknown sk-ant- variants', () => {
@@ -462,12 +462,12 @@ describe('redactSecrets', () => {
 
   it('redacts multiple distinct secrets in one string', () => {
     const input = [
-      `OpenAI: sk-test1234567890abcdef1234567890`,
+      `Inference key: sk-test1234567890abcdef1234567890`,
       `GitHub: ghp_${'a'.repeat(36)}`,
       `AWS: AKIAIOSFODNN7EXAMPLE`,
     ].join(' | ');
     const out = redactSecrets(input);
-    expect(out).toContain('[REDACTED:OPENAI]');
+    expect(out).toContain('[REDACTED:INFERENCE_KEY]');
     expect(out).toContain('[REDACTED:GITHUB_PAT]');
     expect(out).toContain('[REDACTED:AWS_ACCESS_KEY]');
     expect(out).not.toContain('sk-test');
@@ -488,12 +488,12 @@ describe('redactSecrets', () => {
     // One real-shaped fake token per registered pattern. The expected
     // output of `redactSecrets(input)` is the marker; the property under
     // test is `redactSecrets(redactSecrets(input)) === redactSecrets(input)`.
-    // If a marker like `[REDACTED:ANTHROPIC]` accidentally matched any
+    // If a marker like `[REDACTED:INFERENCE_KEY_SCOPED]` accidentally matched any
     // pattern, the second pass would mutate it.
     const fixtures: Array<{ name: string; input: string }> = [
-      { name: 'ANTHROPIC', input: `sk-ant-api03-${'a'.repeat(20)}` },
-      { name: 'OPENAI_PROJECT', input: `sk-proj-${'a'.repeat(20)}` },
-      { name: 'OPENAI', input: `sk-${'a'.repeat(20)}` },
+      { name: 'INFERENCE_KEY_SCOPED', input: `sk-ant-api03-${'a'.repeat(20)}` },
+      { name: 'INFERENCE_KEY_PROJECT', input: `sk-proj-${'a'.repeat(20)}` },
+      { name: 'INFERENCE_KEY', input: `sk-${'a'.repeat(20)}` },
       {
         name: 'SLACK',
         input: `xo${'xb'}-${'A'.repeat(12)}-${'B'.repeat(12)}-${'c'.repeat(24)}`,

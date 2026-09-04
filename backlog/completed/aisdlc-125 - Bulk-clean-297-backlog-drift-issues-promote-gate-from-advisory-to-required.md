@@ -14,7 +14,7 @@ milestone: m-3
 dependencies: []
 references:
   - .github/workflows/ci.yml
-  - CLAUDE.md
+  - .github/copilot-instructions.md
   - scripts/check-backlog-drift.sh
   - docs/upstream-bug-reports/backlog-drift-url-fragment-false-positive.md
 priority: high

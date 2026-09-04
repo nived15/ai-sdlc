@@ -27,7 +27,7 @@
  * AISDLC-563 (2026-08-18): the gate's comparison logic was always correct
  * (extracts the bare tracked-work id, compares case-insensitively against
  * `input.declaredDependencyRefs` / `input.references`) — the bug was that
- * `refineBacklogTask()` (`../ingress-claude.ts`) never populated either
+ * `refineBacklogTask()` (`../ingress.ts`) never populated either
  * field from the task's `dependencies:` / `references:` frontmatter, so
  * every dep-phrase + id pair in the body was flagged as invisible
  * regardless of what frontmatter actually declared. Reproduced twice

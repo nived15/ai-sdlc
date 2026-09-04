@@ -21,16 +21,16 @@ an unpublished version reference).
 The pipeline ships in two tiers (RFC-0012 §2):
 
 - **Tier 1 — slash command body.** `/ai-sdlc execute <task-id>` runs in the
-  main Claude Code session. The slash command body interleaves CLI subcommands
+  main Copilot CLI session. The slash command body interleaves CLI subcommands
   (`ai-sdlc-pipeline validate-task ...`, `... compute-branch ...`) with `Agent`
   tool calls for the LLM dispatch boundaries (Step 5b developer, Step 7b three
-  reviewers in parallel). Subscription billing via Claude Code Max-20x.
+  reviewers in parallel). Subscription billing via GitHub Copilot CLI Max-20x.
   Operator-driven and interactive.
 
 - **Tier 2 — `executePipeline()` composite.** A single `import` + one async
   call drives Step 0-13 end-to-end. The two LLM dispatch boundaries go through
-  an injected `SubagentSpawner` (subscription via `claude --print`, API key via
-  `@anthropic-ai/claude-code` SDK, or `MockSpawner` for tests). Designed for
+  an injected `SubagentSpawner` (subscription via `copilot --print`, API key via
+  `@github/copilot` SDK, or `MockSpawner` for tests). Designed for
   unattended programmatic use: CLI invocation, GitHub Actions, webhooks, cron,
   and the existing `pnpm watch` flow once Phase 5 (AISDLC-100.5) migrates
   `dogfood/src/watch.ts` to call it.
@@ -44,16 +44,16 @@ is identical — only the LLM dispatch boundary differs. See
 
 ### As part of the plugin (recommended)
 
-If you've installed `ai-sdlc-plugin` in Claude Code, `@ai-sdlc/pipeline-cli` is
+If you've installed `ai-sdlc-plugin` in GitHub Copilot CLI, `@ai-sdlc/pipeline-cli` is
 pulled in automatically via the plugin's `runtimeDependencies` declaration. The
-Claude Code plugin runtime installs it under the plugin's own `node_modules/`:
+GitHub Copilot CLI plugin runtime installs it under the plugin's own `node_modules/`:
 
 ```
-<CLAUDE_PLUGIN_ROOT>/node_modules/@ai-sdlc/pipeline-cli/
+<COPILOT_PLUGIN_ROOT>/node_modules/@ai-sdlc/pipeline-cli/
 ```
 
 All 16 `bin/` entries are then resolvable as
-`${CLAUDE_PLUGIN_ROOT}/node_modules/@ai-sdlc/pipeline-cli/bin/<bin>.mjs`:
+`${COPILOT_PLUGIN_ROOT}/node_modules/@ai-sdlc/pipeline-cli/bin/<bin>.mjs`:
 
 ```bash
 ai-sdlc-pipeline.mjs            # Step 0-13 umbrella (RFC-0012)
@@ -120,7 +120,7 @@ caused the `|| echo '<fallback-json>'` safety net in
 cost-saver CLIs (`cli-classify-pr`, `cli-incremental-decide`,
 `cli-classify-budget`), defeating the AISDLC-141/142/147/149/154
 optimizations entirely — every PR ran full-budget reviewers, blowing
-through Anthropic credits and posting `CHANGES_REQUESTED` whenever the
+through GitHub credits and posting `CHANGES_REQUESTED` whenever the
 key was exhausted.
 
 The workflow now invokes each CLI as:
@@ -145,11 +145,11 @@ whether the simpler form can be reintroduced.
 
 ```bash
 pnpm add @ai-sdlc/pipeline-cli
-# Optional: only when using the API-key-billed ClaudeCodeSDKSpawner.
-pnpm add @anthropic-ai/claude-code
+# Optional: only when using the API-key-billed CopilotHarnessAdapter.
+pnpm add @github/copilot
 ```
 
-The `@anthropic-ai/claude-code` SDK is a **lazy import** (NOT a hard
+The `@github/copilot` SDK is a **lazy import** (NOT a hard
 dependency) so subscription-only consumers don't pay for ~50MB of SDK code
 they'll never use. See [`docs/spawner.md`](./docs/spawner.md#the-lazy-sdk-import--why-and-how)
 for the lazy-import rationale and how the failure surfaces when the SDK isn't
@@ -163,14 +163,14 @@ Pick the row that matches your situation:
 
 | Entry point | Invoker | Spawner | Billing | When to use |
 |---|---|---|---|---|
-| `/ai-sdlc execute <task-id>` (slash command body, `ai-sdlc-plugin/commands/execute.md`) | Operator typing in their Claude Code session | `Agent` tool calls in the SAME session | Subscription (Claude Code Max) | The default for internal dogfood. Operator drives, sees progress in real-time, decisions surface inline. |
-| `ai-sdlc-pipeline execute <task-id>` (this CLI subcommand, AISDLC-182) | Anything that can shell out — AI assistant in operator session, cron, webhook, GitHub Action | Safe default plan with `mock`; real runs require `--run` with a real spawner (`--spawner api-key`, `--spawner claude`, `--spawner codex`, or `--spawner copilot`) | Depends on `--spawner` | A bare invocation is non-mutating: it validates the task and prints the planned branch/worktree without calling `executePipeline()`. An AI assistant working alongside the operator (or any non-slash-command context) that needs the FULL pipeline including reviewers + verdict-file write must pass explicit run intent and a real spawner: `--run --spawner claude` (subscription) or `--run --spawner api-key` (API token). `--spawner mock` is dry-run/plumbing only and refuses with `--run`. **Wires AISDLC-177 rollback** on every real-run outcome in the orchestrator's `ROLLBACK_OUTCOMES` set — `developer-failed`, `developer-json-contract-violated`, `aborted`, `unknown-failure` (the constant is imported from `orchestrator/loop.ts` so both surfaces stay in lockstep, AISDLC-191) — the slash command body does NOT yet wire rollback, so the umbrella is the consistency-over-parity win when an unattended dispatch fails mid-flight. |
-| `pnpm --filter @ai-sdlc/dogfood watch --issue <id>` | Cron / GitHub Action / unattended | `ClaudeCodeSDKSpawner` (resolved internally) | API key (paid Anthropic API) | GitHub-issue-driven flow. Designed for unattended use where no operator session is available. |
+| `/ai-sdlc execute <task-id>` (slash command body, `ai-sdlc-plugin/commands/execute.md`) | Operator typing in their Copilot CLI session | `Agent` tool calls in the SAME session | Subscription (GitHub Copilot CLI Max) | The default for internal dogfood. Operator drives, sees progress in real-time, decisions surface inline. |
+| `ai-sdlc-pipeline execute <task-id>` (this CLI subcommand, AISDLC-182) | Anything that can shell out — AI assistant in operator session, cron, webhook, GitHub Action | Safe default plan with `mock`; real runs require `--run --spawner copilot` | Depends on `--spawner` | A bare invocation is non-mutating: it validates the task and prints the planned branch/worktree without calling `executePipeline()`. An AI assistant working alongside the operator (or any non-slash-command context) that needs the FULL pipeline including reviewers + verdict-file write must pass explicit run intent and a real spawner: `--run --spawner copilot`. `--spawner mock` is dry-run/plumbing only and refuses with `--run`. **Wires AISDLC-177 rollback** on every real-run outcome in the orchestrator's `ROLLBACK_OUTCOMES` set — `developer-failed`, `developer-json-contract-violated`, `aborted`, `unknown-failure` (the constant is imported from `orchestrator/loop.ts` so both surfaces stay in lockstep, AISDLC-191) — the slash command body does NOT yet wire rollback, so the umbrella is the consistency-over-parity win when an unattended dispatch fails mid-flight. |
+| `pnpm --filter @ai-sdlc/dogfood watch --issue <id>` | Cron / GitHub Action / unattended | `CopilotHarnessAdapter` (resolved internally) | GitHub Models token | GitHub-issue-driven flow. Designed for unattended use where no operator session is available. |
 
 ### Why the `execute` umbrella subcommand exists (AISDLC-182)
 
 Before this subcommand existed, an AI assistant working alongside the
-operator (e.g. Claude in the main conversation, NOT a slash command) had no
+operator (e.g. GitHub Copilot in the main conversation, NOT a slash command) had no
 clean way to invoke the full pipeline. The two existing surfaces both had
 gaps:
 
@@ -209,8 +209,8 @@ node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-182
 # Equivalent explicit dry-run form.
 node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-182 --dry-run
 
-# Real run with API-key billing (requires ANTHROPIC_API_KEY in env)
-node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-182 --run --spawner api-key
+# Real run with API-key billing (requires GITHUB_MODELS_TOKEN in env)
+node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-182 --run --spawner copilot
 
 # Mock spawner (default) is dry-run/plumbing only. This plans safely:
 node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-182 --spawner mock
@@ -224,48 +224,49 @@ node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-182 --run --spawner 
 | Value | Status | Behaviour |
 |---|---|---|
 | `mock` | shipped (default) | Dry-run/plumbing only. A no-`--run` invocation validates and prints the plan without resolving the spawner or mutating files. `--run --spawner mock` refuses before filesystem mutation. |
-| `api-key` | shipped | Constructs the `ClaudeCodeSDKSpawner` (lazy SDK import). Requires `ANTHROPIC_API_KEY` in env and explicit `--run`. Same billing model as `pnpm dogfood watch`. |
-| `claude` | shipped (AISDLC-349; default for `cli-orchestrator tick` since AISDLC-352) | Constructs the `ShellClaudePSpawner` — shells out to the operator's installed `claude -p` for each dispatch. Uses subscription auth (Agent SDK credit pool post-2026-06-15). Recommended for cron / daemon / sidecar dispatch from a plain shell. |
-| `codex` | shipped (AISDLC-202.2) | Constructs the `CodexHarnessAdapter` (callback-driven Codex `spawn_agent` bridge). The CLI resolver wires a subprocess bridge whose path is read from `CODEX_SPAWN_AGENT_BIN`; when that env var is unset the resolver fails with a configuration message before any pipeline mutation. Programmatic callers can construct `CodexHarnessAdapter` directly with their own `CodexSpawnAgentFn`. Design map: `docs/operations/codex-execution-path.md`. Billing: Codex plan. |
-| `copilot` | shipped (AISDLC-429.2 + AISDLC-429.3) | Constructs the `CopilotHarnessAdapter` (callback-driven GitHub Copilot CLI bridge). The CLI resolver wires a subprocess bridge whose path is read from `COPILOT_SPAWN_AGENT_BIN`; when that env var is unset the resolver fails with a configuration message before any pipeline mutation — refuses to silently fall back to `ANTHROPIC_API_KEY` billing. Programmatic callers can construct `CopilotHarnessAdapter` directly with their own `CopilotSpawnAgentFn`. Design map: [`docs/operations/copilot-execution-path.md`](../docs/operations/copilot-execution-path.md). Operator runbook: [`docs/operations/copilot-spawner.md`](../docs/operations/copilot-spawner.md). Billing: GitHub Copilot subscription. |
-| `claude-cli` | **removed** (RFC-0041 Phase 3.3 / AISDLC-377.6) | Was the `ClaudeCliInlineSpawner` inline-manifest path (AISDLC-198). Deleted after the AISDLC-377.4 deprecation-warning window. Yargs `--spawner claude-cli` is rejected at parse time; programmatic callers receive `CLAUDE_CLI_SPAWNER_REMOVED_MESSAGE`. Migration: [`docs/operations/claude-cli-spawner-removed.md`](../docs/operations/claude-cli-spawner-removed.md). |
+| `copilot` | shipped (AISDLC-429.2 + AISDLC-429.3; default for `cli-orchestrator tick`) | Constructs the `CopilotHarnessAdapter` (callback-driven GitHub Copilot CLI bridge). The CLI resolver wires a subprocess bridge whose path is read from `COPILOT_SPAWN_AGENT_BIN`; when that env var is unset the resolver fails with a configuration message before any pipeline mutation — it refuses to silently fall back to any other billing path. Programmatic callers can construct `CopilotHarnessAdapter` directly with their own `CopilotSpawnAgentFn`. Design map: [`docs/operations/copilot-execution-path.md`](../docs/operations/copilot-execution-path.md). Operator runbook: [`docs/operations/copilot-spawner.md`](../docs/operations/copilot-spawner.md). Billing: GitHub Copilot subscription. |
 
-##### `--spawner codex` — Codex CLI host-bridge dispatch (AISDLC-202.2 + AISDLC-251)
+Any other `--spawner` value is rejected at parse time by the yargs
+`choices: SPAWNER_KINDS` constraint. Programmatic callers that bypass yargs and
+pass a retired literal receive `UNSUPPORTED_SPAWNER_MESSAGE`, which names the
+supported kinds and links the runbook.
 
-Phase 2 of the Codex execution path ships the `CodexHarnessAdapter`, a
-host-agnostic `SubagentSpawner` over Codex's `spawn_agent` host tool.
-Codex CLI does not expose Claude Code's plugin `Agent` system, so the
+##### `--spawner copilot` — GitHub Copilot CLI host-bridge dispatch (AISDLC-202.2 + AISDLC-251)
+
+Phase 2 of the GitHub Copilot execution path ships the `CopilotHarnessAdapter`, a
+host-agnostic `SubagentSpawner` over GitHub Copilot's `spawn_agent` host tool.
+GitHub Copilot CLI does not expose GitHub Copilot CLI's plugin `Agent` system, so the
 adapter centralises the developer + reviewer dispatch contract that the
 AISDLC-201 run had to reconstruct by hand:
 
 - Per-`SubagentType` system prompts derived from
   `ai-sdlc-plugin/agents/<type>.md` (overridable via constructor option).
 - A single injected `spawnAgent` callback that wraps the operator's host
-  bridge — no Codex CLI version coupling lives in `pipeline-cli`.
+  bridge — no GitHub Copilot CLI version coupling lives in `pipeline-cli`.
 - Reviewer envelopes returned by the adapter pass through Step 8
   aggregation **without manual reshaping** (`coerceReviewerVerdict`
-  consumes them directly; verdicts are tagged `harness: 'codex'`).
+  consumes them directly; verdicts are tagged `harness: 'copilot'`).
 
 **Canonical bridge script (AISDLC-251):** The repo ships a ready-to-use bridge
-at `scripts/codex-spawn-agent-bridge.mjs`. Set `CODEX_SPAWN_AGENT_BIN` to this
+at `scripts/copilot-spawn-agent-bridge.mjs`. Set `COPILOT_SPAWN_AGENT_BIN` to this
 script — no hand-written bridge needed:
 
 ```bash
-# Canonical setup — set CODEX_SPAWN_AGENT_BIN to the canonical bridge script,
-# then run ai-sdlc-pipeline execute with --spawner codex.
-export CODEX_SPAWN_AGENT_BIN="$(pwd)/scripts/codex-spawn-agent-bridge.mjs"
-node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-NNN --run --spawner codex
+# Canonical setup — set COPILOT_SPAWN_AGENT_BIN to the canonical bridge script,
+# then run ai-sdlc-pipeline execute with --spawner copilot.
+export COPILOT_SPAWN_AGENT_BIN="$(pwd)/scripts/copilot-spawn-agent-bridge.mjs"
+node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-NNN --run --spawner copilot
 ```
 
-The canonical bridge uses the verified flag set for codex-cli 0.128.0:
-`codex exec -s workspace-write --skip-git-repo-check --color never` for
-developer dispatch, and `codex exec -s read-only --skip-git-repo-check
+The canonical bridge uses the verified flag set for copilot-cli 0.128.0:
+`copilot exec -s workspace-write --skip-git-repo-check --color never` for
+developer dispatch, and `copilot exec -s read-only --skip-git-repo-check
 --color never` for reviewer dispatch. A developer agent must be able to edit
 the task worktree; reviewers remain read-only. The composed prompt is passed on
 stdin with `-` as the prompt argument.
 DO NOT use `--quiet` (errors with "unexpected argument") or `--model o4-mini`
 (HTTP 400 on ChatGPT-account auth) — see AISDLC-249/247 smoke test notes.
-If the bridge or `codex exec` exits 0 with empty stdout, the adapter treats
+If the bridge or `copilot exec` exits 0 with empty stdout, the adapter treats
 that as a bridge error with diagnostics instead of returning an empty developer
 JSON envelope.
 The bridge only forwards safe model/provider `extraArgs` (`--model`/`-m`,
@@ -275,19 +276,19 @@ overrides.
 Two ways to use it:
 
 ```bash
-# CLI form — requires CODEX_SPAWN_AGENT_BIN (use canonical bridge above or your own).
-export CODEX_SPAWN_AGENT_BIN="$(pwd)/scripts/codex-spawn-agent-bridge.mjs"
-node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-202 --run --spawner codex
+# CLI form — requires COPILOT_SPAWN_AGENT_BIN (use canonical bridge above or your own).
+export COPILOT_SPAWN_AGENT_BIN="$(pwd)/scripts/copilot-spawn-agent-bridge.mjs"
+node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs execute AISDLC-202 --run --spawner copilot
 ```
 
 ```typescript
 // Programmatic form — inject any CodexSpawnAgentFn (host-tool wrapper,
 // in-process bridge, etc.). Tests use a deterministic mock.
-import { CodexHarnessAdapter } from '@ai-sdlc/pipeline-cli';
+import { CopilotHarnessAdapter } from '@ai-sdlc/pipeline-cli';
 
-const adapter = new CodexHarnessAdapter({
+const adapter = new CopilotHarnessAdapter({
   spawnAgent: async ({ agentType, systemPrompt, userPrompt, cwd, timeoutMs }) => {
-    // Wrap Codex's spawn_agent host tool here.
+    // Wrap GitHub Copilot's spawn_agent host tool here.
     return { output: '<agent JSON return>', parsed: { /* optional pre-parse */ } };
   },
 });
@@ -304,7 +305,7 @@ produces / consumes):
 
 The adapter normalises reviewer responses into the canonical
 `ReviewerVerdict` envelope (`{ approved, findings, summary, harness:
-'codex' }`) before returning, so Step 8 aggregation runs unchanged.
+'copilot' }`) before returning, so Step 8 aggregation runs unchanged.
 
 ## Quickstart — Tier 1 (slash command body)
 
@@ -337,7 +338,7 @@ node ./pipeline-cli/bin/ai-sdlc-pipeline.mjs build-dev-prompt AISDLC-100.7
 Tier 1's distinctive trait is that the LLM dispatch boundaries (Step 5b — spawn
 developer, Step 7b — spawn 3 reviewers) are NOT calls into pipeline-cli — they
 are direct `Agent(developer, code-reviewer, test-reviewer, security-reviewer)`
-tool calls in the main Claude Code session. The slash command body parses the
+tool calls in the main Copilot CLI session. The slash command body parses the
 JSON each pipeline-cli subcommand emits and feeds the next step.
 
 ## Quickstart — Tier 2 (`executePipeline()`)
@@ -349,9 +350,9 @@ import the composite and pass a spawner:
 import { executePipeline, defaultSpawner } from '@ai-sdlc/pipeline-cli';
 
 const spawner = await defaultSpawner();
-//   ↳ resolves to ShellClaudePSpawner if `claude` CLI is on PATH
-//     (subscription, no tokens spent), otherwise to ClaudeCodeSDKSpawner
-//     if ANTHROPIC_API_KEY is set (API key billing), otherwise throws.
+//   ↳ resolves to CopilotHarnessAdapter if `copilot` CLI is on PATH
+//     (subscription, no tokens spent), otherwise to CopilotHarnessAdapter
+//     if GITHUB_MODELS_TOKEN is set (API key billing), otherwise throws.
 
 const result = await executePipeline({
   taskId: 'AISDLC-100.7',
@@ -405,7 +406,7 @@ const result = await executePipeline({
 ```
 
 See [`docs/spawner.md`](./docs/spawner.md) for the full SubagentSpawner
-catalogue (`ShellClaudePSpawner`, `ClaudeCodeSDKSpawner`, `defaultSpawner()`,
+catalogue (`CopilotHarnessAdapter`, `CopilotHarnessAdapter`, `defaultSpawner()`,
 `MockSpawner`, custom spawner howto).
 
 ## Layout
@@ -436,8 +437,8 @@ pipeline-cli/
     │   ├── index.ts                # barrel — exports SubagentSpawner + Runner surface
     │   ├── exec.ts                                                   # Runner abstraction over child_process.execFile
     │   ├── subagent-spawner.ts                                       # SubagentSpawner interface + MockSpawner
-    │   ├── shell-claude-p-spawner.ts                                 # Tier 2 default — `claude --print --agent <type>` shell-out (subscription)
-    │   ├── claude-code-sdk-spawner.ts                                # Tier 2 alternative — @anthropic-ai/claude-code SDK (API key)
+    │   ├── shell-copilot-p-spawner.ts                                 # Tier 2 default — `copilot --print --agent <type>` shell-out (subscription)
+    │   ├── copilot-spawner.ts                                # Tier 2 alternative — @github/copilot SDK (API key)
     │   └── default-spawner.ts                                        # `defaultSpawner()` resolver: which→shell, env→sdk, else throw
     ├── steps/                      # each step.ts has a colocated step.test.ts
     │   ├── index.ts                # barrel
@@ -492,7 +493,7 @@ The pipeline is purely deterministic except for two LLM dispatch points:
 
 Both go through the `SubagentSpawner` interface (RFC-0012 §8). That's the only
 piece of the pipeline that varies between Tier 1 (`Agent` tool from the main
-session), Tier 2 subscription (`claude --print`), Tier 2 API key (Claude Code
+session), Tier 2 subscription (`copilot --print`), Tier 2 API key (GitHub Copilot CLI
 SDK), and tests (`MockSpawner`).
 
 ```ts
@@ -502,24 +503,20 @@ interface SubagentSpawner {
 }
 ```
 
-Production spawners (Phase 2 — AISDLC-100.2):
+Production spawner (Phase 2 — AISDLC-100.2):
 
-- **`ShellClaudePSpawner`** (subscription billing) — shells out to the
-  operator's installed `claude` CLI with
-  `claude --print --output-format json --permission-mode bypassPermissions --agent <type> <prompt>`.
-  No API tokens consumed; reuses the operator's logged-in Claude Code session.
-  RFC §8.2's sketch said `--subagent <type>` but the actual flag is
-  **`--agent <type>`** (verified empirically against the installed CLI on
+- **`CopilotHarnessAdapter`** — dispatches through the GitHub Copilot CLI via
+  the bridge at `COPILOT_SPAWN_AGENT_BIN`, invoking
+  `copilot --print --output-format json --permission-mode bypassPermissions --agent <type> <prompt>`.
+  No third-party API tokens consumed; reuses the operator's logged-in Copilot
+  CLI session. RFC §8.2's sketch said `--subagent <type>` but the actual flag
+  is **`--agent <type>`** (verified empirically against the installed CLI on
   2026-04-30). See [`docs/spawner.md`](./docs/spawner.md#q5-rfc-15-resolution--agent-type-not---subagent-type)
   for the full Q5 (RFC §15) resolution.
-- **`ClaudeCodeSDKSpawner`** (API-key billing) — uses `@anthropic-ai/claude-code`
-  programmatically. The SDK is **lazy-imported** (NOT a hard dependency of
-  `pipeline-cli`) so subscription-only consumers don't have to install ~50MB
-  of SDK code they'll never use; install it with
-  `pnpm add @anthropic-ai/claude-code` only when you need API-key billing.
-- **`defaultSpawner()`** — convenience resolver: prefers `claude` CLI on PATH
-  (subscription), falls back to `ANTHROPIC_API_KEY` (API key), throws with an
-  instructional error if neither is available.
+- **`defaultSpawner()`** — convenience resolver: constructs a
+  `CopilotHarnessAdapter` over `COPILOT_SPAWN_AGENT_BIN`, or throws with an
+  instructional error when that env var is unset. It does not fall back to any
+  paid API path.
 
 `MockSpawner` (shipped here for tests) accepts either fixed results per
 subagent type or a callback per type so iteration N>1 can return different
@@ -555,7 +552,7 @@ pnpm test:watch            # iteration mode
 ## Documentation
 
 - [`docs/spawner.md`](./docs/spawner.md) — SubagentSpawner selection guide
-  (when to use ShellClaudeP / ClaudeCodeSDK / Mock / custom), lazy SDK import,
+  (when to use CopilotHarnessAdapter / Mock / custom), lazy SDK import,
   Q5 resolution.
 - [`docs/steps.md`](./docs/steps.md) — per-step contract, inputs, outputs,
   side effects, when each step runs.
@@ -571,7 +568,7 @@ pnpm test:watch            # iteration mode
 | Phase | Task | What changes | Status |
 |---|---|---|---|
 | 1 | AISDLC-100.1 | Create `pipeline-cli/` — Step 0-13 pure functions + CLI router + `executePipeline()` composite | shipped |
-| 2 | AISDLC-100.2 | `ShellClaudePSpawner` + `ClaudeCodeSDKSpawner` + `defaultSpawner()` | shipped |
+| 2 | AISDLC-100.2 | `CopilotHarnessAdapter` + `CopilotHarnessAdapter` + `defaultSpawner()` | shipped |
 | 3 | AISDLC-100.3 | Wrap each step function as an MCP tool in `ai-sdlc-plugin/mcp-server/` | in flight |
 | 4 | AISDLC-100.4 | Refactor `commands/execute.md` to use the CLI; delete `agents/execute-orchestrator.md` | in flight |
 | 5 | AISDLC-100.5 | Migrate `dogfood/src/watch.ts` to call `executePipeline()` | in flight |

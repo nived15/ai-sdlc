@@ -14,7 +14,7 @@ import { analyzeTier } from './tier-analysis.js';
 import { DEFAULT_TENANT, type LedgerKey, type SubscriptionPlan } from './types.js';
 
 const baseKey: LedgerKey = {
-  harness: 'claude-code',
+  harness: 'copilot',
   accountId: 'a3f2c891',
   tenant: DEFAULT_TENANT,
 };
@@ -31,8 +31,8 @@ function memoryIO() {
 }
 
 const sessionPlan: SubscriptionPlan = {
-  name: 'claude-code-max-5x',
-  harness: 'claude-code',
+  name: 'copilot-business',
+  harness: 'copilot',
   billingMode: 'session-window',
   windowDuration: 'PT5H',
   windowQuotaTokens: 1_000_000,
@@ -42,8 +42,8 @@ const sessionPlan: SubscriptionPlan = {
 };
 
 const monthlyPlan: SubscriptionPlan = {
-  name: 'codex-pro',
-  harness: 'codex',
+  name: 'copilot-pro-plus',
+  harness: 'copilot',
   billingMode: 'monthly-cap',
   windowQuotaTokens: 5_000_000,
   pacingTarget: 0.85,
@@ -54,7 +54,7 @@ const monthlyPlan: SubscriptionPlan = {
 describe('SubscriptionLedger — gap coverage', () => {
   it('load resets when persisted state is malformed JSON', async () => {
     const io = memoryIO();
-    const path = '/tmp/artifacts/_ledger/claude-code-a3f2c891-__default__.json';
+    const path = '/tmp/artifacts/_ledger/copilot-a3f2c891-__default__.json';
     io.store.set(path, 'not-json');
     const ledger = new SubscriptionLedger('/tmp/artifacts', { io });
     await ledger.load(baseKey, sessionPlan);
@@ -65,7 +65,7 @@ describe('SubscriptionLedger — gap coverage', () => {
   it('load resets when persisted window has expired', async () => {
     const io = memoryIO();
     const longAgo = new Date('2020-01-01T00:00:00Z').toISOString();
-    const path = '/tmp/artifacts/_ledger/claude-code-a3f2c891-__default__.json';
+    const path = '/tmp/artifacts/_ledger/copilot-a3f2c891-__default__.json';
     io.store.set(path, JSON.stringify({ windowStart: longAgo, consumedTokens: 999 }));
     const ledger = new SubscriptionLedger('/tmp/artifacts', { io });
     await ledger.load(baseKey, sessionPlan);
@@ -75,7 +75,7 @@ describe('SubscriptionLedger — gap coverage', () => {
   it('load reuses persisted state when window is still active', async () => {
     const io = memoryIO();
     const recent = new Date(Date.now() - 60_000).toISOString();
-    const path = '/tmp/artifacts/_ledger/claude-code-a3f2c891-__default__.json';
+    const path = '/tmp/artifacts/_ledger/copilot-a3f2c891-__default__.json';
     io.store.set(path, JSON.stringify({ windowStart: recent, consumedTokens: 12345 }));
     const ledger = new SubscriptionLedger('/tmp/artifacts', { io });
     await ledger.load(baseKey, sessionPlan);
@@ -108,7 +108,7 @@ describe('SubscriptionLedger — gap coverage', () => {
       io: memoryIO(),
       now: () => new Date('2026-04-26T12:00:00Z'),
     });
-    const codexKey: LedgerKey = { harness: 'codex', accountId: 'b1', tenant: DEFAULT_TENANT };
+    const codexKey: LedgerKey = { harness: 'copilot', accountId: 'b1', tenant: DEFAULT_TENANT };
     await ledger.load(codexKey, monthlyPlan);
     const ws = ledger.windowState(codexKey, monthlyPlan);
     expect(ws.windowEnd.getMonth()).toBe(4); // May (next month from April=3)
@@ -121,11 +121,11 @@ describe('SubscriptionLedger — gap coverage', () => {
 
   it('keyToFilename truncates accountId to 8 chars', () => {
     const filename = SubscriptionLedger.keyToFilename({
-      harness: 'claude-code',
+      harness: 'copilot',
       accountId: 'abcdef0123456789',
       tenant: 'mytenant',
     });
-    expect(filename).toBe('claude-code-abcdef01-mytenant.json');
+    expect(filename).toBe('copilot-abcdef01-mytenant.json');
   });
 });
 
@@ -296,8 +296,8 @@ describe('buildBurnDownReport — gap coverage', () => {
 
 describe('analyzeTier — gap coverage', () => {
   const proPlan: SubscriptionPlan = {
-    name: 'claude-code-pro',
-    harness: 'claude-code',
+    name: 'copilot-pro',
+    harness: 'copilot',
     billingMode: 'session-window',
     windowDuration: 'PT5H',
     windowQuotaTokens: 200_000,
@@ -323,7 +323,7 @@ describe('analyzeTier — gap coverage', () => {
   it('medium-confidence triggers upgrade recommendation when alternatives exist', () => {
     const max5x: SubscriptionPlan = {
       ...proPlan,
-      name: 'claude-code-max-5x',
+      name: 'copilot-business',
       windowQuotaTokens: 1_000_000,
     };
     const r = analyzeTier({
@@ -339,6 +339,6 @@ describe('analyzeTier — gap coverage', () => {
       candidates: [proPlan, max5x],
     });
     expect(r.confidence).toBe('medium');
-    expect(r.recommendedPlan).toBe('claude-code-max-5x');
+    expect(r.recommendedPlan).toBe('copilot-business');
   });
 });

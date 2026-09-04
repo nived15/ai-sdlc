@@ -158,11 +158,11 @@ const result = await metaReview(
   verdict,
   readFileSync('.ai-sdlc/review-principles.md', 'utf-8'),
   async (prompt) => {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://models.github.ai/inference/chat/completions', {
       method: 'POST',
-      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      headers: { 'x-api-key': apiKey, 'x-github-api-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'copilot-haiku-4-5-20251001',
         max_tokens: 256,
         messages: [{ role: 'user', content: prompt }],
       }),

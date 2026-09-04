@@ -70,41 +70,44 @@ function fail(reason: string, code = 1): never {
 }
 
 /**
- * AISDLC-352 — emit a billing-safety warning to stderr when there is a
- * risk that subscription-billed dispatch could silently fall through to
- * paid API tokens.
+ * AISDLC-429.3 — emit a billing-safety warning to stderr when there is a
+ * risk that GitHub Copilot-billed dispatch could silently fall through to a
+ * paid third-party API.
  *
  * Two conditions trigger the warning:
  *
- * 1. `--spawner claude` is requested AND `ANTHROPIC_API_KEY` is set in the
- *    environment. The `claude` spawner uses the operator's logged-in
- *    subscription auth — it does NOT consume the API key directly. But if
- *    the dispatch falls back to `--spawner api-key` for any reason (e.g.
- *    `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` is also set), the key
- *    WILL be billed. Surfacing this proactively lets operators unset the key
- *    to force subscription-only billing before the tick runs.
+ * 1. `--spawner copilot` is requested AND a third-party inference API key is
+ *    set in the environment. The `copilot` spawner dispatches through the
+ *    operator's GitHub Copilot subscription — it does NOT consume any other
+ *    key. But a stray key in the environment can leak into an agent's own
+ *    tooling and get billed outside the Copilot plan, so surface it
+ *    proactively and let operators unset it before the tick runs.
  *
- * 2. `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` is set AND the
- *    configured spawner is not `api-key`. This means the orchestrator will
- *    silently fall back to API-key billing on spawner-unavailable errors
- *    (e.g. when the configured CLI or bridge isn't reachable). Operators
- *    often don't realise the fallback is wired.
+ * 2. `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK` is set at all. There is no
+ *    cross-spawner fallback in a Copilot-only pipeline; a stale export is a
+ *    leftover from a retired configuration and should be removed.
  *
  * Exported so tests can assert the exact message text.
  */
+export const THIRD_PARTY_KEY_ENV_VARS = [
+  'ANTHROPIC_API_KEY',
+  'OPENAI_API_KEY',
+  'CURSOR_API_KEY',
+  'CODEX_API_KEY',
+  'LLM_API_KEY',
+] as const;
+
 export const BILLING_SAFETY_WARNING_LINES = [
-  '[orchestrator] warning: ANTHROPIC_API_KEY is set but --spawner claude is requested.',
-  "If the dispatch falls back to --spawner api-key for any reason, you'll be billed",
-  'for paid API tokens. To force subscription-only, unset ANTHROPIC_API_KEY before',
-  'running the tick.',
+  '[orchestrator] warning: a third-party inference API key is set while --spawner copilot',
+  'is requested. AI-SDLC dispatches through your GitHub Copilot subscription and never',
+  'reads that key, but leaving it exported risks billing outside the Copilot plan. Unset',
+  'it before running the tick to force Copilot-only billing.',
 ] as const;
 
 export const FALLBACK_BILLING_WARNING_LINES = [
-  '[orchestrator] warning: AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key is set.',
-  'If the configured spawner is unavailable the orchestrator will silently retry',
-  'with --spawner api-key, billing paid API tokens. Unset ANTHROPIC_API_KEY to',
-  'prevent API-key overflow, or unset AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK to',
-  'disable the silent fallback entirely.',
+  '[orchestrator] warning: AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK is set.',
+  'Cross-spawner fallback does not exist in a Copilot-only pipeline — this is a stale',
+  'export from a retired configuration and has no effect. Unset it to avoid confusion.',
 ] as const;
 
 /**
@@ -120,16 +123,16 @@ export function emitBillingSafetyWarnings(
   env: Record<string, string | undefined> = process.env,
   stderrWrite: (msg: string) => void = (msg) => process.stderr.write(msg),
 ): void {
-  const apiKeySet = Boolean(env.ANTHROPIC_API_KEY);
+  const thirdPartyKeySet = THIRD_PARTY_KEY_ENV_VARS.some((name) => Boolean(env[name]));
   const fallbackEnv = (env.AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK ?? '').trim();
 
-  // Warning 1: spawner=claude + ANTHROPIC_API_KEY in env
-  if (spawnerKind === 'claude' && apiKeySet) {
+  // Warning 1: spawner=copilot + a third-party inference key in env
+  if (spawnerKind === 'copilot' && thirdPartyKeySet) {
     stderrWrite(BILLING_SAFETY_WARNING_LINES.join('\n') + '\n');
   }
 
-  // Warning 2: SPAWNER_FALLBACK=api-key AND configured spawner != api-key
-  if (fallbackEnv === 'api-key' && spawnerKind !== 'api-key') {
+  // Warning 2: a stale SPAWNER_FALLBACK export from a retired configuration
+  if (fallbackEnv !== '') {
     stderrWrite(FALLBACK_BILLING_WARNING_LINES.join('\n') + '\n');
   }
 }
@@ -203,17 +206,14 @@ export function buildOrchestratorCli(
     .option('spawner', {
       describe:
         `Spawner for umbrella dispatch. Also configurable with ${ORCHESTRATOR_SPAWNER_ENV}. ` +
-        'Effective default is claude (subscription billing via claude -p) — resolved in ' +
+        'Effective default is copilot (GitHub Copilot CLI host-bridge dispatch) — resolved in ' +
         'resolveUmbrellaSpawnerKind so the env var is honored when --spawner is absent. ' +
-        'The legacy `claude-cli` inline-manifest spawner was removed in RFC-0041 ' +
-        'Phase 3.3 (AISDLC-377.6); use the Dispatch Board model ' +
-        '(`/ai-sdlc orchestrator-tick` + `/ai-sdlc dispatch-worker`) for ' +
-        'subscription-billed parallel autonomous drain.',
+        'Requires COPILOT_SPAWN_AGENT_BIN; see docs/operations/copilot-spawner.md.',
       type: 'string',
       choices: SPAWNER_KINDS,
       // NO yargs `default` — see AISDLC-352 code-reviewer MAJOR. A yargs default
       // populates argv.spawner unconditionally, which shadows AI_SDLC_ORCHESTRATOR_SPAWNER
-      // env var in resolveUmbrellaSpawnerKind. The 'claude' fallback lives in
+      // env var in resolveUmbrellaSpawnerKind. The 'copilot' fallback lives in
       // resolveUmbrellaSpawnerKind (loop.ts) ONLY, where it correctly runs AFTER the
       // env-var check.
     })
@@ -519,7 +519,7 @@ export function buildOrchestratorCli(
         // hosting surface (operator CC session running /ai-sdlc resolve-conflicts,
         // or the orchestrator-tick reconciliation step). The standalone
         // `cli-orchestrator ci-failure-watch` CLI does NOT have access to
-        // the Claude Code `Agent` tool, so --enable-dispatch is gated
+        // the host session's agent tool, so --enable-dispatch is gated
         // behind an explicit operator opt-in that signals "I have wired
         // a spawner via some other surface" (typically by piping the
         // tick output to a follow-up Agent call).

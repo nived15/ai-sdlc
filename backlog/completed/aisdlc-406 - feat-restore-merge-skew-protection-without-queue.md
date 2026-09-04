@@ -5,7 +5,7 @@ status: Done
 labels: [ci, operator-merge, skew-protection, post-aisdlc-400]
 references:
   - .github/workflows/ai-sdlc-gate.yml
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 priority: high
 permittedExternalPaths: []
 ---

@@ -2,7 +2,7 @@
 
 `cli-pr-unstick` is the deterministic PR-blocker auto-resolver. It encodes the recurring failure modes the operator was previously fixing by hand into a single Stage A pass plus a Stage B fallback prompt.
 
-Why it exists: in a single day, three PRs got stuck on mechanically-detectable, mechanically-fixable problems. Each cost the operator notice → Claude session → from-scratch investigation → fix. This CLI eliminates the toil for the known cases and structures the input to Claude for the unknown ones.
+Why it exists: in a single day, three PRs got stuck on mechanically-detectable, mechanically-fixable problems. Each cost the operator notice → GitHub Copilot session → from-scratch investigation → fix. This CLI eliminates the toil for the known cases and structures the input to GitHub Copilot for the unknown ones.
 
 The CLI is part of `@ai-sdlc/pipeline-cli`. Install via `pnpm install`; the bin shim lands at `pipeline-cli/bin/cli-pr-unstick.mjs`. After `pnpm build`, both `pnpm exec cli-pr-unstick …` and `node pipeline-cli/bin/cli-pr-unstick.mjs …` work.
 
@@ -44,7 +44,7 @@ The Stage A pass runs five deterministic checks per PR. Each is independent — 
 
 ## Stage B — LLM diagnosis fallback
 
-When Stage A finds no matches but the PR is still stuck, pass `--stage-b` to emit a markdown prompt that captures every signal Stage A gathered (statuses at HEAD, check runs, files changed, mergeStateStatus, approving review count). Paste that into Claude Code rather than letting the agent re-discover everything via `gh` + `git`.
+When Stage A finds no matches but the PR is still stuck, pass `--stage-b` to emit a markdown prompt that captures every signal Stage A gathered (statuses at HEAD, check runs, files changed, mergeStateStatus, approving review count). Paste that into GitHub Copilot CLI rather than letting the agent re-discover everything via `gh` + `git`.
 
 ## Wake-up sentinel integration
 

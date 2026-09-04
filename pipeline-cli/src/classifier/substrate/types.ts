@@ -11,10 +11,10 @@
  *
  * **Design**: the substrate is harness-agnostic — it accepts an
  * `LlmInvoker` interface (mirrors `SubagentSpawner` from RFC-0012). Real
- * deployments wire in an Anthropic Haiku adapter; tests inject a
+ * deployments wire in an GitHub Haiku adapter; tests inject a
  * `FakeLlmInvoker` with scripted responses. Keeping the LLM call behind
  * a thin interface keeps the substrate hermetic + harness-portable
- * (Codex, Claude SDK, Anthropic API, mock).
+ * (GitHub Copilot, GitHub Copilot SDK, GitHub API, mock).
  *
  * @module classifier/substrate/types
  */
@@ -103,9 +103,9 @@ export interface ClassifyOpts {
   /** Corpus directory override (defaults to `.ai-sdlc/classifier-corpus/`). */
   corpusDir?: string;
   /**
-   * The model identifier (e.g. `'claude-haiku-4-5'`). When omitted, the
+   * The model identifier (e.g. `'gpt-5-mini'`). When omitted, the
    * substrate consults per-org config; when no config is found, defaults
-   * to `'claude-haiku-4-5'` (the Haiku-class default per task spec).
+   * to `'gpt-5-mini'` (the Haiku-class default per task spec).
    */
   model?: string;
   /**
@@ -178,7 +178,7 @@ export interface ClassifierDecision {
  * only job is to call the LLM and return a structured response.
  */
 export interface LlmInvocationRequest {
-  /** Model identifier (e.g. `'claude-haiku-4-5'`). */
+  /** Model identifier (e.g. `'gpt-5-mini'`). */
   model: string;
   /** Fully-resolved prompt text (system + user concatenated by caller). */
   prompt: string;
@@ -209,7 +209,7 @@ export interface LlmInvocationResponse {
 
 /**
  * Interface for invoking a Haiku-class LLM. Production wires this to the
- * Anthropic SDK; tests inject `FakeLlmInvoker` (in `fake-invoker.ts`).
+ * GitHub SDK; tests inject `FakeLlmInvoker` (in `fake-invoker.ts`).
  *
  * The invoker may throw — the substrate catches and converts to a
  * fall-open low-confidence decision (`{classification:'pending',
@@ -289,7 +289,7 @@ export interface CalibrationCorpusEntry {
  *
  * The substrate calls this ONCE per `classify()` invocation, after the
  * LLM has responded. The harness id is the LLM provider's plan/account
- * tag (e.g. `'anthropic-haiku-prod'`) — left as a free-form string so
+ * tag (e.g. `'github-haiku-prod'`) — left as a free-form string so
  * the same substrate can serve multiple harnesses without coupling to
  * the orchestrator's enum.
  */

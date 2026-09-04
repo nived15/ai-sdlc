@@ -1,11 +1,11 @@
 /**
  * Tests for the /ai-sdlc orchestrator-tick slash command.
  *
- * Original purpose (AISDLC-225): guard the legacy claude-cli inline-manifest
+ * Original purpose (AISDLC-225): guard the legacy copilot-cli inline-manifest
  * consumer-bridge contract. Replaced by RFC-0041 Phase 1 (AISDLC-377.1):
  * the Conductor now emits Dispatch Board manifests + polls done/+failed/
  * verdicts in foreground; Worker sessions running /ai-sdlc dispatch-worker
- * own the actual `Agent` dispatch. The legacy `claude-cli` inline-manifest
+ * own the actual `Agent` dispatch. The legacy `copilot-cli` inline-manifest
  * path was removed in RFC-0041 Phase 3.3 (AISDLC-377.6).
  *
  * Body-contract assertions read from `orchestrator-tick.md` itself,
@@ -109,7 +109,7 @@ describe('/ai-sdlc orchestrator-tick frontmatter', () => {
     assert.ok(Array.isArray(tools) && tools.includes('Read'), 'Read must be in allowed-tools');
   });
 
-  it('uses inherit model (same session model as main Claude Code session)', () => {
+  it('uses inherit model (same session model as main Copilot CLI session)', () => {
     assert.equal(frontmatter.model, 'inherit');
   });
 });
@@ -322,18 +322,18 @@ describe('/ai-sdlc orchestrator-tick body — hard rules', () => {
 });
 
 describe('/ai-sdlc orchestrator-tick body — AISDLC-245.4 path resolution', () => {
-  it('establishes PIPELINE_CLI_BIN with CLAUDE_PLUGIN_DIR resolution', () => {
+  it('establishes PIPELINE_CLI_BIN with COPILOT_PLUGIN_DIR resolution', () => {
     assert.ok(
       cmdBody.includes('PIPELINE_CLI_BIN'),
       'must define PIPELINE_CLI_BIN for portable CLI invocation',
     );
     assert.ok(
-      cmdBody.includes('CLAUDE_PLUGIN_DIR'),
-      'must reference CLAUDE_PLUGIN_DIR for adopter-install layout',
+      cmdBody.includes('COPILOT_PLUGIN_DIR'),
+      'must reference COPILOT_PLUGIN_DIR for adopter-install layout',
     );
   });
 
-  it('includes dogfood fallback when CLAUDE_PLUGIN_DIR is unset', () => {
+  it('includes dogfood fallback when COPILOT_PLUGIN_DIR is unset', () => {
     assert.ok(
       cmdBody.includes('pipeline-cli/bin'),
       'must include fallback path to dogfood monorepo pipeline-cli/bin',

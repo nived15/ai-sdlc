@@ -64,7 +64,7 @@ node pipeline-cli/bin/cli-orchestrator.mjs ci-failure-watch --list-cooldowns
 ```
 
 > **Note on `--enable-dispatch`** — the standalone CLI does NOT have
-> the Claude Code `Agent` tool. `--enable-dispatch` is reserved for
+> the GitHub Copilot CLI `Agent` tool. `--enable-dispatch` is reserved for
 > the future hosting surface that wires the watcher into a session
 > that DOES (e.g. an autonomous orchestrator-tick reconciliation
 > step). Until then the standalone CLI runs classify-only dry-runs;

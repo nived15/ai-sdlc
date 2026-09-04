@@ -342,7 +342,7 @@ On the recovery path (initial prose, retry succeeds) the helper fires an
 
 **Module**: `steps/07-build-review-prompts.ts` · **CLI**: `build-review-prompts <task-id>`
 
-**Contract**: capture the PR diff + changed file list, detect whether `codex`
+**Contract**: capture the PR diff + changed file list, detect whether `copilot`
 is installed (independence harness — when missing the prompts get a
 `harnessNote` so the aggregator can flag "INDEPENDENCE NOT ENFORCED"), and
 produce three reviewer-specific prompt strings (one each for code-reviewer,
@@ -358,7 +358,7 @@ interface BuildReviewPromptsOptions {
   worktreePath: string;
   workDir: string;
   runner?: Runner;
-  /** Override the codex-availability detection (test injection). */
+  /** Override the copilot-availability detection (test injection). */
   codexAvailable?: boolean;
 }
 ```
@@ -370,12 +370,12 @@ interface BuildReviewPromptsResult {
   prompts: ReviewPrompt[]; // length 3, ordered code/test/security
   diff: string;
   changedFiles: string[];
-  harnessNote: string; // empty when codex available
+  harnessNote: string; // empty when copilot available
 }
 ```
 
 **Side effects**: shells out to `git diff origin/main...HEAD` (twice — once for
-content, once for `--name-only`) and `which codex`. Reads optional
+content, once for `--name-only`) and `which copilot`. Reads optional
 `.ai-sdlc/review-policy.md` for project-specific reviewer calibration.
 
 **When it runs**: Step 7 of every pipeline invocation, plus once per iteration
@@ -435,7 +435,7 @@ SubagentSpawner injected into `executePipeline()`)
 **Contract**: wrap Steps 5/5b/6/7/7b/8 and loop until reviewers approve OR the
 iteration cap is hit. The LLM dispatch (Steps 5b, 7b) goes through the
 injected `SubagentSpawner`, which lets Tier 2 swap between
-`ShellClaudePSpawner` (subscription), `ClaudeCodeSDKSpawner` (API key), and
+`CopilotHarnessAdapter` (subscription), `CopilotHarnessAdapter` (API key), and
 `MockSpawner` (tests).
 
 If the cap is hit and there are still critical/major findings, returns with

@@ -67,7 +67,7 @@ Independent of any wizard answer, every run of `ai-sdlc init` writes:
 | `.ai-sdlc/quality-gate.yaml` | Default quality-gate config |
 | `.ai-sdlc/autonomy-policy.yaml` | Default autonomy-policy config |
 | `.github/workflows/ai-sdlc-gate.yml` | The single rollup `ai-sdlc/pr-ready` PR-ready gate (Q1 prescriptive default) |
-| `CLAUDE.md` | Recommendation pointer block (idempotent — won't duplicate if you already have one) |
+| `.github/copilot-instructions.md` | Recommendation pointer block (idempotent — won't duplicate if you already have one) |
 
 ## Flag reference
 
@@ -83,8 +83,7 @@ Independent of any wizard answer, every run of `ai-sdlc init` writes:
 | `--force` | Overwrite existing workflow files. Only applies to `.github/workflows/` files — non-workflow files are always skipped for safety. Use with `--with-workflows` or `--add workflows` (AISDLC-261). |
 | `--add <feature>` | Extend an already-initialized repo with a single feature. `<feature>` is one of `dor`, `attestation`, `classifier`, `branch-protection`, `workflows`, `signal-ingestion`. Idempotent — files that already exist are left untouched (except with `--force` for `workflows`). The baseline scaffold is NOT re-written in `--add` mode. |
 | `--dry-run` | Print what would happen without writing files. For branch protection this prints the JSON body of the `gh api` request. |
-| `--skip-mcp` | Skip MCP server auto-configuration (Claude Code, Cursor, etc.). |
-| `--cursor` | Force-install Cursor MCP config even if Cursor isn't detected on this machine. |
+| `--skip-mcp` | Skip MCP server auto-configuration (GitHub Copilot CLI, VS Code). |
 | `--role <tier>` | Agent-role tool tier: `coding` (default), `research` (adds WebFetch + WebSearch), `meta` (adds Task + Skill). |
 | `-d, --dir <path>` | Config directory name (default `.ai-sdlc`). |
 
@@ -95,7 +94,7 @@ Re-running `ai-sdlc init` on an already-initialized repo is safe:
 - **Existing files are skipped.** Each scaffolded path is checked for
   existence before writing; the wizard logs `skip <path> (already exists)`
   and moves on.
-- **Append-once for shared files.** `.husky/pre-push` and `CLAUDE.md` are
+- **Append-once for shared files.** `.husky/pre-push` and `.github/copilot-instructions.md` are
   appended to (not overwritten) and use sentinel markers
   (`# ai-sdlc:attestation-sign-block`, `<!-- ai-sdlc:recommendation-pointer -->`)
   so re-running the wizard never duplicates content.
@@ -116,7 +115,7 @@ cd my-new-repo
 git init                          # required for org/repo detection
 git remote add origin git@github.com:my-org/my-new-repo.git
 ai-sdlc init                      # walk the wizard
-git add .ai-sdlc .github .husky CLAUDE.md
+git add .ai-sdlc .github .husky .github/copilot-instructions.md
 git commit -m "chore: bootstrap AI-SDLC config"
 ```
 
@@ -124,7 +123,7 @@ git commit -m "chore: bootstrap AI-SDLC config"
 
 ```bash
 ai-sdlc init --yes --skip-mcp
-git add .ai-sdlc .github .husky CLAUDE.md
+git add .ai-sdlc .github .husky .github/copilot-instructions.md
 git commit -m "chore: bootstrap AI-SDLC config"
 ```
 

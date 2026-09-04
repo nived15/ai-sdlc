@@ -14,7 +14,7 @@ The orchestrator runs a continuous reconciliation loop over your backlog, dispat
 |---------|-------------|
 | [`orchestrator-runbook.md`](orchestrator-runbook.md) | Day-to-day operations: auto-rebuild, in-flight detection, blocking tasks, quarantine recovery, worktree mutex, resume from interrupted runs |
 | [`orchestrator-promotion.md`](orchestrator-promotion.md) | Hybrid promotion runbook — soak corpus + spot-check evidence to flip `AI_SDLC_AUTONOMOUS_ORCHESTRATOR` default-on |
-| [`claude-cli-spawner-removed.md`](claude-cli-spawner-removed.md) | RFC-0041 Phase 3.3 (AISDLC-377.6) removal of the `--spawner claude-cli` inline-manifest path — migration breadcrumb for legacy scripts |
+| [`copilot-spawner.md`](copilot-spawner.md) | Operator runbook for `--spawner copilot`: `COPILOT_SPAWN_AGENT_BIN` configuration, billing, and troubleshooting |
 
 **Feature flag:** `AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental`
 
@@ -22,15 +22,15 @@ The orchestrator runs a continuous reconciliation loop over your backlog, dispat
 
 ---
 
-### Cross-Harness Review
+### independent parallel review
 
-Claude and Codex review each other's work. Bidirectional coverage with harness-tagged DSSE envelopes and independence enforcement.
+GitHub Copilot and GitHub Copilot review each other's work. Bidirectional coverage with harness-tagged DSSE envelopes and independence enforcement.
 
 | Runbook | Description |
 |---------|-------------|
-| [`cross-harness-review.md`](cross-harness-review.md) | Full bidirectional convention, Codex CLI prerequisites, security architecture, cost comparison, pilot procedure, and results log |
-| [`codex-execution-path.md`](codex-execution-path.md) | Wire protocol for `--spawner codex` programmatic dispatch via the `CodexHarnessAdapter` |
-| [`codex-completion.md`](codex-completion.md) | Codex completion path reference |
+| [`cross-session-review.md`](cross-session-review.md) | Full bidirectional convention, GitHub Copilot CLI prerequisites, security architecture, cost comparison, pilot procedure, and results log |
+| [`copilot-execution-path.md`](copilot-execution-path.md) | Wire protocol for `--spawner copilot` programmatic dispatch via the `CopilotHarnessAdapter` |
+| [`copilot-completion.md`](copilot-completion.md) | GitHub Copilot completion path reference |
 
 **RFC:** [`spec/rfcs/RFC-0010-parallel-execution-worktree-pooling.md`](../../spec/rfcs/RFC-0010-parallel-execution-worktree-pooling.md) §13
 

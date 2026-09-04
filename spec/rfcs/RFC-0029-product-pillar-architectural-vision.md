@@ -228,7 +228,7 @@ The framework is building toward a system where:
 
 2. **Quality is gated automatically.** DoR checks actionability. PPA checks strategic alignment. Design system governance checks expression coherence. Compliance posture checks regulatory constraints. Each gate evaluates one axis. Each gate's failure has a distinct remediation.
 
-3. **Execution is parallel and cost-governed.** N agents on M shards, each on the right model and harness for their stage, scheduled to maximize subscription utilization, with independent cross-harness review catching what same-harness review misses.
+3. **Execution is parallel and cost-governed.** N agents on M shards, each on the right model and harness for their stage, scheduled to maximize subscription utilization, with independent independent parallel review catching what same-harness review misses.
 
 4. **The soul evolves from evidence.** The DID is not a static document. The feedback flywheel accumulates human judgment signals. Demand clusters reveal what users actually need. Calibration data reveals what scoring decisions were wrong. The DID Evolution Loop proposes revisions. The triad approves. The soul stays true to its gravitational center while evolving its expression.
 

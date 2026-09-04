@@ -189,22 +189,18 @@ describe('cli-watch.ts (RFC-0012 Phase 5)', () => {
       expect(reviewResult.parsed).toMatchObject({ approved: true });
     });
 
-    it('shell kind delegates to defaultSpawner with env override', async () => {
+    it('copilot kind delegates to defaultSpawner', async () => {
       const { resolveSpawner } = await import('./cli-watch.js');
       const { defaultSpawner } = await import('@ai-sdlc/pipeline-cli');
-      await resolveSpawner('shell');
-      expect(defaultSpawner).toHaveBeenCalledWith(
-        expect.objectContaining({ env: expect.any(Function) }),
-      );
+      await resolveSpawner('copilot');
+      expect(defaultSpawner).toHaveBeenCalled();
     });
 
-    it('sdk kind delegates to defaultSpawner with which override', async () => {
+    it('auto kind delegates to defaultSpawner', async () => {
       const { resolveSpawner } = await import('./cli-watch.js');
       const { defaultSpawner } = await import('@ai-sdlc/pipeline-cli');
-      await resolveSpawner('sdk');
-      expect(defaultSpawner).toHaveBeenCalledWith(
-        expect.objectContaining({ which: expect.any(Function) }),
-      );
+      await resolveSpawner('auto');
+      expect(defaultSpawner).toHaveBeenCalled();
     });
   });
 });

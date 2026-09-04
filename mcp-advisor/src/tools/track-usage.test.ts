@@ -21,10 +21,10 @@ describe('handleTrackUsage', () => {
   });
 
   it('computes and records cost', () => {
-    const session = deps.sessions.create({ developer: 'alice', tool: 'claude-code' });
+    const session = deps.sessions.create({ developer: 'alice', tool: 'copilot' });
     const result = handleTrackUsage(deps, {
       sessionId: session.sessionId,
-      model: 'claude-opus-4-6',
+      model: 'reasoning',
       inputTokens: 1000,
       outputTokens: 500,
     });
@@ -35,16 +35,16 @@ describe('handleTrackUsage', () => {
   });
 
   it('accumulates across multiple calls', () => {
-    const session = deps.sessions.create({ developer: 'alice', tool: 'claude-code' });
+    const session = deps.sessions.create({ developer: 'alice', tool: 'copilot' });
     handleTrackUsage(deps, {
       sessionId: session.sessionId,
-      model: 'claude-opus-4-6',
+      model: 'reasoning',
       inputTokens: 1000,
       outputTokens: 500,
     });
     const result2 = handleTrackUsage(deps, {
       sessionId: session.sessionId,
-      model: 'claude-opus-4-6',
+      model: 'reasoning',
       inputTokens: 2000,
       outputTokens: 1000,
     });
@@ -54,10 +54,10 @@ describe('handleTrackUsage', () => {
   });
 
   it('persists cost entry in store', () => {
-    const session = deps.sessions.create({ developer: 'alice', tool: 'claude-code' });
+    const session = deps.sessions.create({ developer: 'alice', tool: 'copilot' });
     handleTrackUsage(deps, {
       sessionId: session.sessionId,
-      model: 'claude-opus-4-6',
+      model: 'reasoning',
       inputTokens: 1000,
       outputTokens: 500,
     });
@@ -68,7 +68,7 @@ describe('handleTrackUsage', () => {
 
   it('works without active session (unattributed)', () => {
     const result = handleTrackUsage(deps, {
-      model: 'claude-opus-4-6',
+      model: 'reasoning',
       inputTokens: 1000,
       outputTokens: 500,
     });

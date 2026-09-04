@@ -16,25 +16,10 @@ The orchestrator provides context (issue details, codebase profile, constraints)
 
 ## Available Runners
 
-### ClaudeCodeRunner
-
-Invokes [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI in `--print` mode.
-
-| Property | Value |
-|---|---|
-| CLI command | `claude -p --model <model> --allowedTools <tools>` |
-| stdin | Prompt sent via stdin |
-| Auth | `ANTHROPIC_API_KEY` (inherited from environment) |
-| Model override | `AI_SDLC_MODEL` env var (default: `claude-sonnet-4-5-20250929`) |
-| Registration | Always available (built-in) |
-
-```typescript
-import { ClaudeCodeRunner } from '@ai-sdlc/orchestrator';
-```
-
 ### CopilotRunner
 
-Invokes [GitHub Copilot CLI](https://docs.github.com/en/copilot) in `--yolo` autonomous mode.
+Invokes the [GitHub Copilot CLI](https://docs.github.com/en/copilot) in `--yolo`
+autonomous mode. This is the framework's only built-in runner.
 
 | Property | Value |
 |---|---|
@@ -42,61 +27,14 @@ Invokes [GitHub Copilot CLI](https://docs.github.com/en/copilot) in `--yolo` aut
 | stdin | None (prompt is a CLI argument) |
 | Auth | `GH_TOKEN` or `GITHUB_TOKEN` (passed through environment) |
 | Model override | `AI_SDLC_COPILOT_MODEL` env var |
-| Registration | Available when `GH_TOKEN` or `GITHUB_TOKEN` is set |
+| Registration | Always available (built-in) |
 
 ```typescript
 import { CopilotRunner } from '@ai-sdlc/orchestrator';
 ```
 
-### CursorRunner
-
-Invokes [Cursor](https://www.cursor.com/) CLI agent with NDJSON stream output.
-
-| Property | Value |
-|---|---|
-| CLI command | `cursor-agent --print <prompt> --force --output-format=stream-json [-m <model>]` |
-| stdin | None (prompt is a CLI argument) |
-| Auth | `CURSOR_API_KEY` |
-| Model override | `AI_SDLC_CURSOR_MODEL` env var |
-| Registration | Available when `CURSOR_API_KEY` is set |
-
-The runner parses NDJSON output to extract the final assistant message for use as the PR summary.
-
-```typescript
-import { CursorRunner, parseStreamJson } from '@ai-sdlc/orchestrator';
-```
-
-### CodexRunner
-
-Invokes [OpenAI Codex CLI](https://github.com/openai/codex) in `--full-auto --json` mode.
-
-| Property | Value |
-|---|---|
-| CLI command | `codex exec - --full-auto --json [-m <model>]` |
-| stdin | Prompt written to stdin (Codex reads from `-`) |
-| Auth | `CODEX_API_KEY` |
-| Model override | `AI_SDLC_CODEX_MODEL` env var |
-| Registration | Available when `CODEX_API_KEY` is set |
-
-The runner includes an enhanced token usage parser that first tries NDJSON `usage`/`token_usage` events from stderr (accumulating across multiple events), then falls back to regex.
-
-```typescript
-import { CodexRunner, parseTokenUsage } from '@ai-sdlc/orchestrator';
-```
-
-### GenericLLMRunner
-
-Invokes any OpenAI-compatible chat completions API over HTTP.
-
-| Property | Value |
-|---|---|
-| Transport | HTTP POST to `/v1/chat/completions` endpoint |
-| Auth | API key via `Authorization: Bearer` header |
-| Registration | Available when `OPENAI_API_KEY` or `LLM_API_KEY` + `LLM_API_URL` is set |
-
-```typescript
-import { GenericLLMRunner } from '@ai-sdlc/orchestrator';
-```
+The runner collects changed files via `git diff`, stages them, and commits with
+the configured message template and co-author trailer.
 
 ## Selecting a Runner
 
@@ -105,9 +43,7 @@ import { GenericLLMRunner } from '@ai-sdlc/orchestrator';
 The `ai-sdlc run` command accepts a `--runner <name>` flag to select any registered runner by name:
 
 ```bash
-ai-sdlc run --issue 42 --runner copilot
-ai-sdlc run --issue 42 --runner cursor
-ai-sdlc run --issue 42 --runner claude-code   # explicit built-in default
+ai-sdlc run --issue 42 --runner copilot   # the built-in default
 ```
 
 If the specified name is not registered, the command fails immediately with an actionable error listing the available runners — **no silent fallback**.
@@ -153,9 +89,9 @@ The full precedence chain (first match wins):
 | 1 (highest) | Programmatic injection | `new Orchestrator({ runner: myRunner })` |
 | 2 | `--runner <name>` flag | `ai-sdlc run --runner copilot` |
 | 3 | `AI_SDLC_RUNNER_PLUGIN` | `export AI_SDLC_RUNNER_PLUGIN=/path/to/runner.mjs` |
-| 4 (default) | `ClaudeCodeRunner` | _(always available)_ |
+| 4 (default) | `CopilotRunner` | _(always available)_ |
 
-> **Env-discovered runners do not auto-select.** Setting `GH_TOKEN`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc. **registers** the corresponding runner so it is selectable by name (`--runner copilot`), but the mere presence of an ambient env var does **not** silently switch the default runner — these vars are commonly set for unrelated tools. Absent an explicit `--runner`/`AI_SDLC_RUNNER_PLUGIN`/programmatic selection, the default is always `ClaudeCodeRunner`. Select an env-discovered runner explicitly with `--runner <name>`.
+> **Plugin runners do not auto-select.** `AI_SDLC_RUNNER_PLUGIN` is an explicit opt-in seam and any additionally registered runner is selectable by name (`--runner <name>`). Absent an explicit `--runner`/`AI_SDLC_RUNNER_PLUGIN`/programmatic selection, the default is always `CopilotRunner`.
 
 ## Runner Registry
 
@@ -169,7 +105,7 @@ const registry = createRunnerRegistry();
 // List all available runners
 const available = registry.listAvailable();
 console.log(available.map(r => r.name));
-// ['claude-code', 'copilot', 'cursor', ...]
+// ['copilot']
 
 // Get a specific runner
 const runner = registry.get('copilot');
@@ -180,17 +116,14 @@ const defaultRunner = registry.getDefault();
 
 ### Auto-Discovery
 
-`discoverFromEnv()` registers runners based on environment variables:
+`discoverFromEnv()` registers the built-in runner:
 
 | Runner | Required Env Var(s) | Source |
 |---|---|---|
-| `claude-code` | _(always available)_ | `built-in` |
-| `copilot` | `GH_TOKEN` or `GITHUB_TOKEN` | `env` |
-| `cursor` | `CURSOR_API_KEY` | `env` |
-| `codex` | `CODEX_API_KEY` | `env` |
-| `openai` | `OPENAI_API_KEY` | `env` |
-| `anthropic` | `ANTHROPIC_API_KEY` | `env` |
-| `generic-llm` | `LLM_API_URL` + `LLM_API_KEY` | `env` |
+| `copilot` | _(always available)_ | `built-in` |
+
+Additional runners are registered explicitly via `register()` or the
+`AI_SDLC_RUNNER_PLUGIN` seam.
 
 ### Manual Registration
 
@@ -214,13 +147,13 @@ registry.register('my-agent', new MyCustomRunner());
 When the `sandboxId` field is set on `AgentContext`, CLI-based runners execute the agent inside an [NVIDIA OpenShell](https://github.com/NVIDIA/OpenShell) sandbox. The runner prefixes the spawn command with `openshell sandbox connect <id> --`, so instead of:
 
 ```
-claude -p --model claude-sonnet-4-5-20250929 --allowedTools Edit,Write,...
+copilot -p --model the balanced tier --allowedTools Edit,Write,...
 ```
 
 it becomes:
 
 ```
-openshell sandbox connect aisdlc-issue-42-1711316400 -- claude -p --model claude-sonnet-4-5-20250929 --allowedTools Edit,Write,...
+openshell sandbox connect aisdlc-issue-42-1711316400 -- copilot -p --model the balanced tier --allowedTools Edit,Write,...
 ```
 
 This provides kernel-level isolation (Landlock filesystem policies, seccomp syscall filtering, network policy enforcement) without any changes to the agent itself. The orchestrator's `executePipeline()` automatically passes `sandboxId` when a `SecurityContext` with an OpenShell sandbox is configured.
@@ -229,7 +162,7 @@ See [Security > OpenShell](./security.md#createopenshellsandboxexec-config) for 
 
 ## Common Pattern
 
-All CLI-based runners (Claude Code, Copilot, Cursor, Codex) follow the same subprocess pattern:
+All CLI-based runners (GitHub Copilot CLI, Copilot, GitHub Copilot, GitHub Copilot) follow the same subprocess pattern:
 
 1. **Build prompt** — `buildPrompt(ctx)` constructs a prompt from issue details, constraints, codebase context, and episodic memory
 2. **Spawn CLI** — Run the agent CLI as a child process with appropriate flags
@@ -243,12 +176,12 @@ All CLI-based runners (Claude Code, Copilot, Cursor, Codex) follow the same subp
 | Variable | Default | Description |
 |---|---|---|
 | `AI_SDLC_RUNNER_PLUGIN` | _(none)_ | Path to a custom runner plugin module (ESM/CJS, must export default or named `runner`). Fails fast on invalid module. |
-| `AI_SDLC_MODEL` | `claude-sonnet-4-5-20250929` | Model for ClaudeCodeRunner |
+| `AI_SDLC_MODEL` | `the balanced tier` | Model for CopilotRunner |
 | `AI_SDLC_COPILOT_MODEL` | _(CLI default)_ | Model override for CopilotRunner |
-| `AI_SDLC_CURSOR_MODEL` | _(CLI default)_ | Model override for CursorRunner |
-| `AI_SDLC_CODEX_MODEL` | _(CLI default)_ | Model override for CodexRunner |
+| `AI_SDLC_CURSOR_MODEL` | _(CLI default)_ | Model override for CopilotRunner |
+| `AI_SDLC_CODEX_MODEL` | _(CLI default)_ | Model override for CopilotRunner |
 | `AI_SDLC_RUNNER_TIMEOUT` | `900000` (15 min) | Runner timeout in ms (supports duration strings) |
 | `AI_SDLC_LINT_COMMAND` | _(none)_ | Lint command injected into agent prompts |
 | `AI_SDLC_FORMAT_COMMAND` | _(none)_ | Format command injected into agent prompts |
 | `AI_SDLC_COMMIT_MESSAGE_TEMPLATE` | `fix: resolve issue #{issueNumber}\n\n{issueTitle}` | Commit message template |
-| `AI_SDLC_COMMIT_CO_AUTHOR` | `Claude <noreply@anthropic.com>` | Co-author for commits |
+| `AI_SDLC_COMMIT_CO_AUTHOR` | `GitHub Copilot <noreply@github-models.com>` | Co-author for commits |

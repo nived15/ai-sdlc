@@ -802,7 +802,7 @@ export interface FeatureAdapters {
   /**
    * Append `contents` to `path` exactly once: if `sentinel` is already
    * present in the file, no-op. If the file doesn't exist, behaves like
-   * a write. Used for the husky pre-push sign block + CLAUDE.md pointer
+   * a write. Used for the husky pre-push sign block + .github/copilot-instructions.md pointer
    * (both of which need to coexist with user-edited content).
    */
   appendOnce: (path: string, contents: string, sentinel: string) => 'appended' | 'skipped';
@@ -2053,15 +2053,15 @@ export function renderNextSteps(
   return out;
 }
 
-// ── CLAUDE.md recommendation pointer (AC #4) ─────────────────────────────
+// ── .github/copilot-instructions.md recommendation pointer (AC #4) ─────────────────────────────
 
 /**
- * The pointer block we append to CLAUDE.md so a freshly-initialized repo's
- * Claude Code sessions know where to find the AI-SDLC quality-gate docs.
+ * The pointer block we append to .github/copilot-instructions.md so a freshly-initialized repo's
+ * Copilot CLI sessions know where to find the AI-SDLC quality-gate docs.
  * Idempotent — guarded by a sentinel so re-running init doesn't duplicate
  * the block.
  */
-export const CLAUDE_MD_POINTER = `
+export const COPILOT_INSTRUCTIONS_POINTER = `
 <!-- ai-sdlc:recommendation-pointer -->
 ## AI-SDLC quality gate
 
@@ -2072,35 +2072,39 @@ Run \`ai-sdlc health\` to verify your local config; see
 <!-- end ai-sdlc:recommendation-pointer -->
 `;
 
-/** Sentinel marker used by the CLAUDE.md pointer for idempotency. */
-export const CLAUDE_MD_SENTINEL = '<!-- ai-sdlc:recommendation-pointer -->';
+/** Sentinel marker used by the .github/copilot-instructions.md pointer for idempotency. */
+export const COPILOT_INSTRUCTIONS_SENTINEL = '<!-- ai-sdlc:recommendation-pointer -->';
 
 /**
- * Append the recommendation pointer to CLAUDE.md (or create the file if
+ * Append the recommendation pointer to .github/copilot-instructions.md (or create the file if
  * missing). Idempotent: if the sentinel is already present we no-op.
  */
-export function ensureClaudeMdPointer(
+export function ensureCopilotInstructionsPointer(
   projectDir: string,
   adapters: Pick<FeatureAdapters, 'exists' | 'writeFile' | 'appendOnce' | 'log'>,
   dryRun: boolean,
 ): void {
-  const path = join(projectDir, 'CLAUDE.md');
+  const path = join(projectDir, '.github/copilot-instructions.md');
 
   if (dryRun) {
-    adapters.log('  would update CLAUDE.md (recommendation pointer)');
+    adapters.log('  would update .github/copilot-instructions.md (recommendation pointer)');
     return;
   }
 
   if (!adapters.exists(path)) {
-    adapters.writeFile(path, `# Project instructions\n${CLAUDE_MD_POINTER}`);
-    adapters.log('  created CLAUDE.md');
+    adapters.writeFile(path, `# Project instructions\n${COPILOT_INSTRUCTIONS_POINTER}`);
+    adapters.log('  created .github/copilot-instructions.md');
     return;
   }
 
-  const status = adapters.appendOnce(path, CLAUDE_MD_POINTER, CLAUDE_MD_SENTINEL);
+  const status = adapters.appendOnce(
+    path,
+    COPILOT_INSTRUCTIONS_POINTER,
+    COPILOT_INSTRUCTIONS_SENTINEL,
+  );
   if (status === 'appended') {
-    adapters.log('  updated CLAUDE.md (recommendation pointer)');
+    adapters.log('  updated .github/copilot-instructions.md (recommendation pointer)');
   } else {
-    adapters.log('  skip CLAUDE.md (recommendation pointer already present)');
+    adapters.log('  skip .github/copilot-instructions.md (recommendation pointer already present)');
   }
 }

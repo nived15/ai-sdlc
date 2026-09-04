@@ -14,7 +14,6 @@ labels:
 dependencies: []
 references:
   - ai-sdlc-plugin/plugin.json
-  - .claude/settings.json
   - backlog/completed/aisdlc-108 - Delete-redundant-quality-gate-stop-Claude-hook-husky-pre-push-already-gates-verification.md
 priority: medium
 ---

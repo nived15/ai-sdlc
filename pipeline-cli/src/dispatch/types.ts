@@ -8,7 +8,7 @@
  * and triggers reviewer fan-out + push + auto-merge arming.
  *
  * Phase 1 (AISDLC-377.1) ships the protocol surface + the in-session-agent
- * Worker kind. Phase 2 (AISDLC-377.3) adds the claude-p-shell supervisor.
+ * Worker kind. Phase 2 (AISDLC-377.3) adds the copilot-p-shell supervisor.
  *
  * Schemas:
  *   - spec/schemas/dispatch-manifest.v1.schema.json
@@ -21,7 +21,7 @@ export const BOARD_SUBDIRS = ['queue', 'inflight', 'done', 'failed'] as const;
 export type BoardSubdir = (typeof BOARD_SUBDIRS)[number];
 
 /** Worker backend kinds (RFC-0041 §4.3). */
-export type WorkerKind = 'in-session-agent' | 'claude-p-shell';
+export type WorkerKind = 'in-session-agent' | 'copilot-p-shell';
 
 /** What a manifest declares re: which Worker kinds may claim it. */
 export type ManifestWorkerKind = WorkerKind | 'any';
@@ -112,8 +112,8 @@ export interface DispatchVerdict {
    */
   iterationsAttempted?: number;
   /**
-   * RFC-0041 Phase 1.5 (AISDLC-377.2) — `claude -p --session-id` captured by
-   * a `claude-p-shell` Worker. The Conductor promotes this onto the next
+   * RFC-0041 Phase 1.5 (AISDLC-377.2) — `copilot -p --session-id` captured by
+   * a `copilot-p-shell` Worker. The Conductor promotes this onto the next
    * iteration's manifest as `manifest.lastSessionId` so the supervisor can
    * `--resume` against the same conversation transcript. `in-session-agent`
    * Workers leave this undefined (they resume via Agent `continue: true`).

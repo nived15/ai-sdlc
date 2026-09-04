@@ -9,8 +9,6 @@ structural:
 
 semantic:
   enabled: false
-  provider: anthropic
-  model: claude-sonnet-4-20250514
 
 # Hook behavior
 hook:

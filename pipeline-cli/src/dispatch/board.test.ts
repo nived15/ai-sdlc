@@ -6,7 +6,7 @@
  *     exactly one wins, the other returns `claimed: false` (no double-pickup).
  *   - 3-manifest queue + 2 Worker pollers: all 3 are claimed by exactly
  *     one Worker each; both Workers go idle when the queue empties.
- *   - workerKind filtering: in-session-agent Worker skips claude-p-shell
+ *   - workerKind filtering: in-session-agent Worker skips copilot-p-shell
  *     manifests and vice versa; 'any' is claimable by either.
  *   - noClaimBefore quota-cool-down: manifests are skipped until the wall
  *     clock passes the cool-down timestamp.
@@ -181,17 +181,17 @@ describe('claimNext (atomic claim)', () => {
   it('claims an "any" manifest from either Worker kind', () => {
     const boardDir = mkBoard();
     writeManifest(boardDir, mkManifest('AISDLC-201', 'any'));
-    const shellResult = claimNext(boardDir, 'claude-p-shell');
+    const shellResult = claimNext(boardDir, 'copilot-p-shell');
     expect(shellResult.claimed).toBe(true);
     expect(shellResult.manifest?.taskId).toBe('AISDLC-201');
   });
 
   it('skips manifests targeted at the other Worker kind', () => {
     const boardDir = mkBoard();
-    writeManifest(boardDir, mkManifest('AISDLC-202', 'claude-p-shell'));
+    writeManifest(boardDir, mkManifest('AISDLC-202', 'copilot-p-shell'));
     expect(claimNext(boardDir, 'in-session-agent')).toEqual({ claimed: false });
-    // The claude-p-shell Worker can claim it.
-    expect(claimNext(boardDir, 'claude-p-shell').claimed).toBe(true);
+    // The copilot-p-shell Worker can claim it.
+    expect(claimNext(boardDir, 'copilot-p-shell').claimed).toBe(true);
   });
 
   it('respects FIFO ordering by mtime when multiple manifests match', () => {

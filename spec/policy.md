@@ -180,8 +180,8 @@ Required [provenance](glossary.md#provenance) fields:
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `model` | string | MUST | Model identifier (e.g., `claude-sonnet-4-5-20250929`). |
-| `tool` | string | MUST | Tool that generated the artifact (e.g., `claude-code@1.2.0`). |
+| `model` | string | MUST | Model identifier (e.g., `the balanced tier`). |
+| `tool` | string | MUST | Tool that generated the artifact (e.g., `copilot@1.2.0`). |
 | `promptHash` | string | MUST | SHA-256 hash of the input prompt. |
 | `timestamp` | string (date-time) | MUST | Generation time (ISO 8601). |
 | `humanReviewer` | string | MAY | Identity of the human reviewer. |

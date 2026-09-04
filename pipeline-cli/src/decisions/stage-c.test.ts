@@ -400,7 +400,7 @@ describe('isStageCAutoApplyEligible', () => {
     return {
       corpusEntryId: 'entry-1',
       effectiveThreshold: 0.7,
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       metBehindThreshold: true,
       recommendation: { optionId: 'opt-a', confidence: 0.9, rationale: 'sure.' },
       alternativesConsidered: [],
@@ -447,7 +447,7 @@ describe('makeStageCCompletedEvent + projection', () => {
     const sc: StageCOutput = {
       corpusEntryId: 'entry-1',
       effectiveThreshold: 0.7,
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       metBehindThreshold: true,
       recommendation: { optionId: 'opt-a', confidence: 0.9, rationale: 'sure.' },
       alternativesConsidered: [],
@@ -474,7 +474,7 @@ describe('makeStageCCompletedEvent + projection', () => {
     const sc: StageCOutput = {
       corpusEntryId: 'entry-1',
       effectiveThreshold: 0.7,
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       metBehindThreshold: true,
       recommendation: { optionId: 'opt-a', confidence: 0.9, rationale: 'sure.' },
       alternativesConsidered: [],
@@ -497,7 +497,7 @@ describe('makeStageCCompletedEvent + projection', () => {
     const sc: StageCOutput = {
       corpusEntryId: 'entry-1',
       effectiveThreshold: 0.7,
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       metBehindThreshold: true,
       recommendation: { optionId: 'opt-a', confidence: 0.9, rationale: 'sure.' },
       alternativesConsidered: [],
@@ -521,7 +521,7 @@ describe('makeStageCCompletedEvent + projection', () => {
     const sc: StageCOutput = {
       corpusEntryId: 'entry-1',
       effectiveThreshold: 0.7,
-      model: 'claude-haiku-4-5',
+      model: 'gpt-5-mini',
       metBehindThreshold: true,
       recommendation: { optionId: 'opt-a', confidence: 0.9, rationale: 'sure.' },
       alternativesConsidered: [],
@@ -576,7 +576,7 @@ describe('makeOverriddenEvent + projection', () => {
         stageC: {
           corpusEntryId: 'entry-1',
           effectiveThreshold: 0.7,
-          model: 'claude-haiku-4-5',
+          model: 'gpt-5-mini',
           metBehindThreshold: true,
           recommendation: { optionId: 'opt-a', confidence: 0.9, rationale: 'sure.' },
           alternativesConsidered: [],

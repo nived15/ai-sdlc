@@ -324,7 +324,7 @@ describe('loadSignalIngestionConfigWithGovernance', () => {
     expect(parsed.configPath).toBe(result.configPath);
   });
 
-  it('surfaces legacy sourceBaselineDriftMultiplier as a deprecation Decision (codex #752 fix)', () => {
+  it('surfaces legacy sourceBaselineDriftMultiplier as a deprecation Decision (copilot #752 fix)', () => {
     writeConfig(
       [
         'enabled: true',

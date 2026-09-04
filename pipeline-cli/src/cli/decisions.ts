@@ -1168,7 +1168,7 @@ export function buildDecisionsCli(): Argv {
           })
           .option('model', {
             type: 'string',
-            describe: 'Model override (e.g. claude-haiku-4-5).',
+            describe: 'Model override (e.g. gpt-5-mini).',
           })
           .option('format', {
             type: 'string',

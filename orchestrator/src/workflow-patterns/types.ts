@@ -55,7 +55,7 @@ export interface RawToolSequenceEntry {
   project: string;
 }
 
-/** Session metadata from Claude Code usage data. */
+/** Session metadata from GitHub Copilot CLI usage data. */
 export interface SessionMeta {
   session_id: string;
   project_path: string;

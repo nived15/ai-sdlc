@@ -281,7 +281,7 @@ export interface StageBSkipped {
 
 /**
  * Async callable that sends a prompt to the LLM and returns the raw text
- * response. Production code injects the Anthropic SDK client; tests inject
+ * response. Production code injects the GitHub SDK client; tests inject
  * a synchronous mock via a Promise wrapper.
  *
  * The invoker MUST NOT be called outside `runStageB` — all rate-limiting,
@@ -302,7 +302,7 @@ export interface RunStageBOpts {
   variance: number;
   /**
    * LLM invoker. Tests inject a mock; production code injects the real
-   * Anthropic SDK. When omitted, Stage B is skipped with a
+   * GitHub SDK. When omitted, Stage B is skipped with a
    * `'no LLM invoker provided'` reason — useful for dry-run / preview
    * flows where Stage B is available but we don't want to bill.
    */

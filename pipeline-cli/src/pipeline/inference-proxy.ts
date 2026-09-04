@@ -22,7 +22,7 @@
  *  4. **Payload sanitisation** — response bodies are forwarded verbatim; the
  *     credential header is stripped on every log entry (redaction tested).
  *  5. **Non-review call blocking** — only HTTP POST to
- *     `/v1/messages` (Anthropic) or `/v1/chat/completions` (OpenAI-compat) is
+ *     `/inference/chat/completions` (GitHub Models) or `/chat/completions` (GitHub Copilot-compatible-shaped) is
  *     accepted; any other path or method is rejected 404/405.
  *
  * ## Injectable seams
@@ -57,7 +57,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 // ── Public types ──────────────────────────────────────────────────────────────
 
 /** Upstream provider that the proxy will forward to. */
-export type InferenceProvider = 'anthropic' | 'openai';
+export type InferenceProvider = 'github-models' | 'github-copilot';
 
 /**
  * Rate and size caps applied per proxy session.
@@ -82,7 +82,7 @@ export interface ProxyAuditEntry {
   sessionToken: string;
   /** HTTP method of the incoming request (e.g. `POST`). */
   method: string;
-  /** Path of the incoming request (e.g. `/v1/messages`). */
+  /** Path of the incoming request (e.g. `/inference/chat/completions`). */
   path: string;
   /** Request body size in bytes (BEFORE any truncation). */
   requestBodyBytes: number;
@@ -117,7 +117,7 @@ export interface InferenceProxyConfig {
    * NEVER passed to the sandbox; injected here in the host-side process.
    */
   credential: string;
-  /** Which upstream provider to forward to. Default: `anthropic`. */
+  /** Which upstream provider to forward to. Default: `github-models`. */
   provider?: InferenceProvider;
   /** Rate and size caps. Defaults: 20 req / 256 KB / 1 MB. */
   limits?: Partial<ProxyLimits>;
@@ -179,17 +179,17 @@ interface UpstreamEndpoint {
 }
 
 const UPSTREAM_ENDPOINTS: Record<InferenceProvider, UpstreamEndpoint> = {
-  anthropic: {
-    hostname: 'api.anthropic.com',
+  'github-models': {
+    hostname: 'models.github.ai',
     port: 443,
-    allowedPaths: ['/v1/messages'],
-    credentialHeader: 'x-api-key',
-    credentialHeaderStyle: 'x-api-key',
+    allowedPaths: ['/inference/chat/completions'],
+    credentialHeader: 'authorization',
+    credentialHeaderStyle: 'bearer',
   },
-  openai: {
-    hostname: 'api.openai.com',
+  'github-copilot': {
+    hostname: 'api.githubcopilot.com',
     port: 443,
-    allowedPaths: ['/v1/chat/completions'],
+    allowedPaths: ['/chat/completions'],
     credentialHeader: 'authorization',
     credentialHeaderStyle: 'bearer',
   },
@@ -290,9 +290,9 @@ export async function readRequestBody(
  * Check whether a parsed JSON request body contains tool-use fields.
  *
  * Detects:
- *  - `tools` array present (Anthropic / OpenAI tool-use spec)
- *  - `tool_choice` field present (OpenAI)
- *  - `function_call` field present (OpenAI legacy)
+ *  - `tools` array present (GitHub Models / GitHub Copilot tool-use spec)
+ *  - `tool_choice` field present (GitHub Copilot)
+ *  - `function_call` field present (GitHub Copilot legacy)
  *
  * Returns `true` when tool-use fields are detected.
  */
@@ -313,7 +313,7 @@ export function detectToolUse(body: unknown): boolean {
  * A review call is defined as:
  *  - JSON object
  *  - No tool-use fields (enforced separately via `detectToolUse`)
- *  - Contains a `messages` array (Anthropic / OpenAI format)
+ *  - Contains a `messages` array (GitHub Models / GitHub Copilot format)
  *
  * Returns `true` when the body looks like a review-shaped inference call.
  * Returns `false` for any other shape (non-JSON, missing messages, etc.).
@@ -497,7 +497,7 @@ interface ProxySessionState {
  *  - The credential never appears in audit log entries.
  *  - A request with an invalid session token is refused 403.
  *  - A request exceeding rate or size limits is refused 429/413.
- *  - Only `POST /v1/messages` (Anthropic) or `POST /v1/chat/completions` (OpenAI)
+ *  - Only `POST /inference/chat/completions` (GitHub Models) or `POST /chat/completions` (GitHub Copilot)
  *    are accepted; all other paths return 404.
  */
 export class InferenceProxy {
@@ -509,7 +509,6 @@ export class InferenceProxy {
   private readonly upstream: UpstreamEndpoint;
   private session: ProxySessionState | null = null;
   private server: Server | null = null;
-
   /**
    * Injectable seam: upstream connector.
    * Defaults to `defaultUpstreamConnector` (real HTTPS).
@@ -530,7 +529,7 @@ export class InferenceProxy {
 
   constructor(config: InferenceProxyConfig) {
     this.config = {
-      provider: 'anthropic',
+      provider: 'github-models',
       useHttp: true,
       port: 0,
       bindAddress: '127.0.0.1',
@@ -726,12 +725,12 @@ export class InferenceProxy {
         : { authorization: `Bearer ${this.config.credential}` }),
     };
 
-    // Forward Anthropic-specific headers if present
-    const anthropicVersion = req.headers['anthropic-version'];
-    if (anthropicVersion) {
-      upstreamHeaders['anthropic-version'] = Array.isArray(anthropicVersion)
-        ? anthropicVersion[0]!
-        : anthropicVersion;
+    // Forward the GitHub API version header if present
+    const githubApiVersion = req.headers['x-github-api-version'];
+    if (githubApiVersion) {
+      upstreamHeaders['x-github-api-version'] = Array.isArray(githubApiVersion)
+        ? githubApiVersion[0]!
+        : githubApiVersion;
     }
 
     let upstreamResponse: UpstreamResponse;
@@ -926,12 +925,12 @@ export class InferenceProxy {
  * ```ts
  * const { proxy, port, sessionToken } = await createInferenceProxy({
  *   prNumber: 42,
- *   credential: process.env.ANTHROPIC_API_KEY!,
+ *   credential: process.env.GITHUB_MODELS_TOKEN!,
  * });
  * // Start the reviewer container with:
  * //   INFERENCE_PROXY_PORT=<port>
  * //   INFERENCE_PROXY_SESSION=<sessionToken>
- * // NOT with ANTHROPIC_API_KEY.
+ * // NOT with GITHUB_MODELS_TOKEN.
  * await proxy.stop();
  * ```
  */
@@ -989,9 +988,9 @@ export function buildReviewerProxyEnv(opts: {
     INFERENCE_PROXY_HOST: 'inference.local',
     INFERENCE_PROXY_PORT: String(opts.port),
     INFERENCE_PROXY_SESSION: opts.sessionToken,
-    INFERENCE_PROXY_PROVIDER: opts.provider ?? 'anthropic',
+    INFERENCE_PROXY_PROVIDER: opts.provider ?? 'github-models',
     // Override the provider base URL so the SDK routes to the proxy
-    ANTHROPIC_BASE_URL: `http://inference.local:${opts.port}`,
-    OPENAI_BASE_URL: `http://inference.local:${opts.port}`,
+    GITHUB_MODELS_BASE_URL: `http://inference.local:${opts.port}`,
+    COPILOT_API_BASE_URL: `http://inference.local:${opts.port}`,
   };
 }

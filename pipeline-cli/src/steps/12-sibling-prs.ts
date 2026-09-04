@@ -95,7 +95,7 @@ export async function siblingPrs(opts: SiblingPrStepOptions): Promise<SiblingPrR
     const message =
       `feat: ${opts.task.title} — sibling for ${opts.taskId}\n\n` +
       `Companion changes for ${opts.mainPrUrl}.\n\n` +
-      `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>\n`;
+      `Co-Authored-By: the reasoning tier 4.6 (1M context) <noreply@github-models.com>\n`;
     const commit = await runner('git', ['-C', ext.repo, 'commit', '-m', message], {
       allowFailure: true,
     });

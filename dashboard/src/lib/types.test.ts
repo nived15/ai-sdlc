@@ -42,7 +42,7 @@ describe('Dashboard types', () => {
       runCount: 20,
       byAgent: [{ agentName: 'dev', costUsd: 10.0, runs: 20 }],
       timeSeries: [],
-      byModel: [{ model: 'claude-sonnet-4-5-20250929', costUsd: 8.0, runs: 15 }],
+      byModel: [{ model: 'balanced', costUsd: 8.0, runs: 15 }],
       budget: {
         budgetUsd: 500,
         spentUsd: 10.0,

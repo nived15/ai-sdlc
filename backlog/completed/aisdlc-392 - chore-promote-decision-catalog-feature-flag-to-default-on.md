@@ -10,7 +10,7 @@ references:
   - pipeline-cli/src/decisions/feature-flag.ts
   - pipeline-cli/src/decisions/feature-flag.test.ts
   - spec/rfcs/RFC-0035-decision-catalog-operator-routing.md
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 ---
 
 ## Description

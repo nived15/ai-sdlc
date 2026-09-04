@@ -26,8 +26,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
-      - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
+      - name: Install GitHub Copilot CLI
+        run: npm install -g @github/copilot
 
       - name: Write Slack context to file
         env:
@@ -37,7 +37,7 @@ jobs:
       - name: Synthesize GitHub issue from Slack context
         id: synthesize
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
         run: |
           # Build the full prompt with Slack context embedded
           SLACK_CONTEXT=$(cat /tmp/slack-context.txt)
@@ -58,9 +58,9 @@ jobs:
           ${SLACK_CONTEXT}
           PROMPT_EOF
 
-          # Run Claude with the prompt and capture output
+          # Run GitHub Copilot with the prompt and capture output
           set +e
-          RESULT=$(claude -p --output-format json --model claude-sonnet-4-5-20250929 --max-turns 1 < /tmp/synthesis-prompt.txt 2>/tmp/synthesis-stderr.txt)
+          RESULT=$(copilot -p --output-format json --model the balanced tier --max-turns 1 < /tmp/synthesis-prompt.txt 2>/tmp/synthesis-stderr.txt)
           EXIT_CODE=$?
           set -e
 
@@ -71,7 +71,7 @@ jobs:
           fi
 
           if [ $EXIT_CODE -ne 0 ]; then
-            echo "::warning::Claude synthesis failed with exit code $EXIT_CODE"
+            echo "::warning::GitHub Copilot synthesis failed with exit code $EXIT_CODE"
             RESULT=""
           fi
 

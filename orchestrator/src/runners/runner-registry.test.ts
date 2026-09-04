@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RunnerRegistry, createRunnerRegistry, resolveRunner } from './runner-registry.js';
-import { ClaudeCodeRunner } from './claude-code.js';
 import { CopilotRunner } from './copilot.js';
-import { CursorRunner } from './cursor.js';
-import { CodexRunner } from './codex.js';
 import type { AgentRunner, AgentContext, AgentResult } from './types.js';
 
 class MockRunner implements AgentRunner {
@@ -55,92 +52,40 @@ describe('RunnerRegistry', () => {
   });
 
   describe('discoverFromEnv', () => {
-    it('always registers claude-code', () => {
+    it('always registers the copilot runner', () => {
       const registry = new RunnerRegistry();
       registry.discoverFromEnv({});
 
-      expect(registry.has('claude-code')).toBe(true);
-      expect(registry.get('claude-code')).toBeInstanceOf(ClaudeCodeRunner);
+      expect(registry.has('copilot')).toBe(true);
+      expect(registry.get('copilot')).toBeInstanceOf(CopilotRunner);
     });
 
-    it('registers openai when OPENAI_API_KEY is set', () => {
+    it('registers copilot as the only built-in', () => {
       const registry = new RunnerRegistry();
-      registry.discoverFromEnv({ OPENAI_API_KEY: 'sk-test' });
+      registry.discoverFromEnv({});
 
-      expect(registry.has('openai')).toBe(true);
+      expect(registry.list().map((r) => r.name)).toEqual(['copilot']);
     });
 
-    it('registers anthropic when ANTHROPIC_API_KEY is set', () => {
-      const registry = new RunnerRegistry();
-      registry.discoverFromEnv({ ANTHROPIC_API_KEY: 'sk-ant-test' });
-
-      expect(registry.has('anthropic')).toBe(true);
-    });
-
-    it('registers generic LLM when LLM_API_URL and LLM_API_KEY are set', () => {
+    it('ignores ambient third-party API-key env vars', () => {
       const registry = new RunnerRegistry();
       registry.discoverFromEnv({
-        LLM_API_URL: 'https://llm.example.com/v1/chat/completions',
+        GITHUB_MODELS_TOKEN: 'ghp-test',
+        CURSOR_API_KEY: 'cur_test123',
+        CODEX_API_KEY: 'cdx_test123',
+        LLM_API_URL: 'https://llm.example.com/chat/completions',
         LLM_API_KEY: 'test-key',
       });
 
-      expect(registry.has('generic-llm')).toBe(true);
+      expect(registry.list().map((r) => r.name)).toEqual(['copilot']);
     });
 
-    it('copilot unavailable without GH_TOKEN', () => {
+    it('registers copilot even without GH_TOKEN', () => {
       const registry = new RunnerRegistry();
       registry.discoverFromEnv({});
-
-      expect(registry.has('copilot')).toBe(false);
-      expect(registry.get('copilot')).toBeUndefined();
-    });
-
-    it('copilot available with GH_TOKEN', () => {
-      const registry = new RunnerRegistry();
-      registry.discoverFromEnv({ GH_TOKEN: 'ghp_test123' });
 
       expect(registry.has('copilot')).toBe(true);
       expect(registry.get('copilot')).toBeInstanceOf(CopilotRunner);
-    });
-
-    it('copilot available with GITHUB_TOKEN (alternative)', () => {
-      const registry = new RunnerRegistry();
-      registry.discoverFromEnv({ GITHUB_TOKEN: 'ghp_test456' });
-
-      expect(registry.has('copilot')).toBe(true);
-      expect(registry.get('copilot')).toBeInstanceOf(CopilotRunner);
-    });
-
-    it('cursor unavailable without CURSOR_API_KEY', () => {
-      const registry = new RunnerRegistry();
-      registry.discoverFromEnv({});
-
-      expect(registry.has('cursor')).toBe(false);
-      expect(registry.get('cursor')).toBeUndefined();
-    });
-
-    it('cursor available with CURSOR_API_KEY', () => {
-      const registry = new RunnerRegistry();
-      registry.discoverFromEnv({ CURSOR_API_KEY: 'cur_test123' });
-
-      expect(registry.has('cursor')).toBe(true);
-      expect(registry.get('cursor')).toBeInstanceOf(CursorRunner);
-    });
-
-    it('codex unavailable without CODEX_API_KEY', () => {
-      const registry = new RunnerRegistry();
-      registry.discoverFromEnv({});
-
-      expect(registry.has('codex')).toBe(false);
-      expect(registry.get('codex')).toBeUndefined();
-    });
-
-    it('codex available with CODEX_API_KEY', () => {
-      const registry = new RunnerRegistry();
-      registry.discoverFromEnv({ CODEX_API_KEY: 'cdx_test123' });
-
-      expect(registry.has('codex')).toBe(true);
-      expect(registry.get('codex')).toBeInstanceOf(CodexRunner);
     });
 
     it('devin is not registered at all', () => {
@@ -157,17 +102,16 @@ describe('RunnerRegistry', () => {
 
       const available = registry.listAvailable();
       expect(available.every((r) => r.available)).toBe(true);
-      expect(available.some((r) => r.name === 'claude-code')).toBe(true);
-      expect(available.some((r) => r.name === 'copilot')).toBe(false);
+      expect(available.some((r) => r.name === 'copilot')).toBe(true);
     });
 
     it('does not overwrite manually registered runners', () => {
       const registry = new RunnerRegistry();
       const custom = new MockRunner();
-      registry.register('claude-code', custom);
+      registry.register('copilot', custom);
       registry.discoverFromEnv({});
 
-      expect(registry.get('claude-code')).toBe(custom);
+      expect(registry.get('copilot')).toBe(custom);
     });
   });
 });
@@ -175,7 +119,7 @@ describe('RunnerRegistry', () => {
 describe('createRunnerRegistry', () => {
   it('creates registry with auto-discovery', () => {
     const registry = createRunnerRegistry({});
-    expect(registry.has('claude-code')).toBe(true);
+    expect(registry.has('copilot')).toBe(true);
   });
 });
 
@@ -234,8 +178,8 @@ describe('resolveRunner', () => {
   it('returns named runner when --runner matches registered name', async () => {
     const registry = new RunnerRegistry();
     registry.discoverFromEnv({});
-    const result = await resolveRunner(registry, { runnerName: 'claude-code' });
-    expect(result).toBeInstanceOf(ClaudeCodeRunner);
+    const result = await resolveRunner(registry, { runnerName: 'copilot' });
+    expect(result).toBeInstanceOf(CopilotRunner);
   });
 
   it('throws actionable error when --runner name is not registered', async () => {
@@ -252,7 +196,7 @@ describe('resolveRunner', () => {
       expect.fail('should have thrown');
     } catch (err) {
       expect((err as Error).message).toMatch('Available runners:');
-      expect((err as Error).message).toContain('claude-code');
+      expect((err as Error).message).toContain('copilot');
     }
   });
 
@@ -278,30 +222,27 @@ describe('resolveRunner', () => {
     ).rejects.toThrow('AI_SDLC_RUNNER_PLUGIN');
   });
 
-  it('does NOT auto-select an env-discovered runner — ambient env var must not override default (AISDLC-529 code review)', async () => {
+  it('does NOT auto-select a plugin runner — ambient env must not override the default (AISDLC-529 code review)', async () => {
     const registry = new RunnerRegistry();
     registry.discoverFromEnv({ GH_TOKEN: 'test-token' });
-    // GH_TOKEN registers copilot, but with NO explicit --runner/plugin the default
-    // must stay ClaudeCodeRunner — a user who has GH_TOKEN set for the `gh` CLI must
-    // not silently get a different runner.
+    // With NO explicit --runner/plugin the default must stay CopilotRunner.
     const result = await resolveRunner(registry, {});
-    expect(result).toBeInstanceOf(ClaudeCodeRunner);
+    expect(result).toBeInstanceOf(CopilotRunner);
   });
 
-  it('env-discovered runner is still selectable by explicit --runner name', async () => {
+  it('the built-in runner is still selectable by explicit --runner name', async () => {
     const registry = new RunnerRegistry();
     registry.discoverFromEnv({ GH_TOKEN: 'test-token' });
-    // The env-discovered copilot runner is registered and selectable explicitly.
     const copilot = registry.listAvailable().find((r) => r.runner instanceof CopilotRunner);
     expect(copilot).toBeDefined();
     const result = await resolveRunner(registry, { runnerName: copilot!.name });
     expect(result).toBeInstanceOf(CopilotRunner);
   });
 
-  it('falls back to ClaudeCodeRunner when only built-ins are registered', async () => {
+  it('falls back to CopilotRunner when only built-ins are registered', async () => {
     const registry = createRunnerRegistry({});
     const result = await resolveRunner(registry, {});
-    expect(result).toBeInstanceOf(ClaudeCodeRunner);
+    expect(result).toBeInstanceOf(CopilotRunner);
   });
 
   it('injectedRunner wins over runnerName', async () => {
@@ -309,7 +250,7 @@ describe('resolveRunner', () => {
     const injected = new MockRunner('wins');
     const result = await resolveRunner(registry, {
       injectedRunner: injected,
-      runnerName: 'claude-code',
+      runnerName: 'copilot',
     });
     expect(result).toBe(injected);
   });
@@ -324,9 +265,9 @@ describe('resolveRunner', () => {
       );
     // even though plugin is set, named runner takes precedence
     const result = await resolveRunner(registry, {
-      runnerName: 'claude-code',
+      runnerName: 'copilot',
       env: { AI_SDLC_RUNNER_PLUGIN: pluginModule },
     });
-    expect(result).toBeInstanceOf(ClaudeCodeRunner);
+    expect(result).toBeInstanceOf(CopilotRunner);
   });
 });

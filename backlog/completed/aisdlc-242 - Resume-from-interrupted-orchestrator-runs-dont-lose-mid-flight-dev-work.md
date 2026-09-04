@@ -15,7 +15,7 @@ dependencies: []
 priority: high
 references:
   - pipeline-cli/src/orchestrator/loop.ts
-  - pipeline-cli/src/runtime/shell-claude-p-spawner.ts
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
 ---
 
 ## Description

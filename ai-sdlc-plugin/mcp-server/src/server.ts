@@ -1,7 +1,7 @@
 /**
- * MCP server factory for the AI-SDLC Claude Code plugin.
+ * MCP server factory for the AI-SDLC GitHub Copilot CLI plugin.
  *
- * Exposes governance tools that Claude can call during a session:
+ * Exposes governance tools that GitHub Copilot can call during a session:
  * - check_pr_status: PR checks, reviews, merge readiness
  * - check_issue: Issue details, labels, PPA scoring context
  * - get_governance_context: Current agent-role.yaml constraints
@@ -22,7 +22,7 @@ export function createPluginMcpServer() {
   // Project-root resolution (AISDLC-99). Tools that touch the filesystem
   // (task_edit, task_complete, get_governance_context, ...) need the actual
   // project root the user is working in — NOT the plugin's data dir, which
-  // is what `${CLAUDE_PLUGIN_DATA}` (the env var the plugin's `plugin.json`
+  // is what `${COPILOT_PLUGIN_DATA}` (the env var the plugin's `plugin.json`
   // sets `AI_SDLC_PROJECT_ROOT` to) resolves to. The resolver walks up from
   // cwd when the env var is missing or doesn't contain a `backlog/` dir.
   //

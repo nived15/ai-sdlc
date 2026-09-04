@@ -47,9 +47,9 @@ a gate**. The promotion criteria are:
   exercised on real backlog work.
 - **Cost-tracker totals align with provider invoice** within
   tolerance. The `cli-cost-report --unified` view aggregates
-  `embeddingTokens` against the OpenAI billing dashboard for the
+  `embeddingTokens` against the GitHub Copilot billing dashboard for the
   same period; the absolute-USD discrepancy MUST be within ±10%
-  (tolerance covers OpenAI's rounding, mid-window pricing changes,
+  (tolerance covers GitHub Copilot's rounding, mid-window pricing changes,
   and the difference between "tokens charged" and "tokens we
   counted at the API call site"). >10% drift indicates the
   cost-tracker is mis-instrumented and MUST block promotion until
@@ -130,20 +130,20 @@ node pipeline-cli/bin/cli-cost-report.mjs \
 jq '.totals' ./embedding-spend-may.json
 # Expected shape:
 # {
-#   "openai-text-embedding-3-small": {
+#   "github-models-embedding-small": {
 #     "tokens": 4312891,
 #     "costUsd": 0.0862578
 #   }
 # }
 ```
 
-Now log into the provider dashboard (for OpenAI: <https://platform.openai.com/usage>)
+Now log into the provider dashboard (for GitHub Copilot: <https://platform.github-copilot.com/usage>)
 and filter to the same window + the embeddings line item.
 
 | Comparison | Action |
 |---|---|
 | Framework total within ±10% of provider total | Spot-check passes; record both numbers in the flag-flip PR body. |
-| Framework total <90% of provider total (under-counted) | A call site is calling the provider API directly without routing through the adapter. Block promotion; trace the missing instrumentation. Common culprit: ad-hoc operator scripts that import `openai` directly. |
+| Framework total <90% of provider total (under-counted) | A call site is calling the provider API directly without routing through the adapter. Block promotion; trace the missing instrumentation. Common culprit: ad-hoc operator scripts that import `github-copilot` directly. |
 | Framework total >110% of provider total (over-counted) | The framework is double-counting (e.g. batch interface double-records). Block promotion until the over-counting is fixed; `pipeline-cli/src/cli/cost-report.ts` is the place to start tracing. |
 | Provider dashboard shows zero embeddings spend | Either no `embed()` call actually reached the API (mock adapter / hermetic test mode) or the API key in the framework points at a different account than the dashboard you're checking. Verify `adapter.getAccountId()` matches the dashboard's API key fingerprint. |
 
@@ -155,7 +155,7 @@ footprint is what you'd expect for the spend you observed:
 ```bash
 # How many vectors did we write in the window?
 ls -la artifacts/_embeddings/
-wc -l artifacts/_embeddings/openai-text-embedding-3-small-2024-01-25.jsonl
+wc -l artifacts/_embeddings/github-models-embedding-small-2024-01-25.jsonl
 
 # Rough sanity: average chars per entry × line count ≈ on-disk size.
 # 1536-dim float64 JSONL entry is ~10 KB; 1000 entries ≈ 10 MB.
@@ -236,10 +236,10 @@ is the rigorous path here, not a lesser path.
 
    ```bash
    AI_SDLC_EMBEDDING_PROVIDER=on \
-   OPENAI_API_KEY=$OPENAI_API_KEY \
+   GITHUB_MODELS_TOKEN=$GITHUB_MODELS_TOKEN \
      node -e '
        import("./orchestrator/dist/embedding/registry.js").then(async ({ getEmbeddingAdapter }) => {
-         const adapter = getEmbeddingAdapter("openai-text-embedding-3-small");
+         const adapter = getEmbeddingAdapter("github-models-embedding-small");
          const avail = await adapter.isAvailable();
          console.log("available:", avail);
          const vec = await adapter.embed("smoke test");
@@ -269,7 +269,7 @@ is the rigorous path here, not a lesser path.
 3. **Spot-check the JSONL backend wrote your smoke-test vector**:
 
    ```bash
-   tail -1 artifacts/_embeddings/openai-text-embedding-3-small-2024-01-25.jsonl | \
+   tail -1 artifacts/_embeddings/github-models-embedding-small-2024-01-25.jsonl | \
      jq '{provider: .embeddingProvider, version: .embeddingModelVersion, dims: (.vector | length), text}'
    ```
 
@@ -352,7 +352,7 @@ it continue to no-op gracefully (consumers emit
 
 After the flip lands, update:
 
-- `CLAUDE.md` — add an `AI_SDLC_EMBEDDING_PROVIDER` bullet to the
+- `.github/copilot-instructions.md` — add an `AI_SDLC_EMBEDDING_PROVIDER` bullet to the
   "Feature flags" section mirroring the `AI_SDLC_DEPS_COMPOSITION`
   and `AI_SDLC_AUTONOMOUS_ORCHESTRATOR` entries. Phrase as
   "On by default since AISDLC-NNN (YYYY-MM-DD, operator
@@ -440,7 +440,7 @@ and the dashboard. For the embedding substrate post-flip:
 | Metric | Source | Healthy baseline | Investigation trigger |
 |---|---|---|---|
 | `embedding.embed_calls_per_pipeline_run` | Cost-tracker `embeddingTokens` invocation count, joined to pipeline-run id | Stable around the consumer's expected rate (e.g. RFC-0009 Eτ drift fires on RFC revisions, not on every tick — should be ~0-10 per run depending on revision activity) | Sudden 10x increase → a new consumer wired without operator awareness; spot-check `consumerLabel` distribution. |
-| `embedding.p95_embed_latency_ms` | Per-call timing recorded by the registry wrapper | <500ms for OpenAI SaaS (network-bound); <50ms for local ONNX (CPU-bound) | >1500ms p95 → provider degradation or rate-limiting; check `EmbeddingAvailability.reason: 'rate-limited'` in the Decision Catalog. |
+| `embedding.p95_embed_latency_ms` | Per-call timing recorded by the registry wrapper | <500ms for GitHub Copilot SaaS (network-bound); <50ms for local ONNX (CPU-bound) | >1500ms p95 → provider degradation or rate-limiting; check `EmbeddingAvailability.reason: 'rate-limited'` in the Decision Catalog. |
 | `embedding.stale_vector_event_rate` | RFC-0035 Decision Catalog, `stale-vector-encountered` key | <1 per 100 reads (lazy-re-embed silently migrates; few make it to the catalog) | >10 per 100 → the adapter swap story is converging slowly; either re-run `cli-embedding-bump` to flush the legacy provider, or investigate why so many reads hit stale vectors. |
 | `embedding.dollar_drift_vs_invoice` | `cli-cost-report --unified` framework total vs. provider dashboard total, computed monthly | Within ±10% | >10% over a full billing month → cost-tracker instrumentation gap; trace the missing call site. |
 | `embedding.jsonl_count_per_provider_version` | `wc -l artifacts/_embeddings/*.jsonl` per file | Within the scale-escalation heuristic (<100K per file) | >100K OR p95 read latency >250ms → swap storage backend per RFC-0019 §15 OQ-1; the heuristic is operator-visible, not blocking. |

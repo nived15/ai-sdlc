@@ -20,7 +20,7 @@ requiresDocs: []
 **Document type:** Normative
 **Status:** Approved (AISDLC-169 umbrella + all 5 phases 169.1–169.5 shipped; design locked + implementation complete behind `AI_SDLC_AUTONOMOUS_ORCHESTRATOR=experimental`)
 **Lifecycle:** Signed Off (lifecycle audit 2026-05-13 promoted from Ready for Review; flag default-on promotion gated on AISDLC-253 fixture-leak fix + fresh corpus, not on implementation gap)
-**Author:** Dominique Legault (with Claude assist)
+**Author:** Dominique Legault (with GitHub Copilot assist)
 **Created:** 2026-05-01
 **Updated:** 2026-05-13
 **Target Spec Version:** v1alpha1
@@ -84,7 +84,7 @@ The LLM-driven judgment lives in 2 places: the dev's actual implementation, and 
 
 ### 2.2 What's NOT automated today
 
-Failure recovery. Every time a known failure mode occurs (secret-scan block, merge-queue race, rebase conflict, verification regression, reviewer flagging a major issue), a human (or Claude in interactive mode) decides what to do. Empirically over the last 24 hours we hit:
+Failure recovery. Every time a known failure mode occurs (secret-scan block, merge-queue race, rebase conflict, verification regression, reviewer flagging a major issue), a human (or GitHub Copilot in interactive mode) decides what to do. Empirically over the last 24 hours we hit:
 
 - **Secret-scan block on test fixtures** (PR #154 / AISDLC-126) — fix: reformat to template-literal so source doesn't contain literal pattern. Mechanical.
 - **Push race vs merge queue** (PR #151 closure attempt) — fix: wait + retry. Mechanical.
@@ -302,7 +302,7 @@ The orchestrator described here can run inside a GH Actions job for unattended r
 
 ### 10.2 Bash cron + `/loop` (status quo)
 
-Already what we use. Doesn't handle failures deterministically — every secret-scan-block, merge-queue-race, etc. wakes up Claude in interactive mode. Status quo is the baseline this RFC improves over, not an alternative.
+Already what we use. Doesn't handle failures deterministically — every secret-scan-block, merge-queue-race, etc. wakes up GitHub Copilot in interactive mode. Status quo is the baseline this RFC improves over, not an alternative.
 
 ### 10.3 Dedicated daemon / systemd service
 
@@ -330,7 +330,7 @@ The subscription-billing inline spawner path (AISDLC-198 Option 3) is now
 **production-ready** as of AISDLC-225. The two-part protocol is fully
 implemented:
 
-1. **Producer** (`ClaudeCliInlineSpawner`) — writes `dispatch-manifest.json`,
+1. **Producer** (`CopilotHarnessAdapter`) — writes `dispatch-manifest.json`,
    returns `{ status: 'manifest-emitted' }`. Shipped in AISDLC-198.
 
 2. **Consumer** (`/ai-sdlc orchestrator-tick`) — reads the manifest, invokes
@@ -344,7 +344,7 @@ and continue `executePipeline()` from Step 6.
 
 **Promotion gate**: The inline path is production-ready for inclusion in the
 corpus-driven soak. Operators running the dogfood pipeline should prefer
-`--spawner claude-cli` (subscription billing) over the API-key path. Once the
+`--spawner copilot` (subscription billing) over the API-key path. Once the
 soak corpus shows 95%+ task completion without human intervention and no
 quota-burn surprises, the orchestrator is promoted to default-on per the
 [orchestrator-promotion runbook](../../docs/operations/orchestrator-promotion.md).
@@ -358,7 +358,7 @@ Single sandbox, current dogfood scale:
 - → ~12 tasks/hour theoretical max
 - → ~96 tasks/8h overnight batch
 
-Subscription window (Claude Code Max-20x, 5-hour rolling):
+Subscription window (GitHub Copilot CLI Max-20x, 5-hour rolling):
 
 - Per task: 1 dev call + 3 reviewer calls = 4 LLM calls
 - Avg ~50k tokens per call (per RFC-0010 §14.6.4 cold-start defaults)
@@ -390,11 +390,11 @@ This RFC explicitly delegates quota management to RFC-0010 §14 — orchestrator
 
 10. **Q10: When does the orchestrator detect new conflicts on PRs it already opened?** Today's `/loop /ai-sdlc execute` model + the cron-tick "Resolve PR conflicts" step both rely on the operator (or the cron driver) waking the orchestrator to re-scan PR state. Between waking events, a PR can flip from clean → DIRTY (sibling merged into same files; base PR was squash-merged per §5.1's `StackedPRBaseSquashed`; force-push to main rebased the world) and the orchestrator won't notice for tick-interval seconds. Two options: (A) **Periodic poll** — every tick, scan all open AISDLC bot PRs via `gh pr list --json number,mergeStateStatus`. Cheap (single API call, ~50 PRs returned), naturally bounded by tick interval. (B) **Webhook-driven** — subscribe to GitHub `pull_request` + `status` webhooks; react in real-time. Lower latency, much higher complexity (webhook receiver, auth, replay-on-restart). Lean: A. Phase 1 ships with the periodic poll using the existing `gh pr list` + `gh pr view` calls; webhook-driven (B) is a Phase 4 observability optimization if poll latency becomes a real bottleneck. Decide before Phase 1. **Resolution (2026-05-01):** Option A — periodic poll. Phase 1 wires `gh pr list --author "@me" --state open --json number,mergeStateStatus,headRefOid` per tick (cheap, bounded). Webhook-driven (B) deferred to Phase 4 only if measurement shows the poll latency causes real operator pain.
 
-11. **Q11: Implementation harness — what process actually runs the orchestrator loop?** §4.1 quietly assumes "Node process in operator's sandbox" but doesn't justify this against alternatives. The choice has major cost implications: a `/loop`-driven Claude Code session orchestrator pays ~5-15k subscription tokens per wake just for context-load (during a long peak window with 30s tick = ~300 wakes × 10k = ~3M tokens of pure idle cost), while a Node process pays zero subscription tokens for idle polling (the polling calls are `gh`/git, not LLM). This decision must be settled before Phase 1 because it propagates through Q3 (peak-blocked sleep cadence), Q5 (empty-queue sleep cadence), Q6 (long-running PR park), and §12's resource-sizing model.
+11. **Q11: Implementation harness — what process actually runs the orchestrator loop?** §4.1 quietly assumes "Node process in operator's sandbox" but doesn't justify this against alternatives. The choice has major cost implications: a `/loop`-driven Copilot CLI session orchestrator pays ~5-15k subscription tokens per wake just for context-load (during a long peak window with 30s tick = ~300 wakes × 10k = ~3M tokens of pure idle cost), while a Node process pays zero subscription tokens for idle polling (the polling calls are `gh`/git, not LLM). This decision must be settled before Phase 1 because it propagates through Q3 (peak-blocked sleep cadence), Q5 (empty-queue sleep cadence), Q6 (long-running PR park), and §12's resource-sizing model.
 
    Options:
-   - **(A) Pure Node process** — operator runs `node orchestrator.js` once (locally, in Docker, or on a self-hosted GH Actions runner). The Node process polls + manages workers; workers (the LLM dispatch boundary) ARE Claude Code subagents via the existing `SubagentSpawner` (RFC-0012). Idle polling: zero subscription cost. Operator burden: process supervision (systemd / pm2 / Docker restart policy).
-   - **(B) `/loop`-driven Claude Code session** — operator types `/loop 30s /ai-sdlc orchestrate`; each tick wakes a Claude Code session that does one iteration of the outer loop. Idle polling cost: ~5-15k tokens per wake. Operator burden: zero — same UX they already use. Bounded by Claude Code's `/loop` mechanism.
+   - **(A) Pure Node process** — operator runs `node orchestrator.js` once (locally, in Docker, or on a self-hosted GH Actions runner). The Node process polls + manages workers; workers (the LLM dispatch boundary) ARE GitHub Copilot CLI subagents via the existing `SubagentSpawner` (RFC-0012). Idle polling: zero subscription cost. Operator burden: process supervision (systemd / pm2 / Docker restart policy).
+   - **(B) `/loop`-driven Copilot CLI session** — operator types `/loop 30s /ai-sdlc orchestrate`; each tick wakes a Copilot CLI session that does one iteration of the outer loop. Idle polling cost: ~5-15k tokens per wake. Operator burden: zero — same UX they already use. Bounded by GitHub Copilot CLI's `/loop` mechanism.
    - **(C) GitHub Actions cron-driven** — `.github/workflows/orchestrator-tick.yml` on `schedule:` cron. Each invocation is a fresh runner that does one tick + exits. Idle cost: zero subscription tokens (consumes GH Actions minutes instead). Operator burden: workflow file maintenance. Limitations: 6h runner cap forces long-running work into multi-tick batches; harder to debug; slow startup per tick.
    - **(D) Hybrid: GH Actions cron triggers Node process; runs N polling rounds then exits** — combines C's zero-idle-cost + A's "real loop" benefit. Each cron fire spins up a runner that does multiple polling rounds within a bounded window then exits cleanly. Worker dispatch + state checkpointing must survive the exit/restart cadence (fits the Q2 idempotent-finalize design).
 
@@ -404,7 +404,7 @@ This RFC explicitly delegates quota management to RFC-0010 §14 — orchestrator
 
    Decide before Phase 1. The chosen harness shapes ALL of Q3/Q5/Q6/§12. **Resolution (2026-05-01):** Option A — pure Node process. Phase 1 ships `node ai-sdlc-plugin/orchestrator/run.mjs` (or similar location) as the operator-managed entry point, packaged with a systemd unit + Docker image template + GH Actions self-hosted runner config so operators can pick their supervision mode. Workers (the LLM dispatch boundary) go through `SubagentSpawner` per RFC-0012 — same code path as today's `/ai-sdlc execute`. **Side-effect on prior questions**: Q3's "5min cap" and Q5's "backoff" rationales drop the subscription-cost argument (polling is now zero-cost) — the resolutions stand but on observability/noise grounds only, not cost. §12's resource-sizing model can be tightened: idle ticks consume 0 subscription tokens; only worker dispatches (dev + 3 reviewers) burn the window.
 
-12. **Q12: Should the orchestrator enable GitHub auto-merge on every PR it opens?** Today the `auto-enable-auto-merge.yml` workflow fires only on `pull_request: opened` — every subsequent force-push (rebase, attestation re-sign, conflict resolution) silently dismisses GitHub's auto-merge enablement, and the workflow doesn't re-fire on `synchronize` events. Result: PRs the orchestrator manages sit in a "BLOCKED waiting for human merge" state long after they're actually mergeable. **Important nuance**: enabling auto-merge is NOT the same as merging. `gh pr merge --auto` sets a flag that GitHub uses to merge once required checks pass + bot approval is valid; the merge actor is GitHub, not the orchestrator. Setting the flag is fine per CLAUDE.md's "never merge PRs" rule (the rule is about the actor, not the configuration). Three options: (A) **Orchestrator sets the flag after every push** — Phase 1 adds a `gh pr merge --auto --rebase <pr>` call to the finalize sequence (idempotent — no-op if already enabled). (B) **Fix the existing workflow** — extend `.github/workflows/auto-enable-auto-merge.yml`'s trigger from `[opened]` to `[opened, synchronize, reopened]`. Operationally cleaner (no orchestrator change), but the workflow only fires for the `pull_request` event, not for force-pushes that bypass it (rare). (C) **Both A and B** — defense in depth. Lean: C. The workflow fix (B) handles the common synchronize case; the orchestrator-side call (A) catches edge cases and provides observability into auto-merge state via the events.jsonl. Decide before Phase 1. **Resolution (2026-05-01):** Option C — both. **Workflow side (B) SHIPPED via AISDLC-130** (PR #161): trigger extended to `[opened, synchronize, reopened]`; CLAUDE.md updated with the policy distinction; gh CLI's `--auto` verified naturally idempotent (no wrapper needed). **Orchestrator side (A) is Phase 1 to-do**: finalize sequence adds `gh pr merge --auto --rebase <pr>` after every push, emits `AutoMergeFlagSet` event to events.jsonl. Defense-in-depth captures the rare edge cases the workflow misses (force-push from a worktree the workflow can't see, restart-recovery, branch-protection edits mid-flight).
+12. **Q12: Should the orchestrator enable GitHub auto-merge on every PR it opens?** Today the `auto-enable-auto-merge.yml` workflow fires only on `pull_request: opened` — every subsequent force-push (rebase, attestation re-sign, conflict resolution) silently dismisses GitHub's auto-merge enablement, and the workflow doesn't re-fire on `synchronize` events. Result: PRs the orchestrator manages sit in a "BLOCKED waiting for human merge" state long after they're actually mergeable. **Important nuance**: enabling auto-merge is NOT the same as merging. `gh pr merge --auto` sets a flag that GitHub uses to merge once required checks pass + bot approval is valid; the merge actor is GitHub, not the orchestrator. Setting the flag is fine per .github/copilot-instructions.md's "never merge PRs" rule (the rule is about the actor, not the configuration). Three options: (A) **Orchestrator sets the flag after every push** — Phase 1 adds a `gh pr merge --auto --rebase <pr>` call to the finalize sequence (idempotent — no-op if already enabled). (B) **Fix the existing workflow** — extend `.github/workflows/auto-enable-auto-merge.yml`'s trigger from `[opened]` to `[opened, synchronize, reopened]`. Operationally cleaner (no orchestrator change), but the workflow only fires for the `pull_request` event, not for force-pushes that bypass it (rare). (C) **Both A and B** — defense in depth. Lean: C. The workflow fix (B) handles the common synchronize case; the orchestrator-side call (A) catches edge cases and provides observability into auto-merge state via the events.jsonl. Decide before Phase 1. **Resolution (2026-05-01):** Option C — both. **Workflow side (B) SHIPPED via AISDLC-130** (PR #161): trigger extended to `[opened, synchronize, reopened]`; .github/copilot-instructions.md updated with the policy distinction; gh CLI's `--auto` verified naturally idempotent (no wrapper needed). **Orchestrator side (A) is Phase 1 to-do**: finalize sequence adds `gh pr merge --auto --rebase <pr>` after every push, emits `AutoMergeFlagSet` event to events.jsonl. Defense-in-depth captures the rare edge cases the workflow misses (force-push from a worktree the workflow can't see, restart-recovery, branch-protection edits mid-flight).
 
 ## 14. References
 

@@ -241,7 +241,7 @@ the full forensic trail.
 
 After the flip lands, update:
 
-- `CLAUDE.md` — change the "Off by default" line in the
+- `.github/copilot-instructions.md` — change the "Off by default" line in the
   `AI_SDLC_AUTONOMOUS_ORCHESTRATOR` bullet to "On by default; set
   `AI_SDLC_AUTONOMOUS_ORCHESTRATOR=off` to disable."
 - `pipeline-cli/docs/orchestrator.md` — flip the "Quick start" framing
@@ -353,7 +353,7 @@ operator-effort + billing profile.
 | Pattern | Worker mechanism | Operator effort | Billing | When to use |
 |---|---|---|---|---|
 | **X (default, AISDLC-396 v2 reconcile)** | `/ai-sdlc orchestrator-tick` Conductor dispatches background `Agent(developer)` per manifest; the dev follows its standard Definition-of-Done (commit → rebase → push → open DRAFT PR). Conductor's next tick **reconciles after-the-fact**: parses the dev's return JSON into a verdict, fans out 3 reviewers, signs attestation, force-pushes the chore commit on top of the dev's branch, flips draft → ready. | Open ONE CC session, fire `orchestrator-tick`, walk away. ScheduleWakeup loops indefinitely. | Subscription interactive quota only — Sonnet for dev/code/test, Opus only for security. | The default for interactive operator sessions. ONE session = autonomous drain. Capped at `inSessionAgentMaxSessions` (default 4, configurable in `.ai-sdlc/dispatch-config.yaml`). |
-| **Y** | `cli-orchestrator tick --spawner claude` shells out to `claude -p` subprocesses | One-time daemon setup (cron/systemd/launchd), session-independent. | Subscription Agent SDK credit pool ($200/mo on Max-20x post-2026-06-15). | Headless/CI contexts where no operator CC session is available. Cron-driven background drain. |
+| **Y** | `cli-orchestrator tick --spawner copilot` shells out to `copilot -p` subprocesses | One-time daemon setup (cron/systemd/launchd), session-independent. | Subscription Agent SDK credit pool ($200/mo on Max-20x post-2026-06-15). | Headless/CI contexts where no operator CC session is available. Cron-driven background drain. |
 | **Z (legacy)** | Operator opens N sibling CC sessions running `/ai-sdlc dispatch-worker` | Open N+1 sessions per drain. | Subscription interactive quota. | When N>4 parallel devs needed (large backlog burst). Pattern X's `inSessionAgentMaxSessions` cap can be bumped, but >4 starts hitting per-session attention-tax. |
 
 ### Escalation criteria (X → Y → Z)

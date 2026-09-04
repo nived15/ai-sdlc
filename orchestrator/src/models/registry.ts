@@ -6,9 +6,9 @@
  */
 
 export interface ModelEntry {
-  /** Short alias used in pipeline YAML (e.g., 'haiku'). */
+  /** Short alias used in pipeline YAML (e.g., 'fast'). */
   alias: string;
-  /** Physical model ID dispatched to the harness (e.g., 'claude-haiku-4-5-20251001'). */
+  /** Physical model ID dispatched to the harness (e.g., 'gpt-5-mini'). */
   modelId: string;
   /** ISO 8601 date when the vendor announced deprecation; null if active. */
   deprecatedAt: string | null;
@@ -63,36 +63,37 @@ const GRACE_PERIOD_DAYS = 30;
 
 /**
  * Default registry shipped with the orchestrator. Maintainers update deprecatedAt /
- * removedAt / replacementAlias from public vendor announcements (see operator-runbook).
+ * removedAt / replacementAlias from public GitHub Copilot model announcements
+ * (see operator-runbook).
  */
 export const DEFAULT_REGISTRY: readonly ModelEntry[] = [
   {
-    alias: 'haiku',
-    modelId: 'claude-haiku-4-5-20251001',
+    alias: 'fast',
+    modelId: 'gpt-5-mini',
     deprecatedAt: null,
     removedAt: null,
     replacementAlias: null,
     use: 'Classification, routing, formatting, structured-output extraction',
   },
   {
-    alias: 'sonnet',
-    modelId: 'claude-sonnet-4-6',
+    alias: 'balanced',
+    modelId: 'gpt-5',
     deprecatedAt: null,
     removedAt: null,
     replacementAlias: null,
     use: 'Code review, refactoring, validation, default for everything else',
   },
   {
-    alias: 'opus',
-    modelId: 'claude-opus-4-7',
+    alias: 'reasoning',
+    modelId: 'gpt-5[reasoning=high]',
     deprecatedAt: null,
     removedAt: null,
     replacementAlias: null,
     use: 'Complex implementation, multi-file refactors, design work',
   },
   {
-    alias: 'opus[1m]',
-    modelId: 'claude-opus-4-7[1m]',
+    alias: 'reasoning[1m]',
+    modelId: 'gpt-5[reasoning=high,context=1m]',
     deprecatedAt: null,
     removedAt: null,
     replacementAlias: null,

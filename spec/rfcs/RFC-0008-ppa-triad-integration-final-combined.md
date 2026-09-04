@@ -499,7 +499,7 @@ sAlpha2:
     # Computable metrics are EXCLUDED from the prompt to prevent double-counting.
     llmAssessed:
       weight: 0.5
-      model: "claude-sonnet-4-20250514"
+      model: "the balanced tier"
       temperature: 0.1
       inputs:
         - field: spec.soulPurpose.designPrinciples   # Design-owned: semantic alignment

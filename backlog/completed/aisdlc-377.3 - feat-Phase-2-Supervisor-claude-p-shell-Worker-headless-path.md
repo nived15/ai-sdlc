@@ -17,7 +17,7 @@ dependencies:
 priority: high
 references:
   - spec/rfcs/RFC-0041-conductor-worker-process-architecture.md
-  - pipeline-cli/src/runtime/shell-claude-p-spawner.ts
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
 ---
 
 ## Scope (RFC-0041 §4.3.2 + §4.5 + §7 Phase 2)

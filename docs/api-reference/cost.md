@@ -169,15 +169,15 @@ RFC-0004 deliberately does NOT bundle a pricing table in the spec — pricing ch
 modelPricing:
   source: config
   models:
-    claude-opus-4-6:
+    the reasoning tier:
       inputPerMTok: 15.00
       outputPerMTok: 75.00
       cacheReadPerMTok: 1.50
-    claude-sonnet-4-5:
+    the balanced tier:
       inputPerMTok: 3.00
       outputPerMTok: 15.00
       cacheReadPerMTok: 0.30
-    claude-haiku-4-5:
+    copilot-haiku-4-5:
       inputPerMTok: 0.80
       outputPerMTok: 4.00
       cacheReadPerMTok: 0.08

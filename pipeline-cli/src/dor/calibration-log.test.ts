@@ -310,7 +310,7 @@ describe('appendCalibrationEntry', () => {
     // Use OBVIOUSLY FAKE tokens that pattern-match but aren't real
     // secrets. Each one targets a distinct registry entry so the test
     // covers more than just one regex.
-    // Note: OpenAI classic keys are `sk-[A-Za-z0-9]{20,}` — no hyphen
+    // Note: Classic inference keys are `sk-[A-Za-z0-9]{20,}` — no hyphen
     // in the body. The `testkey` prefix keeps the literal obviously fake
     // without breaking the pattern.
     const fakeOpenAI = 'sk-testkeyABCDEF1234567890abcdef1234567890';
@@ -320,7 +320,7 @@ describe('appendCalibrationEntry', () => {
     const issue = {
       id: 'leaky',
       source: 'github' as const,
-      // Title carries the OpenAI-shape token. <80 chars total so the
+      // Title carries the inference-key-shape token. <80 chars total so the
       // body still inlines (we want bodyPreview to also redact).
       title: `bug: ${fakeOpenAI} fails`,
       // Body carries the GitHub PAT.
@@ -359,11 +359,11 @@ describe('appendCalibrationEntry', () => {
     expect(raw).not.toContain(fakeAws);
 
     // And the redaction markers should be present in the right places.
-    expect(parsed.issue?.title).toContain('[REDACTED:OPENAI]');
+    expect(parsed.issue?.title).toContain('[REDACTED:INFERENCE_KEY]');
     expect(parsed.issue?.bodyPreview).toContain('[REDACTED:GITHUB_PAT]');
     expect(parsed.verdict.gates[0].finding).toContain('[REDACTED:AWS_ACCESS_KEY]');
     expect(parsed.verdict.gates[0].clarificationQuestion).toContain('[REDACTED:AWS_ACCESS_KEY]');
-    expect(parsed.verdict.summary).toContain('[REDACTED:OPENAI]');
+    expect(parsed.verdict.summary).toContain('[REDACTED:INFERENCE_KEY]');
     expect(parsed.verdict.questions?.[0]).toContain('[REDACTED:GITHUB_PAT]');
   });
 });

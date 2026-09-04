@@ -4,12 +4,12 @@ description: Analyze tool call history to detect repetitive workflow patterns an
 argument-hint: [--since YYYY-MM-DD] [--min-confidence 0.6]
 ---
 
-Detect repetitive workflow patterns from Claude Code session history and propose automations.
+Detect repetitive workflow patterns from Copilot CLI session history and propose automations.
 
 ## Steps
 
-1. **Read telemetry data** from `~/.claude/usage-data/tool-sequences.jsonl`
-2. **Also read** session metadata from `~/.claude/usage-data/session-meta/*.json` for historical data
+1. **Read telemetry data** from `~/.copilot/usage-data/tool-sequences.jsonl`
+2. **Also read** session metadata from `~/.copilot/usage-data/session-meta/*.json` for historical data
 3. **Run pattern detection** using the orchestrator's n-gram mining engine:
    ```typescript
    import { readToolSequenceJSONL, mineFrequentPatterns, classifyPattern } from '@ai-sdlc/orchestrator';

@@ -17,9 +17,9 @@ references:
   - pipeline-cli/src/orchestrator/loop.ts
   - pipeline-cli/src/orchestrator/loop.umbrella.test.ts
   - pipeline-cli/README.md
-  - CLAUDE.md
+  - .github/copilot-instructions.md
   - docs/operations/operator-runbook.md
-  - docs/operations/codex-execution-path.md
+  - docs/operations/copilot-spawner.md
 priority: high
 permittedExternalPaths: []
 ---

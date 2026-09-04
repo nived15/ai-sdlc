@@ -62,7 +62,7 @@ export const REVIEWER_FINDINGS_MARKER = '<!-- ai-sdlc:reviewer-findings -->';
  * Branches that the recovery-flow commands MUST refuse to force-push to,
  * even when the PR metadata or worktree state would otherwise permit it.
  * Mirrors the `/ai-sdlc rebase` resolver's protected-branch list and the
- * CLAUDE.md "Never force-push to main/master" rule.
+ * .github/copilot-instructions.md "Never force-push to main/master" rule.
  */
 export const PROTECTED_BRANCHES = new Set(['main', 'master']);
 
@@ -205,7 +205,7 @@ export async function runReworkPr(opts: ReworkPrOptions): Promise<ReworkPrResult
   // Refuse to operate on a PR whose head branch is main/master. The branch
   // is derived from PR metadata, so a misconfigured PR (or one targeting the
   // wrong refspec) could otherwise let a downstream `git push --force-with-lease`
-  // rewrite main. CLAUDE.md: "Never force-push to main/master."
+  // rewrite main. .github/copilot-instructions.md: "Never force-push to main/master."
   if (PROTECTED_BRANCHES.has(branch)) {
     return {
       ok: false,

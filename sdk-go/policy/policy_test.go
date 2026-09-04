@@ -276,7 +276,7 @@ func TestAdmissionPipeline(t *testing.T) {
 
 func TestLLMEvaluator(t *testing.T) {
 	stub := NewStubLLMEvaluator(true, "PASS")
-	rule := &core.GateRule{Prompt: "review this", LLMModel: "gpt-4", PassPhrase: "PASS"}
+	rule := &core.GateRule{Prompt: "review this", LLMModel: "gpt-5", PassPhrase: "PASS"}
 	result := EvaluateLLMRule(context.Background(), rule, stub, nil)
 	assert.True(t, result.Passed)
 }

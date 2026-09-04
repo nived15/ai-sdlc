@@ -199,7 +199,7 @@ describe('Step 2 — slugify (AISDLC-180 fixtures)', () => {
 // AISDLC-202.2 — degraded-input fallback. AISDLC-180 originally threw here so
 // the upstream parser bug (block-scalar markers leaking through) would fail
 // loud; AISDLC-202.2 replaces the throw with a stable fallback slug + warning
-// so Codex/unattended runs that hit a degraded title still produce a valid
+// so GitHub Copilot/unattended runs that hit a degraded title still produce a valid
 // branch name without operator hand-patching.
 describe('Step 2 — computeBranchName degraded-slug fallback (AISDLC-202.2)', () => {
   const evilTask = (title: string): TaskSpec => ({

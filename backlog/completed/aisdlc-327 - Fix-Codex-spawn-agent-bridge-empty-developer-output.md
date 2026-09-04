@@ -11,10 +11,10 @@ labels:
   - developer-experience
 dependencies: []
 references:
-  - scripts/codex-spawn-agent-bridge.mjs
-  - pipeline-cli/src/runtime/spawners/codex-harness.ts
+  - scripts/copilot-spawn-agent-bridge.mjs
+  - pipeline-cli/src/runtime/spawners/copilot-harness.ts
   - pipeline-cli/src/cli/execute.ts
-  - docs/operations/codex-execution-path.md
+  - docs/operations/copilot-spawner.md
 priority: high
 ---
 

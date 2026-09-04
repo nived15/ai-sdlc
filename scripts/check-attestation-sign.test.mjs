@@ -61,9 +61,9 @@ function cleanEnv(extra = {}) {
   if (!('AI_SDLC_V6_CUTOVER_ACTIVE' in extra)) {
     env.AI_SDLC_V6_CUTOVER_ACTIVE = '1';
   }
-  // AISDLC-250: don't inherit CODEX_VERSION from the host env so tests that
+  // AISDLC-250: don't inherit COPILOT_VERSION from the host env so tests that
   // assert the "absent" path are hermetic even when the operator has exported it.
-  delete env.CODEX_VERSION;
+  delete env.COPILOT_VERSION;
   // AISDLC-383.7: the AISDLC-380 sub-attestation gate (Step 4d) was removed in
   // Phase 4 cleanup. The associated AI_SDLC_VERIFY_SUB_ATTESTATIONS_CMD +
   // AI_SDLC_TEST_MODE env vars are no longer consulted by the hook; tests no
@@ -196,7 +196,7 @@ function writeVerdictFile(root, taskId) {
       [
         {
           agentId: 'code-reviewer',
-          harness: 'claude-code',
+          harness: 'copilot',
           approved: true,
           findings: { critical: 0, major: 0, minor: 0, suggestion: 0 },
         },
@@ -688,11 +688,11 @@ describe('check-attestation-sign.sh (AISDLC-133)', () => {
     assert.equal(existsSync(attDir), false, 'attestations dir must not exist when hook is a no-op');
   });
 
-  // ── AISDLC-250: CODEX_VERSION env var harness passthrough ────────────────
+  // ── AISDLC-250: COPILOT_VERSION env var harness passthrough ────────────────
 
-  it('AISDLC-250: passes --harness-name codex --harness-version when CODEX_VERSION is set', () => {
-    // When the operator pre-exports CODEX_VERSION="codex@0.128.0", the hook
-    // must parse the version and forward --harness-name codex --harness-version 0.128.0
+  it('AISDLC-250: passes --harness-name copilot --harness-version when COPILOT_VERSION is set', () => {
+    // When the operator pre-exports COPILOT_VERSION="copilot@1.0.0", the hook
+    // must parse the version and forward --harness-name copilot --harness-version 0.128.0
     // to the signer so the attestation envelope carries harness identification.
     writeFileSync(join(root, '.active-task'), 'AISDLC-250\n');
     writeVerdictFile(root, 'AISDLC-250');
@@ -700,14 +700,14 @@ describe('check-attestation-sign.sh (AISDLC-133)', () => {
     const r = runHook(root, {
       AI_SDLC_SIGN_ATTESTATION_CMD: cmd,
       AI_SDLC_ALLOW_SIGNER_OVERRIDE: '1',
-      CODEX_VERSION: 'codex@0.128.0',
+      COPILOT_VERSION: 'copilot@1.0.0',
     });
     assert.equal(r.status, 1, `expected 1 (signed), got ${r.status}: ${r.stderr}`);
     const log = execFileSync('cat', [logPath], { encoding: 'utf-8' });
     assert.match(
       log,
-      /--harness-name codex/,
-      `signer must be invoked with --harness-name codex: ${log}`,
+      /--harness-name copilot/,
+      `signer must be invoked with --harness-name copilot: ${log}`,
     );
     assert.match(
       log,
@@ -716,24 +716,24 @@ describe('check-attestation-sign.sh (AISDLC-133)', () => {
     );
   });
 
-  it('AISDLC-250: does NOT pass --harness-name when CODEX_VERSION is absent', () => {
-    // When CODEX_VERSION is not set (claude-code path), the hook must NOT pass
+  it('AISDLC-250: does NOT pass --harness-name when COPILOT_VERSION is absent', () => {
+    // When COPILOT_VERSION is not set (unset-harness path), the hook must NOT pass
     // --harness-name or --harness-version — the back-compat path leaves harness
-    // absent from the envelope (defaults to claude-code per AISDLC-202.3).
+    // absent from the envelope (the harness field is simply absent per AISDLC-202.3).
     writeFileSync(join(root, '.active-task'), 'AISDLC-250\n');
     writeVerdictFile(root, 'AISDLC-250');
     const { cmd, logPath } = installFakeSigner(root);
     const r = runHook(root, {
       AI_SDLC_SIGN_ATTESTATION_CMD: cmd,
       AI_SDLC_ALLOW_SIGNER_OVERRIDE: '1',
-      // CODEX_VERSION intentionally absent (cleanEnv already deletes it if present)
+      // COPILOT_VERSION intentionally absent (cleanEnv already deletes it if present)
     });
     assert.equal(r.status, 1, `expected 1 (signed), got ${r.status}: ${r.stderr}`);
     const log = execFileSync('cat', [logPath], { encoding: 'utf-8' });
     assert.equal(
       log.includes('--harness-name'),
       false,
-      `signer must NOT receive --harness-name when CODEX_VERSION is unset: ${log}`,
+      `signer must NOT receive --harness-name when COPILOT_VERSION is unset: ${log}`,
     );
   });
 

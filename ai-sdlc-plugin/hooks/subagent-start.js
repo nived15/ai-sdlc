@@ -2,11 +2,11 @@
  * AI-SDLC SubagentStart Hook
  *
  * Reads .ai-sdlc/agent-role.yaml from the project directory and emits
- * governance context as additionalContext, which Claude Code injects into
+ * governance context as additionalContext, which GitHub Copilot CLI injects into
  * the spawned subagent's session.
  *
  * Why this exists separately from session-start.js: SessionStart hooks do NOT
- * fire for subagents (verified in claude-code source: runAgent.ts:532-543
+ * fire for subagents (verified in copilot source: runAgent.ts:532-543
  * dispatches executeSubagentStartHooks instead of processSessionStartHooks).
  * Without this hook the developer subagent and reviewers would run with no
  * governance context at all.
@@ -29,7 +29,7 @@ try {
 // ── Find project root ────────────────────────────────────────────────
 
 const projectDir =
-  process.env.CLAUDE_PROJECT_DIR ||
+  process.env.COPILOT_PROJECT_DIR ||
   (() => {
     try {
       return execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();
@@ -63,7 +63,7 @@ const blockedPaths = parseListField(yaml, 'blockedPaths');
 
 let context = `## AI-SDLC Governance (subagent context)
 
-You are running as a Claude Code subagent. The orchestrating command will
+You are running as a GitHub Copilot CLI subagent. The orchestrating command will
 gate your output (reviews, PR creation). Stay focused on your assigned task.
 
 ### Hard rules — NEVER violate

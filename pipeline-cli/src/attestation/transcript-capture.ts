@@ -29,7 +29,7 @@ export interface TranscriptEvent {
   event?: string;
   /** Optional: for tool events, the tool name. */
   toolName?: string;
-  /** Optional: harness that produced this event (e.g. 'codex' for cross-harness). */
+  /** Optional: harness that produced this event (e.g. 'copilot' for cross-harness). */
   harness?: string;
 }
 

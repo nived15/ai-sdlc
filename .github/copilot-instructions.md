@@ -1,6 +1,10 @@
-# AI-SDLC Project Instructions
+# AI-SDLC — GitHub Copilot CLI instructions
 
-**Scope:** AI-SDLC is a full autonomous SDLC framework — autonomous orchestrator (RFC-0015), cross-harness review (RFC-0010 §13), decision engine (RFC-0011 DoR), operator TUI (RFC-0023), Pattern-C worktree isolation, and declarative governance. The `ai-sdlc-plugin/` package is the Claude Code plugin pillar; `pipeline-cli/` is the Step 0-13 pipeline runtime; `orchestrator/` is the CLI and agent runner layer.
+> Canonical operating conventions for any agent or contributor working in this
+> repository. The framework dispatches every subagent through the **GitHub
+> Copilot CLI**; there is no other supported harness.
+
+**Scope:** AI-SDLC is a full autonomous SDLC framework — autonomous orchestrator (RFC-0015), independent parallel review (RFC-0010 §13), decision engine (RFC-0011 DoR), operator TUI (RFC-0023), Pattern-C worktree isolation, and declarative governance. The `ai-sdlc-plugin/` package is the GitHub Copilot CLI plugin pillar; `pipeline-cli/` is the Step 0-13 pipeline runtime; `orchestrator/` is the CLI and agent runner layer.
 
 ## Git Flow
 
@@ -17,7 +21,7 @@ GitHub Actions silently skips ALL workflows when ANY commit body contains `[skip
 
 - Branches: `feat/<desc>`, `fix/<desc>`, or `ai-sdlc/issue-<n>`.
 - Conventional commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`, `style:`).
-- Include `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>`.
+- Include `Co-Authored-By: GitHub Copilot <noreply@github.com>`.
 
 ## PRs
 
@@ -107,12 +111,12 @@ Agents whose role is read-only (exploration, audit, refinement review) MUST NOT 
 
 ### Subagent model defaults (AISDLC cost control)
 
-Agent frontmatter pins model by role to prevent session-model bleed (Opus inheritance was the root cause of a 26%-weekly-budget incident on 2026-05-30):
+Agent frontmatter pins model by role to prevent session-model bleed (session-model inheritance was the root cause of a 26%-weekly-budget incident):
 
-- `developer`, `code-reviewer`, `test-reviewer` → **sonnet** (cost-efficient for mechanical tasks)
-- `security-reviewer` → **opus** (reasoning-heavy; the one role where Opus pays for itself)
+- `developer`, `code-reviewer`, `test-reviewer` → **the balanced tier** (cost-efficient for mechanical tasks)
+- `security-reviewer` → **the reasoning tier** (reasoning-heavy; the one role where the extra reasoning budget pays for itself)
 
-On dispatch paths (`/ai-sdlc execute`, `/ai-sdlc orchestrator-tick`), code-review and test-review SHOULD be routed to the `-codex` variants (`code-reviewer-codex` / `test-reviewer-codex`) by default — Codex plan billing is zero Claude usage. Security review stays on the Claude-native `security-reviewer` at opus. Mechanical work (sign, reconcile, rebase) MUST NOT be wrapped in subagents.
+On dispatch paths (`/ai-sdlc execute`, `/ai-sdlc orchestrator-tick`), code-review and test-review SHOULD be routed to the canonical reviewer agents (`code-reviewer` / `test-reviewer`) by default. Security review stays on the `security-reviewer` at the reasoning tier. Mechanical work (sign, reconcile, rebase) MUST NOT be wrapped in subagents.
 
 ## Subagent Governance — OQ-resolution prohibition (AISDLC-298)
 
@@ -184,22 +188,22 @@ Both helpers live in `scripts/verify-attestation.mjs` (`isAttestationOnlyDescend
 
 ## Remote agents (`/schedule`) — read-only by design (AISDLC-442)
 
-CCR remote sandboxes are **read-only by design**. They lack four prerequisites that `/ai-sdlc execute` requires:
+Remote sandboxes are **read-only by design**. They lack four prerequisites that `/ai-sdlc execute` requires:
 
 | Missing prerequisite | Why it matters |
 |---|---|
-| `~/.ai-sdlc/signing-key.pem` | Signing key is operator-machine-local; CCR has no access |
+| `~/.ai-sdlc/signing-key.pem` | Signing key is operator-machine-local; remote sandbox has no access |
 | Plugin install | `mcp__plugin_ai-sdlc_ai-sdlc__*` tools are unavailable |
 | Worktree filesystem | `.worktrees/<task-id>/` creation / git-worktree ops fail |
 | Operator filesystem | `.ai-sdlc/trusted-reviewers.yaml` pubkeys inaccessible |
 
-**Acceptable in CCR**: PR/backlog status surveys, cron metric digests, Slack workflows, CI run-list / flake detection, `mcp__backlog__task_create`, `mcp__github__create_issue`.
+**Acceptable in remote sandbox**: PR/backlog status surveys, cron metric digests, Slack workflows, CI run-list / flake detection, `mcp__backlog__task_create`, `mcp__github__create_issue`.
 
-**Prohibited in CCR**: `/ai-sdlc execute`, signing-key flows, plugin subagents (`developer`, `code-reviewer`, etc.), worktree ops, sibling-repo writes.
+**Prohibited in remote sandbox**: `/ai-sdlc execute`, signing-key flows, plugin subagents (`developer`, `code-reviewer`, etc.), worktree ops, sibling-repo writes.
 
 ### Local vs. remote — what works where
 
-| Task type | Works in CCR? | Works locally? | Notes |
+| Task type | Works in remote sandbox? | Works locally? | Notes |
 |---|---|---|---|
 | Survey open PRs | Yes | Yes | `gh pr list` |
 | Check CI run health | Yes | Yes | `gh run list` |
@@ -209,25 +213,25 @@ CCR remote sandboxes are **read-only by design**. They lack four prerequisites t
 | Run `/ai-sdlc execute` | **No** | Yes | Requires signing key + worktree |
 | Sign attestation envelopes | **No** | Yes | Signing key is operator-machine-local |
 | Open worktrees | **No** | Yes | `git worktree add` fails in sandbox |
-| Run developer subagent | **No** | Yes | Plugin subagents unavailable in CCR |
+| Run developer subagent | **No** | Yes | Plugin subagents unavailable in remote sandbox |
 
 ### Supported handoff workflow
 
-When a CCR `/schedule` task detects work that requires local execution:
+When a remote sandbox `/schedule` task detects work that requires local execution:
 
 1. **File a backlog task** via `mcp__backlog__task_create` — or a GitHub issue via `mcp__github__create_issue` if the work is broad.
 2. **Include full context** in the task body: what triggered the work, what the expected outcome is, any relevant file paths.
 3. **The local operator session picks it up** on the next `/ai-sdlc orchestrator-tick` or manually via `/ai-sdlc execute <task-id>`.
 
-> `/ai-sdlc execute` detects CCR sandboxes at startup (AISDLC-442) and refuses with a clear error pointing here. See `docs/operations/remote-agents-readonly.md` for the full runbook.
+> `/ai-sdlc execute` detects remote sandbox sandboxes at startup (AISDLC-442) and refuses with a clear error pointing here. See `docs/operations/remote-agents-readonly.md` for the full runbook.
 
 ### Detection heuristics
 
 `/ai-sdlc execute` uses three signals (first match wins):
 
-1. `CLAUDE_CODE_ENV=ccr` — canonical env var injected by Claude Code in CCR sessions.
-2. `CLAUDE_REMOTE_EXECUTION=1` — alternative injection used in some operator configurations.
-3. `CLAUDE_CODE_ENV` set (any value) + `~/.ai-sdlc/signing-key.pem` absent — likely managed sandbox; conservative fallback when (1) and (2) don't fire.
+1. `COPILOT_CLI_ENV=remote` — canonical env var injected by the GitHub Copilot CLI in managed remote sessions.
+2. `COPILOT_REMOTE_EXECUTION=1` — alternative injection used in some operator configurations.
+3. `COPILOT_CLI_ENV` set (any value) + `~/.ai-sdlc/signing-key.pem` absent — likely managed sandbox; conservative fallback when (1) and (2) don't fire.
 
 ## RFCs
 
@@ -310,32 +314,30 @@ The decision is computed by `pipeline-cli dor-pr-has-violations`, which consumes
 
 | Use case | Command | Billing |
 |---|---|---|
-| Internal dogfood (backlog tasks) | `/ai-sdlc execute <task-id>` (e.g. `AISDLC-393`) | Subscription (Claude Code Max) |
-| Internal dogfood (GitHub issues, subscription billing) | `/ai-sdlc execute <issue-number>` (e.g. `612`, `#612`, `gh:612`) | Subscription (Agent SDK credit pool post-2026-06-15; refuses to fall back to API key) — AISDLC-393 |
-| **Autonomous loop — single-session drain (Pattern X v2, AISDLC-396)** | `/ai-sdlc orchestrator-tick` (once, ScheduleWakeup loops). Conductor dispatches background `Agent(developer)` per manifest; dev follows its standard contract (commit → rebase → push → open DRAFT PR). Conductor's next tick **reconciles after-the-fact**: parses dev's return JSON into a verdict, fans out 3 reviewers, signs attestation, force-pushes the chore commit on top of the dev's branch, flips draft → ready. | Subscription interactive quota only — Sonnet for dev/code/test, Opus only for security. One operator-opened CC session suffices. |
+| Internal dogfood (backlog tasks) | `/ai-sdlc execute <task-id>` (e.g. `AISDLC-393`) | GitHub Copilot subscription |
+| Internal dogfood (GitHub issues, subscription billing) | `/ai-sdlc execute <issue-number>` (e.g. `612`, `#612`, `gh:612`) | Subscription (GitHub Copilot subscription) — AISDLC-393 |
+| **Autonomous loop — single-session drain (Pattern X v2, AISDLC-396)** | `/ai-sdlc orchestrator-tick` (once, ScheduleWakeup loops). Conductor dispatches background `Agent(developer)` per manifest; dev follows its standard contract (commit → rebase → push → open DRAFT PR). Conductor's next tick **reconciles after-the-fact**: parses dev's return JSON into a verdict, fans out 3 reviewers, signs attestation, force-pushes the chore commit on top of the dev's branch, flips draft → ready. | Subscription interactive quota only — the balanced tier for dev/code/test, the reasoning tier only for security. One operator-opened Copilot CLI session suffices. |
 | **Autonomous loop — N>4 parallel via sibling Workers (Pattern Z)** | `/ai-sdlc orchestrator-tick` + N sibling sessions running `/ai-sdlc dispatch-worker` | Subscription interactive quota only. Use when Pattern X's `inSessionAgentMaxSessions` (default 4) is insufficient for the backlog burst. |
-| Operator-driven single-PR (task file + impl land together) | `cli-orchestrator tick --task-from-file <path>` (AISDLC-373) | Same as the configured `--spawner` (subscription on default `claude`) |
+| Operator-driven single-PR (task file + impl land together) | `cli-orchestrator tick --task-from-file <path>` (AISDLC-373) | Same as the configured `--spawner` (subscription on default `copilot`) |
 | Manual cleanup | `/ai-sdlc cleanup [<task-id>]` | n/a |
-| Shell-driven autonomous tick (cron/daemon/sidecar; Pattern Y) | `cli-orchestrator tick --spawner claude` | Subscription (shells out to `claude -p`; draws Agent SDK credit pool post-2026-06-15). Use when no operator CC session is available. |
-| GitHub issue / unattended / CI | `pnpm --filter @ai-sdlc/dogfood watch --issue <id>` | API key |
+| Shell-driven autonomous tick (cron/daemon/sidecar; Pattern Y) | `cli-orchestrator tick --spawner copilot` | GitHub Copilot subscription (shells out to `copilot -p`; draws GitHub Copilot request allowance post-2026-06-15). Use when no operator Copilot CLI session is available. |
+| GitHub issue / unattended / CI | `pnpm --filter @ai-sdlc/dogfood watch --issue <id>` | GitHub Copilot subscription |
 
 `/ai-sdlc execute` is the default for internal work. Worktree-isolated, auto-creates sibling-repo PRs from `permittedExternalPaths`, marks Done + moves task file in the same PR.
 
-**AISDLC-393 — argument forms.** `/ai-sdlc execute` accepts (in this precedence order): `gh:<n>` (explicit GH-issue), `<prefix>-<number>` (backlog task ID like `AISDLC-393`, including hierarchical sub-IDs like `AISDLC-100.5`), `<number>` / `#<number>` (bare/hash-prefixed numeric → GH-issue). The reference parser lives in `dogfood/src/dispatch-execute-arg.ts` (`parseExecuteArg`) with hermetic test coverage. On the GH-issue path, NO backlog task file is created — the issue is the source of truth and the PR closes it via `Closes #N`. The watcher path (`pnpm --filter @ai-sdlc/dogfood watch --issue <id>`) accepts the same argument forms via the same parser, preserved unchanged for API-key/unattended/CI use. **Dispatch wiring:** the GH-issue path uses `fetchGhIssueAsTaskSpec()` (`dogfood/src/dispatch-from-issue.ts`) to synthesise an in-memory `TaskSpec`, then dispatches via `executePipeline({ taskSpec, sourceKind: 'gh-issue', issueNumber })` — the same composite the backlog-task path uses, just with two knobs flipped. Step 1 skips `findTaskFile`; Step 4 skips the frontmatter patch (sentinel still written) and materialises a transient synthetic task file at `<worktree>/backlog/tasks/<id> - <slug>.md` when `permittedExternalPaths` is non-empty so the PreToolUse hook resolves the allowlist (round-2 AC-2 fix; Step 13 removes the synthetic before push); Step 10 skips the tasks→completed move (attestation envelope still signed + committed); Step 11 formats the PR title with `(closes #N)` and prepends `Closes #N` to the body so the issue auto-closes on merge. **Billing safety (round 2 FINDING 2 fix):** the gh-issue branch pre-flights `claude` on PATH and refuses dispatch if the CLI is missing — refuses to fall back to `ANTHROPIC_API_KEY`-based SDK dispatch (paid API tokens) without explicit operator opt-in via the watcher path. **Latency (round 2 FINDING 3 fix):** the gh-issue branch fetches the issue once, caches the synthesised spec to a `$TMPDIR/aisdlc-393-spec-<n>-$$.json` tmpfile cleaned up on EXIT/INT/TERM, and feeds both the shell-scope TASK_ID extraction and the dispatch `node -e` block from that cache — no second `gh issue view` round-trip.
+**AISDLC-393 — argument forms.** `/ai-sdlc execute` accepts (in this precedence order): `gh:<n>` (explicit GH-issue), `<prefix>-<number>` (backlog task ID like `AISDLC-393`, including hierarchical sub-IDs like `AISDLC-100.5`), `<number>` / `#<number>` (bare/hash-prefixed numeric → GH-issue). The reference parser lives in `dogfood/src/dispatch-execute-arg.ts` (`parseExecuteArg`) with hermetic test coverage. On the GH-issue path, NO backlog task file is created — the issue is the source of truth and the PR closes it via `Closes #N`. The watcher path (`pnpm --filter @ai-sdlc/dogfood watch --issue <id>`) accepts the same argument forms via the same parser, preserved unchanged for unattended/CI use. **Dispatch wiring:** the GH-issue path uses `fetchGhIssueAsTaskSpec()` (`dogfood/src/dispatch-from-issue.ts`) to synthesise an in-memory `TaskSpec`, then dispatches via `executePipeline({ taskSpec, sourceKind: 'gh-issue', issueNumber })` — the same composite the backlog-task path uses, just with two knobs flipped. Step 1 skips `findTaskFile`; Step 4 skips the frontmatter patch (sentinel still written) and materialises a transient synthetic task file at `<worktree>/backlog/tasks/<id> - <slug>.md` when `permittedExternalPaths` is non-empty so the PreToolUse hook resolves the allowlist (round-2 AC-2 fix; Step 13 removes the synthetic before push); Step 10 skips the tasks→completed move (attestation envelope still signed + committed); Step 11 formats the PR title with `(closes #N)` and prepends `Closes #N` to the body so the issue auto-closes on merge. **Billing safety (round 2 FINDING 2 fix):** the gh-issue branch pre-flights `copilot` on PATH and refuses dispatch if the CLI is missing — refuses to dispatch at all rather than silently falling back to another provider. **Latency (round 2 FINDING 3 fix):** the gh-issue branch fetches the issue once, caches the synthesised spec to a `$TMPDIR/aisdlc-393-spec-<n>-$$.json` tmpfile cleaned up on EXIT/INT/TERM, and feeds both the shell-scope TASK_ID extraction and the dispatch `node -e` block from that cache — no second `gh issue view` round-trip.
 
-**Spawner kinds for `cli-orchestrator tick --spawner <kind>`** (AISDLC-349, default changed AISDLC-352; legacy `claude-cli` removed AISDLC-377.6):
+**Spawner kinds for `cli-orchestrator tick --spawner <kind>`**:
 - `mock` — fixtures only; for plumbing tests. Billing: none.
-- `api-key` — uses `ANTHROPIC_API_KEY` via the Claude Code SDK. Billing: API token (pay-as-you-go or Agent SDK credit pool post-2026-06-15).
-- `claude` — **(DEFAULT since AISDLC-352)** shells out to `claude -p` via `child_process.spawn`. **Use this for autonomous tick from a shell** (cron/daemon/sidecar context where no slash command body is around). Billing: subscription (Agent SDK credit pool, $200/mo on Max-20x). AISDLC-349. **Warning**: if `ANTHROPIC_API_KEY` is also set in env and `AI_SDLC_ORCHESTRATOR_SPAWNER_FALLBACK=api-key` is configured, a spawner error can silently fall through to paid API tokens — the CLI warns at tick start.
-- `codex` — dispatches via Codex CLI bridge (`CODEX_SPAWN_AGENT_BIN`). Billing: Codex plan.
-- `copilot` — dispatches via GitHub Copilot CLI bridge (`COPILOT_SPAWN_AGENT_BIN`). Resolver throws a clear configuration error before any pipeline mutation when the env var is unset — refuses to silently fall back to `ANTHROPIC_API_KEY` billing. Billing: GitHub Copilot subscription. AISDLC-429.2 + AISDLC-429.3. See [`docs/operations/copilot-spawner.md`](docs/operations/copilot-spawner.md).
-- ~~`claude-cli`~~ — **removed in RFC-0041 Phase 3.3 (AISDLC-377.6)** after the AISDLC-377.4 deprecation-warning window. Was the `ClaudeCliInlineSpawner` inline-manifest path (AISDLC-198). For subscription-billed parallel autonomous drain, use the Dispatch Board model: `/ai-sdlc orchestrator-tick` (Conductor) + N `/ai-sdlc dispatch-worker` sessions (Workers). Migration breadcrumb: [`docs/operations/claude-cli-spawner-removed.md`](docs/operations/claude-cli-spawner-removed.md).
+- `copilot` — **(DEFAULT)** dispatches via the GitHub Copilot CLI bridge (`COPILOT_SPAWN_AGENT_BIN`). The resolver throws a clear configuration error before any pipeline mutation when the env var is unset — it refuses to silently fall back to any other inference provider. Billing: GitHub Copilot subscription. AISDLC-429.2 + AISDLC-429.3. See [`docs/operations/copilot-spawner.md`](docs/operations/copilot-spawner.md).
+
+Retired kinds (`api-key`, `claude`, `claude-cli`, `codex`, `cursor`, `generic-llm`) are rejected with an actionable migration error. For parallel autonomous drain, use the Dispatch Board model: `/ai-sdlc orchestrator-tick` (Conductor) + N `/ai-sdlc dispatch-worker` sessions (Workers).
 
 **New dispatch patterns (RFC-0041 Conductor/Worker Architecture)**:
-- `in-session-agent` — each Worker is a separate operator-opened CC session running `/ai-sdlc dispatch-worker`; tasks are claimed from the Dispatch Board (`.ai-sdlc/dispatch/queue/`) via foreground `Agent` calls (no watchdog, subscription quota). **Recommended default for autonomous drain.** N sessions = N-wide parallelism at zero incremental cost.
-- `claude-p-shell` — Workers are `env -u CLAUDECODE claude -p` subprocesses spawned by `cli-dispatch-supervisor`. Operator-controlled 30 min watchdog. Draws Agent SDK credit pool post-2026-06-15. For headless/CI contexts where no operator CC session is available.
+- `in-session-agent` — each Worker is a separate operator-opened Copilot CLI session running `/ai-sdlc dispatch-worker`; tasks are claimed from the Dispatch Board (`.ai-sdlc/dispatch/queue/`) via foreground agent calls (no watchdog, subscription quota). **Recommended default for autonomous drain.** N sessions = N-wide parallelism at zero incremental cost.
+- `copilot-p-shell` — Workers are `env -u COPILOT_CLI_SESSION copilot -p` subprocesses spawned by `cli-dispatch-supervisor`. Operator-controlled 30 min watchdog. For headless/CI contexts where no operator Copilot CLI session is available.
 
-The Step 0-13 pipeline lives in `pipeline-cli/` (`@ai-sdlc/pipeline-cli`). Tier 1 = slash command body (subscription). Tier 2 = `executePipeline()` library + `SubagentSpawner` injection (API-key, MockSpawner, etc.). Refs: `pipeline-cli/{README,docs/spawner,docs/steps}.md`, RFC-0012.
+The Step 0-13 pipeline lives in `pipeline-cli/` (`@ai-sdlc/pipeline-cli`). Tier 1 = slash command body. Tier 2 = `executePipeline()` library + `SubagentSpawner` injection (`CopilotHarnessAdapter`, `MockSpawner`). Refs: `pipeline-cli/{README,docs/spawner,docs/steps}.md`, RFC-0012.
 
 ### Done semantics
 
@@ -357,9 +359,9 @@ The PreToolUse hook reads `<worktree>/.active-task` (per-worktree sentinel, AISD
 
 ### Parallel runs
 
-Each `/ai-sdlc execute` runs in its own Claude Code session with its own per-worktree sentinel. Fan out via `/loop /ai-sdlc execute <task-id>` or multiple terminals — no shared mutable state to race on. Pre-push hook serializes only at push (Step 11); Steps 5-10 run fully in parallel across runs.
+Each `/ai-sdlc execute` runs in its own Copilot CLI session with its own per-worktree sentinel. Fan out via `/loop /ai-sdlc execute <task-id>` or multiple terminals — no shared mutable state to race on. Pre-push hook serializes only at push (Step 11); Steps 5-10 run fully in parallel across runs.
 
-Plugin subagents cannot use the `Agent` tool (Claude Code filters it one level deep — verified via AISDLC-69.2 test). The pipeline therefore lives inline in the slash command body, not in a subagent middleman (AISDLC-82 reverted by AISDLC-98).
+Plugin subagents cannot use the `Agent` tool (GitHub Copilot CLI filters it one level deep — verified via AISDLC-69.2 test). The pipeline therefore lives inline in the slash command body, not in a subagent middleman (AISDLC-82 reverted by AISDLC-98).
 
 ### Lifecycle rules
 
@@ -425,7 +427,7 @@ When adding a new publishable package: add to `pnpm-workspace.yaml`, add the `pu
 
 ## Plugin MCP server — project root resolution (AISDLC-99, AISDLC-216)
 
-The plugin's MCP server (`mcp__plugin_ai-sdlc_ai-sdlc__*` tools) resolves the project directory in this order: `AI_SDLC_PROJECT_ROOT` env → `CLAUDE_PROJECT_DIR` env → walk up from `process.cwd()` for an ancestor with `backlog/` → throw. Almost always falls through to the cwd-walk and finds the right project. Override with `AI_SDLC_PROJECT_ROOT=/abs/path` before launching Claude Code.
+The plugin's MCP server (`mcp__plugin_ai-sdlc_ai-sdlc__*` tools) resolves the project directory in this order: `AI_SDLC_PROJECT_ROOT` env → `COPILOT_PROJECT_DIR` env → walk up from `process.cwd()` for an ancestor with `backlog/` → throw. Almost always falls through to the cwd-walk and finds the right project. Override with `AI_SDLC_PROJECT_ROOT=/abs/path` before launching GitHub Copilot CLI.
 
 ### Pattern C routing (AISDLC-216)
 
@@ -437,7 +439,7 @@ After resolving the candidate root, the resolver checks for Pattern C: if `<root
 2. **Per-worktree `.active-task` sentinels** — scans `<parent>/.worktrees/<id>/.active-task` (matches `pipeline-cli/src/steps/04-flip-status.ts` write location and `findWorktreeSentinel` pattern). When multiple worktrees have sentinels (parallel runs), the most-recently-modified one wins.
 3. **No signal → refuse** with the Pattern C error message.
 
-The typical Pattern C setup: `/ai-sdlc execute <task-id>` automatically writes `.worktrees/<task-id>/.active-task` (per AISDLC-81). For sessions where the env-var path is preferred (e.g. operator manually launching Claude Code into a multi-worktree project), set `AI_SDLC_ACTIVE_TASK_ID=AISDLC-NNN` before launch.
+The typical Pattern C setup: `/ai-sdlc execute <task-id>` automatically writes `.worktrees/<task-id>/.active-task` (per AISDLC-81). For sessions where the env-var path is preferred (e.g. operator manually launching GitHub Copilot CLI into a multi-worktree project), set `AI_SDLC_ACTIVE_TASK_ID=AISDLC-NNN` before launch.
 
 ### Pattern C hard guards (AISDLC-358)
 

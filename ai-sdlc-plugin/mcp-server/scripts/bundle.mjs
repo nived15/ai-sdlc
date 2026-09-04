@@ -4,7 +4,7 @@
  *
  * Why this exists:
  *   The plugin manifest (`ai-sdlc-plugin/plugin.json`) loads the MCP server via
- *   `node ${CLAUDE_PLUGIN_ROOT}/mcp-server/dist/bin.js`. When the marketplace
+ *   `node ${COPILOT_PLUGIN_ROOT}/mcp-server/dist/bin.js`. When the marketplace
  *   clones the plugin source it does NOT run `pnpm install`, so `node_modules/`
  *   is absent. A plain `tsc` build emits ESM imports that resolve at runtime
  *   against `node_modules` — which fails silently in the marketplace clone and

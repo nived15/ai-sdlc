@@ -32,7 +32,7 @@ requiresDocs: []
 
 The plugin currently ships three reviewer agents (code-reviewer, test-reviewer, security-reviewer) wired into `/ai-sdlc execute` Step 7 fan-out and AISDLC-141's classifier-gated subset. Adopter projects develop domain-specific quality concerns that don't map cleanly onto these three — doc-conformance, compliance, accessibility, narrative consistency, API stability, telemetry instrumentation, etc.
 
-Currently adopters' only options are (a) inline domain-specific concerns into the existing reviewer prompts via project-local `.claude/agents/<name>.md` overrides (couples concerns, hard to evolve independently), or (b) fork the plugin to add a new reviewer agent type (defeats framework value). This RFC proposes a reviewer extension contract: adopters register additional reviewer types via configuration, and the classifier + dispatch pipeline treat them as first-class.
+Currently adopters' only options are (a) inline domain-specific concerns into the existing reviewer prompts via project-local `.copilot/agents/<name>.md` overrides (couples concerns, hard to evolve independently), or (b) fork the plugin to add a new reviewer agent type (defeats framework value). This RFC proposes a reviewer extension contract: adopters register additional reviewer types via configuration, and the classifier + dispatch pipeline treat them as first-class.
 
 ## 2. Motivation
 
@@ -87,13 +87,13 @@ Schema:
 ```yaml
 adopterReviewers:
   - id: doc-conformance-reviewer
-    agentDefinition: .claude/agents/doc-conformance-reviewer.md
+    agentDefinition: .copilot/agents/doc-conformance-reviewer.md
     classifierKey: docs
     fanOutWeight: required | optional | classified-only
     description: "Validates frontmatter standard, cross-link integrity, currency dates"
 
   - id: accessibility-reviewer
-    agentDefinition: .claude/agents/accessibility-reviewer.md
+    agentDefinition: .copilot/agents/accessibility-reviewer.md
     classifierKey: ui
     fanOutWeight: classified-only
     description: "Validates WCAG 2.1 AA compliance on touched UI components"
@@ -142,9 +142,9 @@ Fully backward-compatible. Adopters who don't ship `.ai-sdlc/reviewers.yaml` see
 
 ## 7. Alternatives Considered
 
-### 7.1 Per-agent prompt extension via `.claude/agents/<default-reviewer>.md` overrides
+### 7.1 Per-agent prompt extension via `.copilot/agents/<default-reviewer>.md` overrides
 
-Adopters can already override `.claude/agents/code-reviewer.md` etc. to add domain-specific checks. Works for small additions; couples concerns (code quality + accessibility in one reviewer) and makes the override hard to evolve.
+Adopters can already override `.copilot/agents/code-reviewer.md` etc. to add domain-specific checks. Works for small additions; couples concerns (code quality + accessibility in one reviewer) and makes the override hard to evolve.
 
 ### 7.2 Adopter pre-commit / pre-PR scripts
 
@@ -319,7 +319,7 @@ The subprocess-plugin path (§10) and the config-file LLM-agent path (§4.1) are
 | Dimension | §4.1 config-file LLM agent | §10 subprocess plugin |
 |-----------|----------------------------|----------------------|
 | Concern type | Judgment-heavy, prose-finding | Policy-heavy, deterministic |
-| Authoring language | Claude agent prompt + `reviewers.yaml` | Any language; TypeScript shim wrapper |
+| Authoring language | GitHub Copilot agent prompt + `reviewers.yaml` | Any language; TypeScript shim wrapper |
 | Reproducibility | Non-deterministic (LLM) | Deterministic (binary gate) |
 | Classifier integration | Via `classifierKey` field | Optional `classifierKey` on plugin (deferred) |
 | Fan-out integration | Step 7 fan-out | `beforeRun` hook (pre-dispatch) |

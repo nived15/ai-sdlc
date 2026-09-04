@@ -1,6 +1,6 @@
 # Authoring a HarnessAdapter
 
-**Audience:** AI-SDLC maintainers adding support for a new coding-agent runtime (Gemini CLI, OpenCode, Aider, etc.).
+**Audience:** AI-SDLC maintainers adding support for a new coding-agent runtime (the GitHub Copilot CLI).
 **Status:** Draft v1
 **Companion to:** [RFC-0010 §13](../../spec/rfcs/RFC-0010-parallel-execution-worktree-pooling.md)
 **Related spec:** [RFC-0003 (Infrastructure Provider Adapters)](../../spec/rfcs/RFC-0003-infrastructure-adapters.md) §1 — extended adapter interface enum (`AuditSink`, `Sandbox`, `SecretStore`, `MemoryStore`, `EventBus`).
@@ -11,7 +11,7 @@
 
 The HarnessAdapter framework decouples the orchestrator from any single coding-agent runtime. Each adapter declares static capabilities, a binary requirement with version range, and three runtime methods (`getAccountId`, `isAvailable`, `invoke`). Adapters are in-tree only — third-party plugins are NOT supported in v1 because adapters execute external CLIs with full credential scope.
 
-The two adapters shipped with v1 are `claude-code` and `codex`. Adding a new adapter follows a five-step recipe.
+The two adapters shipped with v1 are `copilot` and `copilot`. Adding a new adapter follows a five-step recipe.
 
 ## Recipe
 
@@ -32,7 +32,7 @@ import type {
 } from '../types.js';
 
 export class GeminiCliAdapter implements HarnessAdapter {
-  readonly name: HarnessName = 'gemini-cli';
+  readonly name: HarnessName = 'copilot';
 
   readonly capabilities: HarnessCapabilities = {
     freshContext: true,
@@ -45,7 +45,7 @@ export class GeminiCliAdapter implements HarnessAdapter {
   };
 
   readonly requires: HarnessRequires = {
-    binary: 'gemini',
+    binary: 'copilot',
     versionRange: '>=1.0.0',          // open-ended upper bound by default
     versionProbe: {
       args: ['--version'],
@@ -74,7 +74,7 @@ async getAccountId(): Promise<string | null> {
   const token = env.GEMINI_API_KEY;
   if (!token) return null;
   return createHash('sha256')
-    .update(`gemini-cli:${token}`)  // namespace by harness name
+    .update(`copilot:${token}`)  // namespace by harness name
     .digest('hex')
     .slice(0, 16);
 }
@@ -107,12 +107,12 @@ Per RFC §13.8, parse failures fall through to `available: true` with `reason: '
 Update `orchestrator/src/harness/index.ts`:
 
 ```typescript
-import { GeminiCliAdapter } from './adapters/gemini-cli.js';
+import { GeminiCliAdapter } from './adapters/copilot.js';
 
 export function createDefaultHarnessRegistry(): HarnessRegistry {
   const reg = new HarnessRegistry();
-  reg.register(new ClaudeCodeAdapter());
-  reg.register(new CodexAdapter());
+  reg.register(new CopilotAdapter());
+  reg.register(new CopilotAdapter());
   reg.register(new GeminiCliAdapter());  // ← new line
   return reg;
 }
@@ -129,13 +129,13 @@ Every new adapter MUST ship with unit tests (`adapters/<name>.test.ts`) covering
 - [ ] `getAccountId` deterministic for same env
 - [ ] `getAccountId` differs across credentials
 - [ ] `getAccountId` returns null on missing credentials
-- [ ] `getAccountId` namespaces by harness name (cross-harness key isolation)
+- [ ] `getAccountId` namespaces by harness name (cross-session key isolation)
 - [ ] `getAccountId` never returns the credential
 - [ ] `isAvailable` honors injected probe
 - [ ] `isAvailable` caches result
 - [ ] `availableModels` returns the canonical list
 
-Reference: `orchestrator/src/harness/adapters/claude-code.test.ts` and `codex.test.ts`.
+Reference: `orchestrator/src/harness/adapters/copilot.test.ts` and `copilot.test.ts`.
 
 ## Security review requirements
 
@@ -157,4 +157,4 @@ Two pieces of the adapter contract are stubbed in Phase 2.7 and complete in late
 - **`invoke` end-to-end execution.** The default `invoke` throws `not wired into dispatch yet`. Phase 3 (concurrency + worker pool) routes dispatch through the adapter registry.
 - **Schema-conformant artifact emission.** Per RFC §13.9, adapters MUST validate any JSON artifacts they produce against `spec/schemas/artifacts/<name>.schema.json`. The artifact schemas land in Phase 4.
 
-When implementing a new adapter today, you can ship the static capabilities + version probe + getAccountId + availableModels and leave `invoke` stubbed (matching Claude Code and Codex's pattern). Phase 3 will populate the dispatch path uniformly across all adapters.
+When implementing a new adapter today, you can ship the static capabilities + version probe + getAccountId + availableModels and leave `invoke` stubbed (matching GitHub Copilot CLI and GitHub Copilot's pattern). Phase 3 will populate the dispatch path uniformly across all adapters.

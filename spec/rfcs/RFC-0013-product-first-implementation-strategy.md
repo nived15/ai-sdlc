@@ -58,7 +58,7 @@ The market has:
 
 | What exists | What it does | What it doesn't do |
 |---|---|---|
-| **AI coding agents** (Claude Code, Copilot, Cursor, Codex) | Write code from prompts | Manage complexity, maintain context, enforce process |
+| **AI coding agents** (GitHub Copilot CLI, Copilot, GitHub Copilot, GitHub Copilot) | Write code from prompts | Manage complexity, maintain context, enforce process |
 | **CI/CD pipelines** (GitHub Actions, Argo, Tekton) | Build, test, deploy | Orchestrate the *full* SDLC; know nothing about AI agents |
 | **Agent frameworks** (LangChain, CrewAI, AutoGen) | Wire agents together | Understand software engineering; manage codebase growth |
 | **Code quality tools** (SonarQube, Snyk, CodeRabbit) | Scan for issues | Orchestrate; route tasks; manage autonomy |
@@ -128,10 +128,10 @@ Think of it as a **programmable engineering team lead**: it understands the proc
 │  │          │    │           │    │  creds,   │    │   Ledger     │  │
 │  │ Linear   │    │ Codebase  │    │  context) │    │              │  │
 │  │ Jira     │    │ State     │    │           │    │ Promotion/   │  │
-│  │ GitHub   │    │ Store     │    │ Claude    │    │ Demotion     │  │
+│  │ GitHub   │    │ Store     │    │ GitHub Copilot    │    │ Demotion     │  │
 │  └─────────┘    └───────────┘    │ Copilot   │    └──────────────┘  │
-│                                  │ Cursor    │                      │
-│                                  │ Codex     │                      │
+│                                  │ GitHub Copilot    │                      │
+│                                  │ GitHub Copilot     │                      │
 │                                  │ Any MCP   │                      │
 │                                  └───────────┘                      │
 │                                                                      │
@@ -279,7 +279,7 @@ The routing isn't static. As agents prove themselves (promotion criteria met), t
 The orchestrator tracks every agent's performance and progressively grants or restricts autonomy:
 
 ```
-Agent: claude-code-team-alpha
+Agent: copilot-team-alpha
   Current Level: 2 (Senior)
   Time at Level: 6 weeks
   Tasks Completed: 47
@@ -433,7 +433,7 @@ Generated pipeline with:
   - Stages: validate → implement → test → review → merge
   - Quality gates: jest coverage (80%), eslint (0 errors), npm audit (0 critical)
   - Autonomy: Starting at Level 1 (all PRs require human review)
-  - Agent: claude-code (default, configurable)
+  - Agent: copilot (default, configurable)
 
 Ready. Label any issue with "ai-eligible" to start.
 ```
@@ -598,17 +598,13 @@ interface AgentResult {
 ```
 
 Concrete agent runners implement this interface for specific agents:
-- `ClaudeCodeRunner` — invokes Claude Code CLI in `--print` mode
-- `CopilotRunner` — invokes GitHub Copilot CLI in `--yolo` mode
-- `CursorRunner` — invokes Cursor CLI (`cursor-agent`) with stream-json output
-- `CodexRunner` — invokes OpenAI Codex CLI (`codex exec`) via stdin
-- `GenericLLMRunner` — invokes any OpenAI-compatible API endpoint
+- `CopilotRunner` — invokes the GitHub Copilot CLI in `--yolo` mode
 
 This means the orchestrator works with whatever AI coding agents the team already uses.
 
 ### Human-Directed AI Usage: The MCP Session Tracker
 
-The orchestrator controls agent execution when *it* invokes the agent. But most AI-assisted development today happens in a developer's IDE — a developer opens Claude Code, Copilot, or Cursor and works directly, bypassing the orchestrator entirely. This creates a **shadow IT blind spot**: no cost tracking, no quality gates, no attribution, no audit trail.
+The orchestrator controls agent execution when *it* invokes the agent. But most AI-assisted development today happens in a developer's IDE — a developer opens GitHub Copilot CLI, Copilot, or GitHub Copilot and works directly, bypassing the orchestrator entirely. This creates a **shadow IT blind spot**: no cost tracking, no quality gates, no attribution, no audit trail.
 
 The solution is an **MCP Session Tracker** — an MCP server that runs alongside human-directed AI tool sessions, acting as a telemetry and context bridge between the developer's IDE and the orchestrator.
 
@@ -617,9 +613,9 @@ The solution is an **MCP Session Tracker** — an MCP server that runs alongside
 │                      Developer's IDE                          │
 │                                                              │
 │  ┌──────────────┐          ┌───────────────────────────────┐ │
-│  │  Claude Code  │◄──MCP──►│  AI-SDLC Session Tracker      │ │
+│  │  GitHub Copilot CLI  │◄──MCP──►│  AI-SDLC Session Tracker      │ │
 │  │  (or Copilot, │         │  (MCP Server)                 │ │
-│  │   Cursor)     │         │                               │ │
+│  │   GitHub Copilot)     │         │                               │ │
 │  └──────┬───────┘         │  • Links session to issue     │ │
 │         │                  │  • Injects codebase context   │ │
 │         │ writes code      │  • Tracks tokens/cost         │ │
@@ -796,7 +792,7 @@ ai-sdlc diff ISSUE-142              # What changed: files modified, complexity d
 
 ```bash
 ai-sdlc agents                      # Agent roster: autonomy levels, recent performance, promotion proximity
-ai-sdlc agents claude-senior        # Detailed view of a specific agent's history
+ai-sdlc agents copilot-senior        # Detailed view of a specific agent's history
 ai-sdlc routing --last 7d           # Task routing distribution (autonomous / ai-with-review / human-led)
 ai-sdlc complexity                  # Current codebase complexity profile and hotspot map
 ai-sdlc cost --last 7d              # Cost summary: per-pipeline, per-agent, budget utilization
@@ -840,7 +836,7 @@ Most developers should not need to learn the CLI at all. The orchestrator surfac
 | Issue | ISSUE-142: Add user avatar upload |
 | Complexity | 4/10 (moderate) |
 | Routing | AI-with-review |
-| Agent | claude-senior (Level 2) |
+| Agent | copilot-senior (Level 2) |
 | Cost | $0.47 (budget: $5.00) |
 | Gates passed | 6/6 |
 
@@ -853,7 +849,7 @@ Most developers should not need to learn the CLI at all. The orchestrator surfac
 ✅ Convention adherence — consistent with existing patterns
 
 ### Provenance
-Agent: claude-code v1.2 | Model: claude-sonnet-4-5-20250929 | Duration: 4m 12s
+Agent: copilot v1.2 | Model: the balanced tier | Duration: 4m 12s
 Files: 3 modified, 1 created | Lines: +142 / -18
 ```
 
@@ -864,7 +860,7 @@ Files: 3 modified, 1 created | Lines: +142 / -18
 ```
 🔄 Pipeline started — Complexity: 4/10, routing to AI-with-review
 📋 Planning complete — 2 subtasks identified
-🤖 Implementation in progress — agent: claude-senior
+🤖 Implementation in progress — agent: copilot-senior
 ✅ All gates passed — PR #287 created, awaiting human review
 ```
 
@@ -1185,7 +1181,7 @@ Build a hosted SaaS platform where teams connect their repos and agents.
 - [ ] Implement `ai-sdlc health` command (orchestrator health check)
 - [ ] CLI output formatters (table, JSON, minimal) for all commands
 - [ ] SQLite-backed autonomy ledger and codebase state store
-- [ ] Basic ClaudeCodeRunner implementation
+- [ ] Basic CopilotRunner implementation
 - [ ] PR comment generation (structured orchestrator summary on agent-created PRs)
 - [ ] Issue comment updates (stage transition notifications on source issues)
 
@@ -1218,7 +1214,7 @@ Build a hosted SaaS platform where teams connect their repos and agents.
 - [ ] Parallel agent execution for decomposed tasks
 - [ ] Handoff contract validation between agents
 - [ ] Multi-repo orchestration (monorepo and polyrepo)
-- [x] Additional agent runners (Copilot, Cursor, Codex, custom)
+- [x] Additional agent runners (Copilot, GitHub Copilot, GitHub Copilot, custom)
 - [ ] Python SDK: custom agent runner interface + policy evaluator
 - [ ] Go SDK: Kubernetes operator for orchestrator deployment
 - [ ] Web dashboard: org overview, autonomy trajectory, codebase health (Team Cloud)
@@ -1287,37 +1283,37 @@ The credential model supports three authentication methods in a priority chain:
 # .ai-sdlc/agents.yaml
 agents:
   - name: code-agent
-    provider: anthropic
+    provider: github-models
     credentials:
       # Primary: user's OAuth token (for human-initiated work)
       # The agent acts on behalf of the user who triggered the pipeline
       primary:
         type: oauth
-        provider: anthropic
+        provider: github-models
         scopes: ["code:write", "code:read"]
 
       # Fallback chain (tried in order if primary fails)
       fallback:
         # Fallback 1: Org API key (for autonomous work)
         - type: api-key
-          keyRef: ANTHROPIC_API_KEY_PRIMARY
+          keyRef: GITHUB_MODELS_TOKEN_PRIMARY
 
         # Fallback 2: Backup key (if primary exposed/rotated)
         - type: api-key
-          keyRef: ANTHROPIC_API_KEY_SECONDARY
+          keyRef: GITHUB_MODELS_TOKEN_SECONDARY
 
         # Fallback 3: Different provider entirely (graceful degradation)
         - type: api-key
-          provider: openai
-          keyRef: OPENAI_API_KEY
+          provider: github-copilot
+          keyRef: GITHUB_MODELS_TOKEN
           model: gpt-4o
 
       # Key rotation: array of pre-provisioned keys for instant rotation
       rotation:
         keys:
-          - ANTHROPIC_API_KEY_PRIMARY
-          - ANTHROPIC_API_KEY_SECONDARY
-          - ANTHROPIC_API_KEY_TERTIARY
+          - GITHUB_MODELS_TOKEN_PRIMARY
+          - GITHUB_MODELS_TOKEN_SECONDARY
+          - GITHUB_MODELS_TOKEN_TERTIARY
         activeSlot: 0
         rotateOnFailure: true    # Auto-advance to next slot on auth failure
         notifyOnRotation: ["#ops-channel"]
@@ -1452,11 +1448,11 @@ See **Appendix A: Commercial Strategy** below for the full analysis.
 
 The AI developer tooling market is experiencing explosive growth:
 - AI captured **$211 billion** in venture funding in 2025 (85% YoY increase)
-- Cursor (Anysphere) went from $0 to **$1B+ ARR** in ~24 months, valued at **$29.3B**
-- Cognition (Devin + Windsurf) raised $400M at a **$10.2B** valuation
+- GitHub Copilot (Anysphere) went from $0 to **$1B+ ARR** in ~24 months, valued at **$29.3B**
+- Cognition (Devin + GitHub Copilot) raised $400M at a **$10.2B** valuation
 - The AI governance market is projected to grow from **$309M (2025)** to **$4.8B (2034)** at 35.7% CAGR
 
-No one is monetizing the AI SDLC orchestration layer yet. Cursor, Copilot, and Codex monetize *code generation*. SonarQube and Snyk monetize *code scanning*. Jira and Linear monetize *project tracking*. Nobody monetizes the orchestration of AI agents through the full SDLC — the layer that coordinates all of these.
+No one is monetizing the AI SDLC orchestration layer yet. GitHub Copilot monetizes *code generation*. SonarQube and Snyk monetize *code scanning*. Jira and Linear monetize *project tracking*. Nobody monetizes the orchestration of AI agents through the full SDLC — the layer that coordinates all of these.
 
 ### Pricing Model: Open-Core + Managed Cloud
 
@@ -1469,7 +1465,7 @@ Everything needed to run the orchestrator for a single team:
 | Feature | Included |
 |---|---|
 | Full orchestration engine | Pipeline execution, stage management, agent invocation |
-| All agent runners | Claude Code, Copilot, Cursor, Codex, custom |
+| All agent runners | GitHub Copilot CLI, Copilot, GitHub Copilot, GitHub Copilot, custom |
 | Quality gate engine | Advisory, soft-mandatory, hard-mandatory enforcement |
 | Autonomy system | Levels 0-3, promotion/demotion, full metrics |
 | Codebase analysis | Nightly deep analysis, per-pipeline diffs |
@@ -1497,7 +1493,7 @@ Managed orchestrator-as-a-service for teams scaling beyond a single repo:
 | Team management | Invite members, assign roles, manage agents |
 | 99.9% SLA | On the orchestration service |
 
-**Pricing rationale:** "Active agent" = an agent that executed at least one pipeline stage in the billing period. This aligns cost with value — teams pay for agents that are doing work, not idle seats. At $49/active-agent/month, a team with 3 active agents pays $147/month. This is comparable to 3 Cursor Pro seats ($60/month) but delivers orchestration value on top of the coding agents the team already pays for.
+**Pricing rationale:** "Active agent" = an agent that executed at least one pipeline stage in the billing period. This aligns cost with value — teams pay for agents that are doing work, not idle seats. At $49/active-agent/month, a team with 3 active agents pays $147/month. This is comparable to 3 GitHub Copilot Pro seats ($60/month) but delivers orchestration value on top of the coding agents the team already pays for.
 
 #### Enterprise ($199/active-agent/month, annual commitment)
 
@@ -1561,9 +1557,9 @@ The core orchestration engine never becomes paid. Governance gates, autonomy man
 
    **Resolution (2026-05-13):** Apache-2.0 across the board. `orchestrator/package.json` v0.10.0 ships under Apache-2.0, matching every other workspace package and the repo-root `LICENSE`. `CHARTER.md`'s CNCF Alignment section makes this binding: CNCF Sandbox eligibility requires Apache-2.0 as the project license. The BSL/AGPL alternative was considered and rejected — vendor-neutral foundation governance (CNCF) is the strategic moat against free-rider managed services, not a restrictive license. The IP policy is explicit: no CLA beyond Apache-2.0 terms, contributors retain copyright, patent grants flow through the Apache-2.0 patent clause. Future commercial differentiation lives in the Team Cloud / Enterprise feature tiers (Appendix A), not in the license.
 
-2. **Agent compute cost attribution** — When the orchestrator invokes agents, who pays for the compute? The orchestrator itself is lightweight, but the agents it invokes consume API credits (Anthropic, OpenAI) or compute (self-hosted models). Should the orchestrator track and report per-pipeline agent costs? This would be valuable for the "cost per task" metric but requires integration with billing APIs.
+2. **Agent compute cost attribution** — When the orchestrator invokes agents, who pays for the compute? The orchestrator itself is lightweight, but the agents it invokes consume API credits (GitHub Models, GitHub Copilot) or compute (self-hosted models). Should the orchestrator track and report per-pipeline agent costs? This would be valuable for the "cost per task" metric but requires integration with billing APIs.
 
-   **Resolution (2026-05-13):** Resolved. The orchestrator tracks per-pipeline agent cost end-to-end via the `cost_ledger` table and the `CostTracker` API (`orchestrator/src/cost-tracker.ts`, `orchestrator/src/state/schema.ts:107-124`). Each ledger entry binds cost to `runId`, `agentName`, `pipelineType`, `model`/`modelAlias`, `stageName`, and `issueId`/`prNumber`, with separate accounting for input, output, and cache-read tokens. The `CostGovernancePlugin` (`orchestrator/src/cost-governance.ts`) enforces budget alerts, soft/hard spend limits, and circuit-breaker `abort`/`require-approval` actions over day/week/month/quarter windows. Costs are computed deterministically from a model price table (`DEFAULT_MODEL_COSTS` in `orchestrator/src/defaults.ts`) rather than scraped from live provider billing APIs — this gives "cost per task" and "cost per agent" without depending on Anthropic/OpenAI invoice latency, and supports `shadowCostUsd` so subscription-billed work can record what pay-per-token would have cost. Live billing-API reconciliation remains a non-goal.
+   **Resolution (2026-05-13):** Resolved. The orchestrator tracks per-pipeline agent cost end-to-end via the `cost_ledger` table and the `CostTracker` API (`orchestrator/src/cost-tracker.ts`, `orchestrator/src/state/schema.ts:107-124`). Each ledger entry binds cost to `runId`, `agentName`, `pipelineType`, `model`/`modelAlias`, `stageName`, and `issueId`/`prNumber`, with separate accounting for input, output, and cache-read tokens. The `CostGovernancePlugin` (`orchestrator/src/cost-governance.ts`) enforces budget alerts, soft/hard spend limits, and circuit-breaker `abort`/`require-approval` actions over day/week/month/quarter windows. Costs are computed deterministically from a model price table (`DEFAULT_MODEL_COSTS` in `orchestrator/src/defaults.ts`) rather than scraped from live provider billing APIs — this gives "cost per task" and "cost per agent" without depending on GitHub Models/GitHub Copilot invoice latency, and supports `shadowCostUsd` so subscription-billed work can record what pay-per-token would have cost. Live billing-API reconciliation remains a non-goal.
 
 3. **AAIF contribution timing** — At what point does the orchestrator have enough traction to propose the spec as a governance layer for the AAIF? The target should be quantifiable (e.g., 1,000+ governed repos, 5+ enterprise customers, multiple agent runners proven in production).
 
@@ -1584,4 +1580,4 @@ The core orchestration engine never becomes paid. Governance gates, autonomy man
 - [Google DORA: AI Adoption and System Stability](https://dora.dev/) — Evidence for stability regression
 - [MCP Specification](https://modelcontextprotocol.io/) — Agent-tool connectivity (consumed by orchestrator)
 - [A2A Protocol](https://github.com/google/A2A) — Agent-agent communication (consumed by orchestrator)
-- [AGENTS.md](https://github.com/anthropics/agents-md) — Per-project agent instructions (generated by orchestrator)
+- [AGENTS.md](https://agents.md) — Per-project agent instructions (generated by orchestrator)

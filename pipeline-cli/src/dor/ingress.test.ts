@@ -1,5 +1,5 @@
 /**
- * Claude Code subagent ingress shim tests (RFC-0011 §5.2).
+ * GitHub Copilot CLI subagent ingress shim tests (RFC-0011 §5.2).
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -12,7 +12,7 @@ import {
   refineBacklogTask,
   refusalMessage,
   stripFrontmatter,
-} from './ingress-claude.js';
+} from './ingress.js';
 import type { CommentPoster, ExistingComment } from './comment-loop.js';
 import type { DorConfig } from './dor-config.js';
 

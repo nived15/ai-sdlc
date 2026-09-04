@@ -10,7 +10,7 @@ references:
   - ai-sdlc-plugin/commands/execute.md
   - dogfood/src/cli-watch.ts
   - dogfood/src/cli.ts
-  - CLAUDE.md
+  - .github/copilot-instructions.md
 priority:
   level: P1
 size:

@@ -16,7 +16,7 @@
  * mirrored back into a public comment.
  *
  * The poster itself is split out behind the `CommentPoster` interface
- * so the GitHub Action shim and the Claude Code subagent shim share the
+ * so the GitHub Action shim and the GitHub Copilot CLI subagent shim share the
  * composition + idempotency logic and only differ in I/O.
  */
 
@@ -314,7 +314,7 @@ export interface PostResult {
 
 /**
  * Generic comment poster contract. Every shim (GitHub Action,
- * Claude Code subagent, future Slack / Forge) implements this; the
+ * GitHub Copilot CLI subagent, future Slack / Forge) implements this; the
  * shared `postIdempotent()` helper drives the create-vs-update decision.
  */
 export interface CommentPoster {

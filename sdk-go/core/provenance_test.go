@@ -8,9 +8,9 @@ import (
 )
 
 func TestCreateProvenance(t *testing.T) {
-	p := CreateProvenance("gpt-4", "cursor", "abc123")
-	assert.Equal(t, "gpt-4", p.Model)
-	assert.Equal(t, "cursor", p.Tool)
+	p := CreateProvenance("gpt-5", "copilot", "abc123")
+	assert.Equal(t, "gpt-5", p.Model)
+	assert.Equal(t, "copilot", p.Tool)
 	assert.Equal(t, "abc123", p.PromptHash)
 	assert.NotEmpty(t, p.Timestamp)
 	assert.Equal(t, ReviewPending, p.ReviewDecision)
@@ -18,7 +18,7 @@ func TestCreateProvenance(t *testing.T) {
 }
 
 func TestCreateProvenanceWithOptions(t *testing.T) {
-	p := CreateProvenance("claude-3", "vscode", "hash",
+	p := CreateProvenance("gpt-5", "vscode", "hash",
 		WithTimestamp("2024-01-01T00:00:00Z"),
 		WithHumanReviewer("alice"),
 		WithReviewDecision(ReviewApproved),
@@ -30,8 +30,8 @@ func TestCreateProvenanceWithOptions(t *testing.T) {
 
 func TestProvenanceAnnotationRoundTrip(t *testing.T) {
 	original := &ProvenanceRecord{
-		Model:          "gpt-4",
-		Tool:           "cursor",
+		Model:          "gpt-5",
+		Tool:           "copilot",
 		PromptHash:     "abc123",
 		Timestamp:      "2024-01-01T00:00:00Z",
 		HumanReviewer:  "alice",
@@ -40,7 +40,7 @@ func TestProvenanceAnnotationRoundTrip(t *testing.T) {
 
 	annotations := ProvenanceToAnnotations(original)
 	assert.Len(t, annotations, 6)
-	assert.Equal(t, "gpt-4", annotations[ProvenanceAnnotationPrefix+"model"])
+	assert.Equal(t, "gpt-5", annotations[ProvenanceAnnotationPrefix+"model"])
 
 	restored := ProvenanceFromAnnotations(annotations)
 	require.NotNil(t, restored)
@@ -54,15 +54,15 @@ func TestProvenanceAnnotationRoundTrip(t *testing.T) {
 
 func TestProvenanceFromAnnotationsMissing(t *testing.T) {
 	result := ProvenanceFromAnnotations(map[string]string{
-		ProvenanceAnnotationPrefix + "model": "gpt-4",
+		ProvenanceAnnotationPrefix + "model": "gpt-5",
 	})
 	assert.Nil(t, result)
 }
 
 func TestProvenanceWithoutReviewer(t *testing.T) {
 	p := &ProvenanceRecord{
-		Model:          "gpt-4",
-		Tool:           "cursor",
+		Model:          "gpt-5",
+		Tool:           "copilot",
 		PromptHash:     "abc",
 		Timestamp:      "2024-01-01T00:00:00Z",
 		ReviewDecision: ReviewPending,
@@ -73,8 +73,8 @@ func TestProvenanceWithoutReviewer(t *testing.T) {
 
 func TestValidateProvenance(t *testing.T) {
 	valid, missing := ValidateProvenance(map[string]string{
-		"model":          "gpt-4",
-		"tool":           "cursor",
+		"model":          "gpt-5",
+		"tool":           "copilot",
 		"promptHash":     "abc",
 		"timestamp":      "2024-01-01T00:00:00Z",
 		"reviewDecision": "approved",
@@ -85,7 +85,7 @@ func TestValidateProvenance(t *testing.T) {
 
 func TestValidateProvenanceMissing(t *testing.T) {
 	valid, missing := ValidateProvenance(map[string]string{
-		"model": "gpt-4",
+		"model": "gpt-5",
 	})
 	assert.False(t, valid)
 	assert.Contains(t, missing, "tool")

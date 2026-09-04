@@ -345,13 +345,13 @@ describe('Vector 5 [integration]: prompt injection — proxy lifecycle verified;
       // NOT verify that the Stage 3 reviewer matrix detects the injection.
       //
       // The real reviewer matrix detection (injection-detected-flag) requires a live
-      // ANTHROPIC_API_KEY and a running model. That is an irreducible integration gap —
+      // GITHUB_MODELS_TOKEN and a running model. That is an irreducible integration gap —
       // see the unverifiedProperties field in the conformance record.
 
       const proxy = new (await import('./inference-proxy.js')).InferenceProxy({
         prNumber: FIXTURE_PROMPT_INJECTION.prNumber,
-        credential: process.env['ANTHROPIC_API_KEY'] ?? 'sk-fake-key-for-integration-test',
-        provider: 'anthropic',
+        credential: process.env['GITHUB_MODELS_TOKEN'] ?? 'sk-fake-key-for-integration-test',
+        provider: 'github-models',
       });
 
       let port: number | undefined;
@@ -364,7 +364,7 @@ describe('Vector 5 [integration]: prompt injection — proxy lifecycle verified;
 
         // Verify: the session token is NOT the raw API key
         expect(sessionToken).not.toBe(
-          process.env['ANTHROPIC_API_KEY'] ?? 'sk-fake-key-for-integration-test',
+          process.env['GITHUB_MODELS_TOKEN'] ?? 'sk-fake-key-for-integration-test',
         );
         // The session token should be a random hex string (not the API key prefix)
         expect(sessionToken).toMatch(/^[0-9a-f]{32,}$/);

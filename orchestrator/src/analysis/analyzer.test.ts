@@ -47,7 +47,7 @@ describe('analyzer (facade)', () => {
     await writeFile(join(tmpDir, 'src', 'state', 'store.ts'), `export class Store {}\n`);
     await mkdir(join(tmpDir, 'src', 'runners'), { recursive: true });
     await writeFile(join(tmpDir, 'src', 'runners', 'index.ts'), `export {};\n`);
-    await writeFile(join(tmpDir, 'src', 'runners', 'claude.ts'), `export class Runner {}\n`);
+    await writeFile(join(tmpDir, 'src', 'runners', 'copilot.ts'), `export class Runner {}\n`);
 
     const profile = await analyzeCodebase({
       repoPath: tmpDir,

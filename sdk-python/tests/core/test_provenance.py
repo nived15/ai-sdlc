@@ -10,9 +10,9 @@ from ai_sdlc.core.provenance import (
 
 
 def test_create_provenance_defaults() -> None:
-    p = create_provenance(model="gpt-4", tool="cursor", prompt_hash="abc123")
-    assert p.model == "gpt-4"
-    assert p.tool == "cursor"
+    p = create_provenance(model="gpt-5", tool="copilot", prompt_hash="abc123")
+    assert p.model == "gpt-5"
+    assert p.tool == "copilot"
     assert p.prompt_hash == "abc123"
     assert p.review_decision == "pending"
     assert p.timestamp  # not empty
@@ -20,7 +20,7 @@ def test_create_provenance_defaults() -> None:
 
 def test_create_provenance_explicit() -> None:
     p = create_provenance(
-        model="claude-3",
+        model="gpt-5",
         tool="vscode",
         prompt_hash="hash",
         timestamp="2024-01-01T00:00:00Z",
@@ -34,7 +34,7 @@ def test_create_provenance_explicit() -> None:
 
 def test_roundtrip_annotations() -> None:
     p = create_provenance(
-        model="claude-3",
+        model="gpt-5",
         tool="vscode",
         prompt_hash="h1",
         timestamp="2024-01-01T00:00:00Z",
@@ -42,7 +42,7 @@ def test_roundtrip_annotations() -> None:
         review_decision="approved",
     )
     ann = provenance_to_annotations(p)
-    assert ann[f"{PROVENANCE_ANNOTATION_PREFIX}model"] == "claude-3"
+    assert ann[f"{PROVENANCE_ANNOTATION_PREFIX}model"] == "gpt-5"
     assert f"{PROVENANCE_ANNOTATION_PREFIX}humanReviewer" in ann
 
     restored = provenance_from_annotations(ann)

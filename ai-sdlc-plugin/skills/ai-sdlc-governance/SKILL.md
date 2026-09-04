@@ -15,7 +15,7 @@ autoContext: true
 5. **NEVER delete branches.** Do not run `git branch -D` or `git branch -d`.
 6. **NEVER run destructive git operations.** No `git reset --hard`, `git checkout -- .`, `git restore .`.
 
-These rules are also enforced technically via `.claude/hooks/enforce-blocked-actions.sh` and `.ai-sdlc/agent-role.yaml` `blockedActions`.
+These rules are also enforced technically via `.copilot/hooks/enforce-blocked-actions.sh` and `.ai-sdlc/agent-role.yaml` `blockedActions`.
 
 ## Pre-Commit Checklist
 
@@ -84,26 +84,33 @@ When review agents post findings:
 - `reference/` — framework reference implementation
 - `dogfood/` — CLI scripts that invoke the orchestrator
 - `.ai-sdlc/` — pipeline configuration (YAML) — agents cannot modify these files
-- `.claude/` — Claude Code hooks, commands, and skills
+- `.copilot/` — GitHub Copilot CLI hooks, commands, and skills
 - `.github/workflows/` — GitHub Actions — agents cannot modify these files
 - `spec/schemas/` — JSON schemas for YAML validation
 
-## Cross-harness review (AISDLC-247)
+## Independent parallel review
 
-Two Codex reviewer variants ship alongside the Claude variants:
+Three reviewer agents run in parallel on every change, each in its own fresh
+GitHub Copilot CLI session so no reviewer inherits the implementer's context:
 
-| Agent | Harness | When to use |
-|-------|---------|-------------|
-| `code-reviewer` | claude-code | Default code review |
-| `test-reviewer` | claude-code | Default test review |
-| `code-reviewer-codex` | codex | Claude-developed PRs reviewed by Codex; or when o4-mini latency/cost is preferred |
-| `test-reviewer-codex` | codex | Same as above for test coverage |
+| Agent | Harness | Model tier | When to use |
+|-------|---------|------------|-------------|
+| `code-reviewer` | copilot | balanced | Correctness, design, conventions |
+| `test-reviewer` | copilot | balanced | Coverage, regression guards, ACs |
+| `security-reviewer` | copilot | reasoning | OWASP-class analysis, secret exposure |
 
-All four return the same `{ approved, findings, summary }` envelope — Step 8 aggregation is harness-agnostic.
+All three return the same `{ approved, findings, summary }` envelope — Step 8
+aggregation is role-agnostic.
 
-**`security-reviewer` stays on Claude** (per `feedback_subagent_model_selection.md`) for reasoning-heavy OWASP analysis.
+**`security-reviewer` runs on the reasoning tier** — it is the one role where the
+extra reasoning budget consistently pays for itself. Override every reviewer's
+tier with `AI_SDLC_REVIEWER_MODEL_TIER`.
 
-See `docs/operations/cross-harness-review.md` for the full operator runbook.
+Reviewer-set completeness is enforced at verification time: `verify-attestation`
+rejects any DSSE envelope missing one of the three roles.
+
+See `docs/operations/copilot-spawner.md` for the full operator runbook and
+`docs/operations/reviewer-dispatch-defaults.md` for the routing contract.
 
 ## Testing
 

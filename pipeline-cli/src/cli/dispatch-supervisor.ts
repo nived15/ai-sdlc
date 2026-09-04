@@ -240,7 +240,7 @@ Subcommands:
 
 Environment:
   AI_SDLC_DISPATCH_BOARD_DIR  Overrides default board path.
-  CLAUDE_BINARY               Overrides the 'claude' binary name.
+  COPILOT_BINARY              Overrides the 'copilot' binary name.
 `;
 
 /**

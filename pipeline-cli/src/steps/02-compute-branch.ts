@@ -183,7 +183,7 @@ export async function computeBranchName(opts: ComputeBranchOptions): Promise<Com
   // AISDLC-202.2 — degraded-input fallback. AISDLC-180 originally threw here
   // to surface upstream parser bugs (legacy line-based frontmatter parser
   // captured YAML block-scalar markers like `>-` as the literal title). The
-  // js-yaml parser in `parseSimpleYaml` fixed the common trigger, but Codex
+  // js-yaml parser in `parseSimpleYaml` fixed the common trigger, but GitHub Copilot
   // and other-harness runs still occasionally feed titles that normalise to
   // empty (pure-punctuation, non-ASCII titles, etc.). Throwing forced the
   // operator to hand-patch the branch name in `/ai-sdlc execute`-style

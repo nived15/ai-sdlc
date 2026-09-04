@@ -18,8 +18,8 @@
  *    When the caller doesn't pass one (the only realistic case from a
  *    plugin invocation), we resolve `defaultSpawner()` lazily from
  *    `@ai-sdlc/pipeline-cli/runtime`. Tests inject `spawnerFactory` via
- *    `PipelineToolDeps` so they don't shell out to `claude` or hit the
- *    Anthropic API.
+ *    `PipelineToolDeps` so they don't shell out to `copilot` or hit the
+ *    GitHub API.
  *  - Each step function is invoked through a `stepRunners` map so tests
  *    can substitute mocks without monkey-patching the imported module.
  *
@@ -392,12 +392,12 @@ export function registerPipelineTools(server: McpServer, deps: PipelineToolDeps 
       branch: z.string(),
       worktreePath: z.string(),
       workDir: z.string(),
-      codexAvailable: z
+      copilotAvailable: z
         .boolean()
         .optional()
-        .describe('Override the codex-availability detection (test injection).'),
+        .describe('Override the copilot-availability detection (test injection).'),
     },
-    async ({ taskId, task, branch, worktreePath, workDir, codexAvailable }) => {
+    async ({ taskId, task, branch, worktreePath, workDir, copilotAvailable }) => {
       try {
         const result = await runners.buildReviewPrompts({
           taskId,
@@ -405,7 +405,7 @@ export function registerPipelineTools(server: McpServer, deps: PipelineToolDeps 
           branch,
           worktreePath,
           workDir,
-          codexAvailable,
+          copilotAvailable,
         });
         return jsonResult(result);
       } catch (err) {
